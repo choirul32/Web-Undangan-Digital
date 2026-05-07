@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" role="img" aria-labelledby="title desc">
+  <title id="title">Modern Muslim wedding invitation preview</title>
+  <desc id="desc">Sage and ivory invitation visual with arch ornament.</desc>
+  <rect width="900" height="1200" fill="#e7eddd"/>
+  <path d="M0 0h900v1200H0z" fill="#fff8f1" opacity=".42"/>
+  <path d="M190 980V455c0-155 105-275 260-275s260 120 260 275v525Z" fill="#fffdf8" stroke="#7d8f69" stroke-width="8"/>
+  <path d="M250 960V490c0-120 80-210 200-210s200 90 200 210v470Z" fill="none" stroke="#b98724" stroke-width="4" opacity=".65"/>
+  <text x="450" y="435" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#52613f">SADAJIWA</text>
+  <text x="450" y="535" text-anchor="middle" font-family="Arial, sans-serif" font-size="90" font-weight="900" fill="#2f2a28">F &amp; N</text>
+  <text x="450" y="610" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" fill="#5f5b4f">Modern Muslim</text>
+  <circle cx="450" cy="755" r="82" fill="#dfe6d5"/>
+  <path d="M405 770c30-58 60-58 90 0" fill="none" stroke="#b96b4a" stroke-width="18" stroke-linecap="round"/>
+  <text x="450" y="890" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#5f5b4f">Doa | Akad | Maps</text>
+</svg>
