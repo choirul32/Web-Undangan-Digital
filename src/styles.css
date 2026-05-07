@@ -2,6 +2,113 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --color-primary: #0f1f3d;
+  --color-primary-dark: #071022;
+  --color-primary-hover: #172b52;
+  --color-accent: #c8a24a;
+  --color-accent-soft: #d9b85f;
+  --color-accent-pale: #d9c88f;
+  --color-bg: #fbf7ef;
+  --color-surface: #fffaf2;
+  --color-muted: #f6efe3;
+  --color-muted-strong: #efe2c4;
+  --color-section-soft: #eef2f7;
+  --color-text: #374151;
+  --color-heading: #0b1730;
+  --color-wa: #1f8f4d;
+  --color-wa-hover: #16713c;
+}
+
+/*
+Theme presets. Copy one block below, then paste it over the :root values above.
+
+Royal Navy Gold
+--color-primary: #0f1f3d;
+--color-primary-dark: #071022;
+--color-primary-hover: #172b52;
+--color-accent: #c8a24a;
+--color-accent-soft: #d9b85f;
+--color-accent-pale: #d9c88f;
+--color-bg: #fbf7ef;
+--color-surface: #fffaf2;
+--color-muted: #f6efe3;
+--color-muted-strong: #efe2c4;
+--color-section-soft: #eef2f7;
+--color-text: #374151;
+--color-heading: #0b1730;
+--color-wa: #1f8f4d;
+--color-wa-hover: #16713c;
+
+Emerald Gold Premium
+--color-primary: #0d3b2e;
+--color-primary-dark: #062118;
+--color-primary-hover: #14523f;
+--color-accent: #c9a24d;
+--color-accent-soft: #ddbb67;
+--color-accent-pale: #dccb97;
+--color-bg: #fbf8ef;
+--color-surface: #fffdf6;
+--color-muted: #f3ead6;
+--color-muted-strong: #e6dbc2;
+--color-section-soft: #edf4ef;
+--color-text: #37413d;
+--color-heading: #08281f;
+--color-wa: #1f8f4d;
+--color-wa-hover: #16713c;
+
+Maroon Songket Luxe
+--color-primary: #5a1f2b;
+--color-primary-dark: #2c0d14;
+--color-primary-hover: #7a2b3a;
+--color-accent: #d2a64f;
+--color-accent-soft: #e3bf70;
+--color-accent-pale: #dfc994;
+--color-bg: #fbf3eb;
+--color-surface: #fff8f0;
+--color-muted: #f4e5d5;
+--color-muted-strong: #ead5bf;
+--color-section-soft: #f6ecec;
+--color-text: #43373a;
+--color-heading: #3b121c;
+--color-wa: #1f8f4d;
+--color-wa-hover: #16713c;
+
+Terracotta Heritage
+--color-primary: #7f3f2a;
+--color-primary-dark: #3c1b11;
+--color-primary-hover: #a05235;
+--color-accent: #b99346;
+--color-accent-soft: #d1ad63;
+--color-accent-pale: #dbc895;
+--color-bg: #fff7ef;
+--color-surface: #fffaf4;
+--color-muted: #f4e5d4;
+--color-muted-strong: #ead2ba;
+--color-section-soft: #eef2e8;
+--color-text: #463c35;
+--color-heading: #4a2317;
+--color-wa: #1f8f4d;
+--color-wa-hover: #16713c;
+
+Sage Champagne
+--color-primary: #485c43;
+--color-primary-dark: #243020;
+--color-primary-hover: #607858;
+--color-accent: #bd9850;
+--color-accent-soft: #d4b36d;
+--color-accent-pale: #ddc99a;
+--color-bg: #faf7ef;
+--color-surface: #fffdf6;
+--color-muted: #efe8d8;
+--color-muted-strong: #ded8c6;
+--color-section-soft: #eef3ea;
+--color-text: #3f453d;
+--color-heading: #2f3d2b;
+--color-wa: #1f8f4d;
+--color-wa-hover: #16713c;
+*/
+
 html {
   scroll-behavior: smooth;
 }
@@ -12,10 +119,10 @@ body {
 
 .nusantara-pattern {
   background-image:
-    linear-gradient(135deg, rgba(185, 107, 74, 0.08) 25%, transparent 25%),
-    linear-gradient(225deg, rgba(125, 143, 105, 0.08) 25%, transparent 25%),
-    linear-gradient(45deg, rgba(185, 107, 74, 0.08) 25%, transparent 25%),
-    linear-gradient(315deg, rgba(125, 143, 105, 0.08) 25%, rgba(255, 248, 241, 0) 25%);
+    linear-gradient(135deg, rgba(15, 31, 61, 0.08) 25%, transparent 25%),
+    linear-gradient(225deg, rgba(200, 162, 74, 0.1) 25%, transparent 25%),
+    linear-gradient(45deg, rgba(15, 31, 61, 0.08) 25%, transparent 25%),
+    linear-gradient(315deg, rgba(200, 162, 74, 0.1) 25%, rgba(251, 247, 239, 0) 25%);
   background-position: 18px 0, 18px 0, 0 0, 0 0;
   background-size: 36px 36px;
 }
@@ -23,8 +130,8 @@ body {
 .songket-line {
   background-image: repeating-linear-gradient(
     90deg,
-    rgba(185, 135, 36, 0.22) 0,
-    rgba(185, 135, 36, 0.22) 1px,
+    rgba(200, 162, 74, 0.28) 0,
+    rgba(200, 162, 74, 0.28) 1px,
     transparent 1px,
     transparent 14px
   );

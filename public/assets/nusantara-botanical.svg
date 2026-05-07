@@ -1,14 +1,15 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1200" role="img" aria-labelledby="title desc">
   <title id="title">Bali Botanical wedding invitation preview</title>
   <desc id="desc">Botanical wedding invitation visual with sage and terracotta.</desc>
-  <rect width="900" height="1200" fill="#fff8f1"/>
-  <circle cx="80" cy="150" r="210" fill="#dfe6d5"/>
-  <circle cx="820" cy="1030" r="240" fill="#f1d49c" opacity=".7"/>
-  <path d="M130 920c180-240 420-245 640-10" fill="none" stroke="#7d8f69" stroke-width="28" stroke-linecap="round" opacity=".6"/>
-  <path d="M210 300c120 75 230 75 350 0" fill="none" stroke="#b96b4a" stroke-width="18" stroke-linecap="round" opacity=".75"/>
-  <rect x="115" y="160" width="670" height="880" rx="34" fill="#fffdf8" opacity=".9"/>
-  <text x="450" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#7d8f69">MELATI SENJA</text>
-  <text x="450" y="505" text-anchor="middle" font-family="Arial, sans-serif" font-size="92" font-weight="900" fill="#2f2a28">B &amp; A</text>
+  <rect width="900" height="1200" fill="#fbf7ef"/>
+  <circle cx="80" cy="150" r="210" fill="#eef2f7"/>
+  <circle cx="820" cy="1030" r="240" fill="#d9c88f" opacity=".7"/>
+  <path d="M130 920c180-240 420-245 640-10" fill="none" stroke="#c8a24a" stroke-width="28" stroke-linecap="round" opacity=".6"/>
+  <path d="M210 300c120 75 230 75 350 0" fill="none" stroke="#0f1f3d" stroke-width="18" stroke-linecap="round" opacity=".75"/>
+  <rect x="115" y="160" width="670" height="880" rx="34" fill="#fffaf2" opacity=".9"/>
+  <text x="450" y="400" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#c8a24a">MELATI SENJA</text>
+  <text x="450" y="505" text-anchor="middle" font-family="Arial, sans-serif" font-size="92" font-weight="900" fill="#0f1f3d">B &amp; A</text>
   <text x="450" y="585" text-anchor="middle" font-family="Arial, sans-serif" font-size="30" fill="#5f5b4f">Bali Botanical</text>
   <text x="450" y="880" text-anchor="middle" font-family="Arial, sans-serif" font-size="24" fill="#5f5b4f">Garden Party | Gallery</text>
 </svg>
+
