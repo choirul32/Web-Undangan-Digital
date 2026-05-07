@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 const whatsappUrl =
-  "https://wa.me/6285817171713?text=Halo%20admin,%20saya%20mau%20lihat%20katalog%20undangan%20digital";
+  "https://wa.me/6282226551246?text=Halo%20admin,%20saya%20mau%20lihat%20katalog%20undangan%20digital";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 28 },
