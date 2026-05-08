@@ -1,5 +1,8 @@
+"use client";
+
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { mergeTemplateOverrides } from "../data/templateAdminDefaults";
 
 const whatsappUrl =
   "https://wa.me/6282226551246?text=Halo%20admin,%20saya%20mau%20lihat%20katalog%20undangan%20digital";
@@ -46,8 +49,8 @@ const trustItems = ["Gratis konsultasi", "Revisi dibantu", "Selesai 1 hari"];
 const heroSlides = [
   {
     title: "Modern Jawa",
-    desc: "Ivory, terracotta, dan aksen emas untuk acara yang hangat.",
-    image: "/assets/nusantara-jawa.svg",
+    desc: "Batik, melati, dan aksen gold untuk nuansa adat Jawa premium.",
+    image: "/assets/template-adat-jawa-premium.png",
   },
   {
     title: "Songket Luxe",
@@ -60,9 +63,9 @@ const heroSlides = [
     image: "/assets/nusantara-botanical.svg",
   },
   {
-    title: "Adat Chic",
-    desc: "Sentuhan adat yang tetap bersih dan modern.",
-    image: "/assets/nusantara-adat.svg",
+    title: "Adat Jawa",
+    desc: "Frame wayang modern dengan detail floral yang elegan.",
+    image: "/assets/template-adat-jawa-premium.png",
   },
 ];
 
@@ -106,11 +109,11 @@ const catalogItems = [
   {
     title: "Nawasena",
     category: "Adat",
-    style: "Adat Chic",
+    style: "Adat Jawa",
     badge: "Custom",
     price: "Rp 149.000",
     oldPrice: "Rp 229.000",
-    image: "/assets/nusantara-adat.svg",
+    image: "/assets/template-adat-jawa-premium.png",
   },
   {
     title: "Larasati",
@@ -665,13 +668,15 @@ function CatalogCard({ item }) {
         <h3 className="text-lg font-black text-[var(--color-primary)]">{item.title}</h3>
         <div className="mt-2 flex items-end gap-3">
           <p className="text-xl font-black text-[var(--color-primary)]">{item.price}</p>
-          <p className="pb-0.5 text-sm font-bold text-[var(--color-text)] line-through">
-            {item.oldPrice}
-          </p>
+          {item.oldPrice ? (
+            <p className="pb-0.5 text-sm font-bold text-[var(--color-text)] line-through">
+              {item.oldPrice}
+            </p>
+          ) : null}
         </div>
         <div className="mt-4 grid grid-cols-2 gap-3">
           <motion.a
-            href="#katalog"
+            href={item.previewUrl || "#katalog"}
             whileHover={{ scale: 1.04 }}
             whileTap={{ scale: 0.98 }}
             className="rounded-xl border border-[var(--color-accent-pale)] bg-[var(--color-surface)] px-4 py-2.5 text-center text-sm font-black text-[var(--color-text)] transition-colors hover:bg-white"
@@ -695,10 +700,54 @@ function CatalogCard({ item }) {
 }
 
 function CatalogSection() {
-  const [activeCatalog, setActiveCatalog] = useState(catalogTabs[0]);
-  const filteredItems = catalogItems.filter(
+  const [landingCatalogItems, setLandingCatalogItems] = useState(catalogItems);
+  const activeCatalogTabs = Array.from(
+    new Set([
+      ...catalogTabs,
+      ...landingCatalogItems.map((item) => item.category).filter(Boolean),
+    ]),
+  );
+  const [activeCatalog, setActiveCatalog] = useState(activeCatalogTabs[0]);
+  const filteredItems = landingCatalogItems.filter(
     (item) => item.category === activeCatalog,
   );
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetch("/api/templates")
+      .then((response) => response.json())
+      .then((result) => {
+        if (!isMounted || !Array.isArray(result.data) || result.data.length === 0) {
+          return;
+        }
+
+        const mappedItems = mergeTemplateOverrides(result.data)
+          .map((template) => ({
+            title: template.name,
+            category: template.category,
+            style: template.category,
+            badge: template.badge || "Ready",
+            price: template.price || "Rp 99.000",
+            oldPrice: "",
+            image: template.image || "/assets/nusantara-premium.svg",
+            previewUrl: template.previewUrl || "/preview",
+          }));
+
+        setLandingCatalogItems(mappedItems);
+
+        if (!mappedItems.some((item) => item.category === activeCatalog)) {
+          setActiveCatalog(mappedItems[0]?.category || catalogTabs[0]);
+        }
+      })
+      .catch(() => {
+        setLandingCatalogItems(catalogItems);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [activeCatalog]);
 
   return (
     <section id="katalog" className="relative overflow-hidden bg-[var(--color-bg)] px-6 py-24 sm:px-8 lg:px-10">
@@ -717,8 +766,8 @@ function CatalogSection() {
           variants={staggerContainer}
           className="mt-10 flex flex-wrap justify-center gap-3"
         >
-          {catalogTabs.map((tab) => {
-            const total = catalogItems.filter(
+          {activeCatalogTabs.map((tab) => {
+            const total = landingCatalogItems.filter(
               (item) => item.category === tab,
             ).length;
             const isActive = activeCatalog === tab;
