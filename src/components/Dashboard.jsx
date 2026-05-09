@@ -18,6 +18,7 @@ import {
   getCoupleSectionConfig,
   getCoverSectionConfig,
   getOpeningRevealConfig,
+  getSectionOrnaments,
   getSectionStyleConfig,
   normalizeDesignConfig,
 } from "../templates/designConfigs";
@@ -2656,6 +2657,10 @@ function TemplateAdminPage() {
   }, [parsedDesignConfig]);
 
   const activeOrnaments = parsedDesignConfig?.ornaments?.[activeDesignSection] || [];
+  const previewOrnaments = useMemo(
+    () => getSectionOrnaments(parsedDesignConfig || {}, activeDesignSection),
+    [parsedDesignConfig, activeDesignSection],
+  );
   const selectedOrnament =
     activeOrnaments[selectedOrnamentIndex] || activeOrnaments[0] || null;
   const activePreviewViewport =
@@ -5092,7 +5097,7 @@ function TemplateAdminPage() {
                                 section={activeDesignSection}
                                 styleConfig={activeSectionStyleConfig}
                               />
-                              <OrnamentLayer ornaments={activeOrnaments} />
+                              <OrnamentLayer ornaments={previewOrnaments} />
                               <div className="absolute inset-0 border border-dashed border-[var(--color-accent)]/50" />
                               <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 rounded-[8px] bg-white/78 p-3 text-center text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
                                 {activeDesignSection} Section
