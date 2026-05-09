@@ -59,7 +59,6 @@ export function mapSupabaseInvitation(row) {
       pax: guest.pax,
     })),
     features: row.features || {},
-    visualTheme: row.theme_settings || {},
   };
 }
 
@@ -130,7 +129,7 @@ export function mapInvitationListItem(row) {
 export function formPayloadToInvitationRow(payload) {
   return {
     slug: payload.slug,
-    template_id: payload.templateId || "rana-kirana",
+    template_id: payload.templateId || "standard",
     package: payload.package || "Premium",
     status: payload.status || "draft",
     groom_name: payload.groomName,
@@ -144,6 +143,5 @@ export function formPayloadToInvitationRow(payload) {
       music: Boolean(payload.music),
       guestName: Boolean(payload.guestName),
     },
-    theme_settings: payload.visualTheme || payload.theme || {},
   };
 }

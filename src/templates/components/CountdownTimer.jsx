@@ -17,6 +17,16 @@ const monthMap = {
   desember: 11,
 };
 
+const initialTimeLeft = {
+  isComplete: false,
+  items: [
+    ["00", "Hari"],
+    ["00", "Jam"],
+    ["00", "Menit"],
+    ["00", "Detik"],
+  ],
+};
+
 export const defaultCountdownWidgetConfig = {
   enabled: true,
   eventIndex: 0,
@@ -95,15 +105,7 @@ function parseTargetDate(event = {}) {
 
 function getTimeLeft(targetDate) {
   if (!targetDate) {
-    return {
-      isComplete: false,
-      items: [
-        ["00", "Hari"],
-        ["00", "Jam"],
-        ["00", "Menit"],
-        ["00", "Detik"],
-      ],
-    };
+    return initialTimeLeft;
   }
 
   const diff = Math.max(0, targetDate.getTime() - Date.now());
@@ -134,9 +136,11 @@ export default function CountdownTimer({
   completeText = "Acara sedang berlangsung",
 }) {
   const targetDate = useMemo(() => parseTargetDate(event), [event]);
-  const [timeLeft, setTimeLeft] = useState(() => getTimeLeft(targetDate));
+  const [isMounted, setIsMounted] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(initialTimeLeft);
 
   useEffect(() => {
+    setIsMounted(true);
     setTimeLeft(getTimeLeft(targetDate));
 
     const interval = window.setInterval(() => {
@@ -156,7 +160,7 @@ export default function CountdownTimer({
           </div>
         ))}
       </div>
-      {timeLeft.isComplete ? (
+      {isMounted && timeLeft.isComplete ? (
         <p className="mt-4 text-xs font-black uppercase tracking-[0.12em]">
           {completeText}
         </p>

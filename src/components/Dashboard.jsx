@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { createInvitationFromDashboardForm } from "../data/sampleInvitation";
-import { sampleInvitation } from "../data/sampleInvitation";
+import { getStoredInvitationDraft, sampleInvitation } from "../data/sampleInvitation";
 import {
   addStoredDeletedTemplateId,
   defaultTemplateMetadata,
@@ -17,10 +17,10 @@ import OrnamentLayer from "../templates/components/OrnamentLayer";
 import {
   getCoupleSectionConfig,
   getCoverSectionConfig,
+  getOpeningRevealConfig,
   getSectionStyleConfig,
   normalizeDesignConfig,
 } from "../templates/designConfigs";
-import { templateOptions } from "../templates/templateRegistry";
 
 const invitations = [
   {
@@ -80,24 +80,21 @@ const invitations = [
   },
 ];
 
-const templates = templateOptions.map((template, index) => ({
-  id: template.id,
-  name: template.name,
-  category: template.category,
-  orders: [34, 28, 24, 19][index] || 12,
-  ...(defaultTemplateMetadata.find((item) => item.id === template.id) || {
-    image: template.preview,
-    price: "Rp 99.000",
-    badge: "Ready",
-    status: "active",
-    description: `${template.name} untuk konsep ${template.category} dengan tampilan mobile-first.`,
-    previewUrl: "/preview",
-    sortOrder: index + 1,
-  }),
-  supportedFeatures: template.supportedFeatures || [],
-}));
+const templates = defaultTemplateMetadata.map((metadata, index) => {
+  return {
+    orders: [34, 28, 24, 19][index] || 12,
+    ...metadata,
+    image: metadata.image || "/assets/nusantara-premium.svg",
+    previewUrl:
+      metadata.previewUrl ||
+      `/preview?templateId=${encodeURIComponent(metadata.id)}`,
+    supportedFeatures: metadata.supportedFeatures || [],
+    rendererType: metadata.rendererType || "config",
+  };
+});
 
-const templateCategoryOptions = ["Modern", "Adat", "Muslim", "Non Foto", "Premium"];
+const templateCategoryOptions = ["Basic", "Standard", "Premium", "Adat"];
+const templateBadgeOptions = ["New", "Best Seller", "Premium", "Favorite", "Promo", "Limited", "Custom"];
 const templateCategories = ["Semua", ...Array.from(new Set([...templateCategoryOptions, ...templates.map((template) => template.category)]))];
 const ornamentSlots = [
   "fill",
@@ -131,7 +128,9 @@ const storyAnimationOptions = ["fade-up", "zoom-in", "slide-left", "stagger"];
 const galleryVariantOptions = ["grid", "carousel", "masonry"];
 const coverLayoutOptions = ["centered", "split", "minimal"];
 const coverOpeningAnimationOptions = ["none", "fade-up", "zoom-in", "slide-left", "pop-up"];
-const coverRevealStyleOptions = ["curtain", "gate", "paper", "wayang"];
+const openingRevealAnimationOptions = ["fade", "zoom", "slide-up", "curtain", "gate", "paper"];
+const openingRevealBackgroundModeOptions = ["color", "image"];
+const coverBackgroundModeOptions = ["color", "image"];
 const guestBlockStyleOptions = ["card", "pill", "minimal", "hidden"];
 const couplePhotoStyleOptions = ["circle", "arch", "square"];
 const coupleFontPresetOptions = ["serif", "sans", "script"];
@@ -202,6 +201,7 @@ const templateStylePresets = [
       staggerStep: 0.14,
     },
     widgets: {
+      openingReveal: { enabled: true, animation: "curtain" },
       countdown: { variant: "minimal" },
       events: { variant: "elegant", showIcon: true, showMaps: true },
       story: { variant: "timeline", animation: "fade-up" },
@@ -209,7 +209,6 @@ const templateStylePresets = [
     },
     cover: {
       openingAnimation: "fade-up",
-      revealStyle: "curtain",
       guestBlockStyle: "minimal",
     },
   },
@@ -232,6 +231,7 @@ const templateStylePresets = [
       staggerStep: 0.18,
     },
     widgets: {
+      openingReveal: { enabled: true, animation: "paper" },
       countdown: { variant: "cards" },
       events: { variant: "cards", showIcon: true, showMaps: true },
       story: { variant: "card", animation: "stagger" },
@@ -239,7 +239,6 @@ const templateStylePresets = [
     },
     cover: {
       openingAnimation: "zoom-in",
-      revealStyle: "paper",
       guestBlockStyle: "card",
     },
   },
@@ -262,6 +261,7 @@ const templateStylePresets = [
       staggerStep: 0.22,
     },
     widgets: {
+      openingReveal: { enabled: true, animation: "paper" },
       countdown: { variant: "circle" },
       events: { variant: "elegant", showIcon: false, showMaps: true },
       story: { variant: "stacked", animation: "fade-up" },
@@ -269,7 +269,6 @@ const templateStylePresets = [
     },
     cover: {
       openingAnimation: "pop-up",
-      revealStyle: "paper",
       guestBlockStyle: "pill",
     },
   },
@@ -292,6 +291,7 @@ const templateStylePresets = [
       staggerStep: 0.18,
     },
     widgets: {
+      openingReveal: { enabled: true, animation: "curtain" },
       countdown: { variant: "cards" },
       events: { variant: "elegant", showIcon: true, showMaps: true },
       story: { variant: "timeline", animation: "slide-left" },
@@ -299,7 +299,6 @@ const templateStylePresets = [
     },
     cover: {
       openingAnimation: "slide-left",
-      revealStyle: "wayang",
       guestBlockStyle: "card",
     },
   },
@@ -323,6 +322,7 @@ const templateStylePresets = [
       staggerStep: 0.12,
     },
     widgets: {
+      openingReveal: { enabled: true, animation: "gate" },
       countdown: { variant: "circle" },
       events: { variant: "elegant", showIcon: true, showMaps: true },
       story: { variant: "card", animation: "zoom-in" },
@@ -330,7 +330,6 @@ const templateStylePresets = [
     },
     cover: {
       openingAnimation: "pop-up",
-      revealStyle: "gate",
       guestBlockStyle: "pill",
     },
   },
@@ -353,6 +352,7 @@ const templateStylePresets = [
       staggerStep: 0.16,
     },
     widgets: {
+      openingReveal: { enabled: true, animation: "curtain" },
       countdown: { variant: "minimal" },
       events: { variant: "list", showIcon: true, showMaps: true },
       story: { variant: "stacked", animation: "stagger" },
@@ -360,7 +360,6 @@ const templateStylePresets = [
     },
     cover: {
       openingAnimation: "zoom-in",
-      revealStyle: "curtain",
       guestBlockStyle: "minimal",
     },
   },
@@ -383,6 +382,7 @@ const templateStylePresets = [
       staggerStep: 0.12,
     },
     widgets: {
+      openingReveal: { enabled: false, animation: "fade" },
       countdown: { variant: "minimal" },
       events: { variant: "list", showIcon: false, showMaps: true },
       story: { variant: "stacked", animation: "fade-up" },
@@ -390,51 +390,8 @@ const templateStylePresets = [
     },
     cover: {
       openingAnimation: "fade-up",
-      revealStyle: "paper",
       guestBlockStyle: "hidden",
     },
-  },
-];
-const backgroundAssetLibrary = [
-  {
-    id: "paper-fan-blush",
-    name: "Paper Fan Blush",
-    src: "/assets/backgrounds/paper-fan-blush.jpg",
-  },
-  {
-    id: "soft-watercolor-cream",
-    name: "Soft Watercolor",
-    src: "/assets/backgrounds/soft-watercolor-cream.jpg",
-  },
-  {
-    id: "tropical-frame-soft",
-    name: "Tropical Soft",
-    src: "/assets/backgrounds/tropical-frame-soft.jpg",
-  },
-  {
-    id: "blue-floral-frame",
-    name: "Blue Floral",
-    src: "/assets/backgrounds/blue-floral-frame.jpg",
-  },
-  {
-    id: "black-rose-frame",
-    name: "Black Rose",
-    src: "/assets/backgrounds/black-rose-frame.jpg",
-  },
-  {
-    id: "tropical-leaf-yellow",
-    name: "Tropical Yellow",
-    src: "/assets/backgrounds/tropical-leaf-yellow.jpg",
-  },
-  {
-    id: "green-watercolor-leaf",
-    name: "Green Leaf",
-    src: "/assets/backgrounds/green-watercolor-leaf.jpg",
-  },
-  {
-    id: "soft-tropical-cream",
-    name: "Soft Tropical",
-    src: "/assets/backgrounds/soft-tropical-cream.jpg",
   },
 ];
 const standardTemplateSections = [
@@ -459,20 +416,23 @@ const templatePreviewViewports = {
   mobile: {
     label: "Mobile 430",
     frameClass: "h-[680px] max-w-[430px]",
+    viewportWidth: 430,
+    viewportHeight: 680,
     scale: 1,
-    innerWidth: "100%",
   },
   tablet: {
     label: "Tablet",
     frameClass: "h-[720px] max-w-[640px]",
+    viewportWidth: 768,
+    viewportHeight: 980,
     scale: 0.78,
-    innerWidth: "128%",
   },
   desktop: {
     label: "Desktop scaled",
     frameClass: "h-[760px] max-w-full",
+    viewportWidth: 1280,
+    viewportHeight: 900,
     scale: 0.58,
-    innerWidth: "172%",
   },
 };
 
@@ -525,8 +485,8 @@ function buildDashboardMetrics(stats) {
 const formSteps = ["Template", "Mempelai", "Acara", "Fitur", "Review"];
 
 const initialInvitationForm = {
-  template: "Rana Kirana",
-  templateId: "rana-kirana",
+  template: "Standard",
+  templateId: "standard",
   package: "Premium",
   slug: "dimas-salsa",
   groomName: "Dimas Pratama",
@@ -534,7 +494,7 @@ const initialInvitationForm = {
   brideName: "Salsa Kirana",
   brideNickname: "Salsa",
   quote: "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu pasangan hidup.",
-  eventTitle: "Akad & Resepsi",
+  eventTitle: "Akad Nikah",
   eventDate: "2026-06-12",
   eventTime: "09:00",
   venue: "Gedung Serbaguna Nusantara",
@@ -544,86 +504,6 @@ const initialInvitationForm = {
   music: true,
   guestName: true,
 };
-
-const visualThemePresets = [
-  {
-    id: "royal-navy-gold",
-    name: "Royal Navy Gold",
-    bg: "#f7f1e6",
-    surface: "#fffaf0",
-    sectionSoft: "#e9efe1",
-    primary: "#18243f",
-    heading: "#111827",
-    text: "#4d4a45",
-    accent: "#d4a84f",
-    accentSoft: "#f1d28b",
-    accentPale: "#e7c987",
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
-    coverImage: "/assets/nusantara-hero-bg.svg",
-  },
-  {
-    id: "maroon-songket",
-    name: "Maroon Songket",
-    bg: "#fbf3ec",
-    surface: "#fffaf4",
-    sectionSoft: "#f4dfd0",
-    primary: "#4b1623",
-    heading: "#2f1119",
-    text: "#59433e",
-    accent: "#c4914f",
-    accentSoft: "#efc785",
-    accentPale: "#e8cda8",
-    fontFamily: "Georgia, Cambria, serif",
-    coverImage: "/assets/nusantara-songket.svg",
-  },
-  {
-    id: "emerald-gold",
-    name: "Emerald Gold",
-    bg: "#f3f6ee",
-    surface: "#fffdf4",
-    sectionSoft: "#dfe9d7",
-    primary: "#163c32",
-    heading: "#10251f",
-    text: "#46534b",
-    accent: "#c6a24a",
-    accentSoft: "#ead089",
-    accentPale: "#ddcc95",
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
-    coverImage: "/assets/nusantara-botanical.svg",
-  },
-  {
-    id: "terracotta-heritage",
-    name: "Terracotta Heritage",
-    bg: "#fff4ec",
-    surface: "#fffaf6",
-    sectionSoft: "#f4dfcf",
-    primary: "#563326",
-    heading: "#2e1a13",
-    text: "#665049",
-    accent: "#c76f45",
-    accentSoft: "#e7a57e",
-    accentPale: "#e8c5ad",
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
-    coverImage: "/assets/nusantara-jawa.svg",
-  },
-  {
-    id: "sage-champagne",
-    name: "Sage Champagne",
-    bg: "#f7f5ea",
-    surface: "#fffdf5",
-    sectionSoft: "#e5ead9",
-    primary: "#3f4a38",
-    heading: "#242a20",
-    text: "#596052",
-    accent: "#b89b5e",
-    accentSoft: "#e5d09d",
-    accentPale: "#d9c69b",
-    fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
-    coverImage: "/assets/nusantara-premium.svg",
-  },
-];
-
-const initialVisualTheme = visualThemePresets[0];
 
 function Field({ label, children }) {
   return (
@@ -843,7 +723,7 @@ function InvitationTable() {
 }
 
 function QuickCreateCard() {
-  const [selectedTemplate, setSelectedTemplate] = useState("rana-kirana");
+  const [selectedTemplate, setSelectedTemplate] = useState("standard");
 
   return (
     <motion.section
@@ -2048,191 +1928,6 @@ const pageMeta = {
   },
 };
 
-function ColorInput({ label, value, onChange }) {
-  return (
-    <label className="block rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-4">
-      <span className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-        {label}
-      </span>
-      <div className="mt-3 flex items-center gap-3">
-        <input
-          type="color"
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="h-11 w-14 rounded-lg border border-[var(--color-accent-pale)] bg-white p-1"
-        />
-        <input
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-          className="min-w-0 flex-1 rounded-xl border border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-        />
-      </div>
-    </label>
-  );
-}
-
-function TemplateVisualEditor() {
-  const [theme, setTheme] = useState(initialVisualTheme);
-  const [message, setMessage] = useState("");
-
-  useEffect(() => {
-    try {
-      const savedTheme = window.localStorage.getItem("nusa-invite:visual-theme");
-      if (savedTheme) {
-        setTheme(JSON.parse(savedTheme));
-      }
-    } catch {
-      setTheme(initialVisualTheme);
-    }
-  }, []);
-
-  const updateTheme = (key, value) => {
-    setTheme((current) => ({ ...current, [key]: value }));
-    setMessage("");
-  };
-
-  const applyPreset = (presetId) => {
-    const selectedPreset =
-      visualThemePresets.find((preset) => preset.id === presetId) || initialVisualTheme;
-    setTheme(selectedPreset);
-    setMessage("");
-  };
-
-  const previewData = useMemo(
-    () => ({
-      ...sampleInvitation,
-      templateId: "rana-kirana",
-      coverImage: theme.coverImage,
-      visualTheme: theme,
-    }),
-    [theme],
-  );
-
-  const saveTheme = async () => {
-    window.localStorage.setItem("nusa-invite:visual-theme", JSON.stringify(theme));
-    setMessage("Theme tersimpan ke draft lokal.");
-
-    try {
-      const response = await fetch("/api/template-theme", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          slug: sampleInvitation.slug,
-          theme,
-        }),
-      });
-      const result = await response.json();
-      if (response.ok) {
-        setMessage(
-          result.source === "supabase"
-            ? "Theme tersimpan ke Supabase."
-            : "Theme tersimpan ke draft lokal.",
-        );
-      }
-    } catch {
-      setMessage("Theme tersimpan ke draft lokal.");
-    }
-  };
-
-  return (
-    <motion.section
-      variants={fadeUp}
-      className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)] p-6 shadow-xl shadow-[var(--color-primary)]/8"
-    >
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-        <div className="max-w-2xl">
-          <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
-            Visual Editor
-          </p>
-          <h2 className="mt-2 text-2xl font-black text-[var(--color-primary)]">
-            Atur rasa visual template tanpa sentuh kode.
-          </h2>
-          <p className="mt-2 text-base font-semibold leading-7 text-[var(--color-text)]">
-            Editor ini mengubah token visual template: warna utama, aksen, background,
-            font, dan cover image. Nanti token ini bisa dipakai semua template.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={saveTheme}
-          className="rounded-2xl bg-[var(--color-accent)] px-5 py-3 text-base font-black text-[var(--color-primary)] shadow-lg shadow-[var(--color-accent)]/20 transition-colors hover:bg-[var(--color-accent-soft)]"
-        >
-          Simpan Theme
-        </button>
-      </div>
-
-      <div className="mt-6 grid gap-6 xl:grid-cols-[420px_1fr]">
-        <div className="space-y-5">
-          <Field label="Preset Cepat">
-            <SelectInput value={theme.id} onChange={(event) => applyPreset(event.target.value)}>
-              {visualThemePresets.map((preset) => (
-                <option key={preset.id} value={preset.id}>
-                  {preset.name}
-                </option>
-              ))}
-            </SelectInput>
-          </Field>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <ColorInput label="Background" value={theme.bg} onChange={(value) => updateTheme("bg", value)} />
-            <ColorInput label="Surface" value={theme.surface} onChange={(value) => updateTheme("surface", value)} />
-            <ColorInput label="Primary" value={theme.primary} onChange={(value) => updateTheme("primary", value)} />
-            <ColorInput label="Heading" value={theme.heading} onChange={(value) => updateTheme("heading", value)} />
-            <ColorInput label="Text" value={theme.text} onChange={(value) => updateTheme("text", value)} />
-            <ColorInput label="Accent" value={theme.accent} onChange={(value) => updateTheme("accent", value)} />
-          </div>
-
-          <Field label="Font Feel">
-            <SelectInput
-              value={theme.fontFamily}
-              onChange={(event) => updateTheme("fontFamily", event.target.value)}
-            >
-              <option value="Inter, ui-sans-serif, system-ui, sans-serif">Sans Modern</option>
-              <option value="Georgia, Cambria, serif">Serif Premium</option>
-              <option value="Trebuchet MS, ui-sans-serif, system-ui, sans-serif">Soft Rounded</option>
-            </SelectInput>
-          </Field>
-
-          <Field label="Cover Image">
-            <SelectInput
-              value={theme.coverImage}
-              onChange={(event) => updateTheme("coverImage", event.target.value)}
-            >
-              <option value="/assets/nusantara-hero-bg.svg">Nusantara Pattern</option>
-              <option value="/assets/nusantara-songket.svg">Songket Premium</option>
-              <option value="/assets/nusantara-jawa.svg">Jawa Modern</option>
-              <option value="/assets/nusantara-botanical.svg">Botanical</option>
-              <option value="/assets/nusantara-premium.svg">Premium Minimal</option>
-            </SelectInput>
-          </Field>
-
-          {message ? (
-            <p className="rounded-[8px] bg-[var(--color-section-soft)] px-4 py-3 text-sm font-black text-[var(--color-primary)]">
-              {message}
-            </p>
-          ) : null}
-        </div>
-
-        <div className="overflow-hidden rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-primary)] p-4 shadow-xl shadow-[var(--color-primary)]/12">
-          <div className="mb-3 flex items-center justify-between text-white">
-            <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
-              Live Preview
-            </p>
-            <p className="text-sm font-bold text-white/70">Desktop scaled</p>
-          </div>
-          <div className="h-[720px] overflow-hidden rounded-[8px] bg-white">
-            <div className="origin-top-left scale-[0.42]">
-              <div className="w-[238%]">
-                <InvitationRenderer data={previewData} guestName="Bapak/Ibu Tamu" />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </motion.section>
-  );
-}
-
 function TemplateStatusPill({ status }) {
   const isActive = status === "active";
   return (
@@ -2264,6 +1959,434 @@ function MiniInput({ label, value, onChange, type = "text", step }) {
         className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
       />
     </label>
+  );
+}
+
+function countdownPreviewClasses(variant = "cards") {
+  if (variant === "minimal") {
+    return {
+      container: "grid grid-cols-4 gap-2 border-y border-[var(--color-accent-pale)] py-4",
+      item: "px-2 text-center",
+      value: "text-2xl font-black text-[var(--color-primary)]",
+      label: "mt-1 text-[10px] font-black uppercase tracking-[0.12em] text-[var(--color-text)]",
+    };
+  }
+
+  if (variant === "circle") {
+    return {
+      container: "grid grid-cols-4 gap-3",
+      item: "flex aspect-square flex-col items-center justify-center rounded-full border border-[var(--color-accent)] bg-white shadow-lg shadow-[var(--color-primary)]/8",
+      value: "text-xl font-black text-[var(--color-primary)]",
+      label: "mt-1 text-[9px] font-black uppercase tracking-[0.08em] text-[var(--color-text)]",
+    };
+  }
+
+  return {
+    container: "grid grid-cols-4 gap-3",
+    item: "rounded-[8px] bg-white px-3 py-4 text-center shadow-lg shadow-[var(--color-primary)]/8",
+    value: "text-2xl font-black text-[var(--color-primary)]",
+    label: "mt-1 text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]",
+  };
+}
+
+function CountdownWidgetPreview({ variant = "cards", enabled = true }) {
+  const classes = countdownPreviewClasses(variant);
+  const previewItems = [
+    ["45", "Hari"],
+    ["08", "Jam"],
+    ["32", "Menit"],
+    ["18", "Detik"],
+  ];
+
+  return (
+    <div className={`rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-section-soft)] p-4 ${enabled ? "" : "opacity-55"}`}>
+      <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
+          Live Preview
+        </p>
+        <p className="text-xs font-black text-[var(--color-accent)]">
+          {enabled ? variant : "disabled"}
+        </p>
+      </div>
+      <div className="mt-4">
+        <div className={classes.container}>
+          {previewItems.map(([value, label]) => (
+            <div key={label} className={classes.item}>
+              <p className={classes.value}>{value}</p>
+              <p className={classes.label}>{label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WidgetPreviewShell({ title, label, enabled = true, children }) {
+  return (
+    <div className={`rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-section-soft)] p-4 ${enabled ? "" : "opacity-55"}`}>
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
+          {title}
+        </p>
+        <p className="text-xs font-black text-[var(--color-accent)]">
+          {enabled ? label : "disabled"}
+        </p>
+      </div>
+      <div className="mt-4">{children}</div>
+    </div>
+  );
+}
+
+function StoryWidgetPreview({ variant = "card", enabled = true }) {
+  const items = [
+    ["2021", "Bertemu"],
+    ["2024", "Lamaran"],
+    ["2026", "Menikah"],
+  ];
+
+  if (variant === "timeline") {
+    return (
+      <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
+        <div className="space-y-3 border-l-2 border-[var(--color-accent)]/50 pl-4">
+          {items.map(([year, title]) => (
+            <div key={year} className="relative rounded-[8px] bg-white p-3 shadow-sm">
+              <span className="absolute -left-[23px] top-4 h-3 w-3 rounded-full bg-[var(--color-accent)]" />
+              <p className="text-[10px] font-black text-[var(--color-accent)]">{year}</p>
+              <p className="mt-1 text-sm font-black text-[var(--color-primary)]">{title}</p>
+            </div>
+          ))}
+        </div>
+      </WidgetPreviewShell>
+    );
+  }
+
+  if (variant === "stacked") {
+    return (
+      <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
+        <div className="divide-y divide-[var(--color-accent-pale)] rounded-[8px] bg-white shadow-sm">
+          {items.map(([year, title]) => (
+            <div key={year} className="p-3">
+              <p className="text-[10px] font-black text-[var(--color-accent)]">{year}</p>
+              <p className="mt-1 text-sm font-black text-[var(--color-primary)]">{title}</p>
+            </div>
+          ))}
+        </div>
+      </WidgetPreviewShell>
+    );
+  }
+
+  return (
+    <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
+      <div className="grid grid-cols-3 gap-2">
+        {items.map(([year, title]) => (
+          <div key={year} className="rounded-[8px] bg-white p-3 text-center shadow-sm">
+            <p className="text-[10px] font-black text-[var(--color-accent)]">{year}</p>
+            <p className="mt-1 text-xs font-black text-[var(--color-primary)]">{title}</p>
+          </div>
+        ))}
+      </div>
+    </WidgetPreviewShell>
+  );
+}
+
+function GalleryWidgetPreview({ variant = "grid", enabled = true }) {
+  const items = Array.from({ length: 6 }, (_, index) => index + 1);
+
+  if (variant === "carousel") {
+    return (
+      <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
+        <div className="flex gap-2 overflow-hidden">
+          {items.slice(0, 4).map((item) => (
+            <div key={item} className="flex aspect-[4/5] w-20 shrink-0 items-center justify-center rounded-[8px] border border-dashed border-[var(--color-accent)] bg-white text-xs font-black text-[var(--color-primary)]">
+              {item}
+            </div>
+          ))}
+        </div>
+      </WidgetPreviewShell>
+    );
+  }
+
+  if (variant === "masonry") {
+    return (
+      <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
+        <div className="columns-3 gap-2 space-y-2">
+          {items.map((item) => (
+            <div
+              key={item}
+              className={`${item % 3 === 0 ? "h-20" : item % 2 === 0 ? "h-14" : "h-16"} flex break-inside-avoid items-center justify-center rounded-[8px] border border-dashed border-[var(--color-accent-pale)] bg-white text-xs font-black text-[var(--color-primary)]`}
+            >
+              {item}
+            </div>
+          ))}
+        </div>
+      </WidgetPreviewShell>
+    );
+  }
+
+  return (
+    <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
+      <div className="grid grid-cols-3 gap-2">
+        {items.map((item) => (
+          <div key={item} className="flex aspect-[4/5] items-center justify-center rounded-[8px] border border-dashed border-[var(--color-accent-pale)] bg-white text-xs font-black text-[var(--color-primary)]">
+            {item}
+          </div>
+        ))}
+      </div>
+    </WidgetPreviewShell>
+  );
+}
+
+function EventWidgetPreview({ variant = "cards", enabled = true, showMaps = true, showIcon = true }) {
+  const items = ["Akad", "Resepsi"];
+  const cardContent = (title) => (
+    <>
+      <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[var(--color-accent)]">{title}</p>
+      <p className="mt-1 text-sm font-black text-[var(--color-primary)]">12 Jun 2026</p>
+      <p className="mt-1 text-xs font-black text-[var(--color-primary)]">09.00 WIB</p>
+      {showMaps ? (
+        <span className="mt-2 inline-flex rounded-lg bg-[var(--color-primary)] px-3 py-1 text-[10px] font-black text-white">
+          Maps
+        </span>
+      ) : null}
+    </>
+  );
+
+  if (variant === "list") {
+    return (
+      <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
+        {showIcon ? <div className="mx-auto mb-3 h-8 w-8 rounded-full border border-[var(--color-accent)]" /> : null}
+        <div className="divide-y divide-[var(--color-accent-pale)] rounded-[8px] bg-white text-center shadow-sm">
+          {items.map((item) => (
+            <div key={item} className="p-3">{cardContent(item)}</div>
+          ))}
+        </div>
+      </WidgetPreviewShell>
+    );
+  }
+
+  if (variant === "elegant") {
+    return (
+      <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
+        {showIcon ? <div className="mx-auto mb-3 h-9 w-9 rounded-t-full rounded-b-md border border-[var(--color-accent)] bg-white" /> : null}
+        <div className="grid grid-cols-2 gap-2">
+          {items.map((item) => (
+            <div key={item} className="rounded-t-full rounded-b-[8px] border border-[var(--color-accent-pale)] bg-white px-2 pb-3 pt-6 text-center shadow-sm">
+              {cardContent(item)}
+            </div>
+          ))}
+        </div>
+      </WidgetPreviewShell>
+    );
+  }
+
+  return (
+    <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
+      {showIcon ? <div className="mx-auto mb-3 h-8 w-8 rounded-[8px] border border-[var(--color-accent-pale)] bg-white" /> : null}
+      <div className="grid grid-cols-2 gap-2">
+        {items.map((item) => (
+          <div key={item} className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3 text-center shadow-sm">
+            {cardContent(item)}
+          </div>
+        ))}
+      </div>
+    </WidgetPreviewShell>
+  );
+}
+
+function OpeningRevealPreview({ config = {} }) {
+  const enabled = Boolean(config.enabled);
+  const animation = config.animation || "fade";
+  const backgroundColor = config.backgroundColor || "#fbf7ef";
+  const useImageBackground = config.backgroundMode === "image";
+  const coverImageEnabled = config.coverImageEnabled !== false;
+  const isSplit = animation === "curtain" || animation === "gate";
+  const panelStyle = useImageBackground
+    ? {
+        backgroundImage: `url(${config.backgroundImage || "/assets/CoverPasangan.png"})`,
+        backgroundSize: "200% 100%",
+        backgroundRepeat: "no-repeat",
+      }
+    : { backgroundColor };
+
+  return (
+    <WidgetPreviewShell title="Live Preview" label={animation} enabled={enabled}>
+      <div
+        className="relative flex aspect-[4/5] min-h-[220px] items-center justify-center overflow-hidden rounded-[8px] border border-[var(--color-accent-pale)] px-4 py-5 text-center"
+        style={{ backgroundColor }}
+      >
+        {useImageBackground && !isSplit ? (
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-35"
+            style={{ backgroundImage: `url(${config.backgroundImage || "/assets/CoverPasangan.png"})` }}
+          />
+        ) : null}
+        {isSplit ? (
+          <>
+            <div
+              className={`absolute inset-y-0 left-0 w-1/2 ${animation === "gate" ? "border-r border-[var(--color-accent)]/35 bg-white" : "bg-[var(--color-primary)]/10"}`}
+              style={{ ...panelStyle, backgroundPosition: "left center" }}
+            />
+            <div
+              className={`absolute inset-y-0 right-0 w-1/2 ${animation === "gate" ? "border-l border-[var(--color-accent)]/35 bg-white" : "bg-[var(--color-primary)]/10"}`}
+              style={{ ...panelStyle, backgroundPosition: "right center" }}
+            />
+          </>
+        ) : null}
+        <div className="absolute inset-0 bg-white/55" />
+        <div className={`relative z-10 mx-auto max-w-[220px] ${animation === "paper" ? "rounded-[8px] border border-[var(--color-accent-pale)] bg-white/80 p-3 shadow-sm" : ""}`}>
+          {coverImageEnabled ? (
+            <img
+              src="/assets/CoverPasangan.png"
+              alt=""
+              className="mx-auto mb-3 aspect-[3/4] w-16 rounded-t-full rounded-b-md object-cover shadow-sm"
+            />
+          ) : null}
+          <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[var(--color-accent)]">
+            The Wedding Of
+          </p>
+          <p className="mt-1 font-serif text-xl font-black leading-none text-[var(--color-primary)]">
+            Dimas & Salsa
+          </p>
+          <div className="mx-auto mt-3 rounded-[8px] border border-[var(--color-accent-pale)] bg-white/80 px-3 py-2">
+            <p className="text-[9px] font-black uppercase tracking-[0.1em] text-[var(--color-accent)]">
+              Kepada Yth.
+            </p>
+            <p className="mt-1 text-xs font-black text-[var(--color-primary)]">
+              Tamu Undangan
+            </p>
+          </div>
+          <span className="mt-3 inline-flex rounded-xl bg-[var(--color-primary)] px-4 py-2 text-[10px] font-black text-white">
+            {config.buttonText || "Buka Undangan"}
+          </span>
+        </div>
+      </div>
+    </WidgetPreviewShell>
+  );
+}
+
+function coverPreviewMotionClass(animation = "fade-up") {
+  if (animation === "zoom-in") {
+    return "scale-95";
+  }
+
+  if (animation === "slide-left") {
+    return "translate-x-2";
+  }
+
+  if (animation === "pop-up") {
+    return "scale-90";
+  }
+
+  return "";
+}
+
+function CoverSectionPreview({ config = {} }) {
+  const backgroundColor = config.backgroundColor || "#fbf7ef";
+  const useImageBackground = config.backgroundMode === "image";
+  const layout = config.layout || "centered";
+  const showGuest = config.guestBlockStyle !== "hidden";
+
+  return (
+    <WidgetPreviewShell title="Live Preview" label={layout} enabled>
+      <div
+        className="relative flex aspect-[4/5] min-h-[220px] items-center justify-center overflow-hidden rounded-[8px] border border-[var(--color-accent-pale)] px-4 py-5 text-center"
+        style={{ backgroundColor }}
+      >
+        {useImageBackground ? (
+          <div
+            className="absolute inset-0 bg-cover bg-center opacity-35"
+            style={{ backgroundImage: `url(${config.backgroundImage || "/assets/CoverPasangan.png"})` }}
+          />
+        ) : null}
+        <div className="absolute inset-0 bg-white/55" />
+        <div
+          className={`relative z-10 mx-auto grid max-w-[250px] gap-3 ${layout === "split" ? "grid-cols-[0.8fr_1fr] items-center text-left" : "text-center"} ${coverPreviewMotionClass(config.openingAnimation)}`}
+        >
+          {config.photoEnabled && layout !== "minimal" ? (
+            <img
+              src="/assets/CoverPasangan.png"
+              alt=""
+              className="mx-auto aspect-[3/4] w-16 rounded-t-full rounded-b-md object-cover shadow-sm"
+            />
+          ) : null}
+          <div className={layout === "split" && config.photoEnabled ? "" : "col-span-full"}>
+            <p className="text-[9px] font-black uppercase tracking-[0.16em] text-[var(--color-accent)]">
+              The Wedding Of
+            </p>
+            <p className="mt-1 font-serif text-xl font-black leading-none text-[var(--color-primary)]">
+              Dimas & Salsa
+            </p>
+            {showGuest ? (
+              <div className={`mx-auto mt-3 max-w-[170px] px-3 py-2 ${config.guestBlockStyle === "minimal" ? "border-t border-[var(--color-accent-pale)]" : config.guestBlockStyle === "pill" ? "rounded-full border border-[var(--color-accent-pale)] bg-white/80" : "rounded-[8px] border border-[var(--color-accent-pale)] bg-white/80"}`}>
+                <p className="text-[9px] font-black uppercase tracking-[0.1em] text-[var(--color-accent)]">
+                  Kepada Yth.
+                </p>
+                <p className="mt-1 text-xs font-black text-[var(--color-primary)]">
+                  Tamu Undangan
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </WidgetPreviewShell>
+  );
+}
+
+function couplePreviewImageClass(config = {}) {
+  const shape =
+    config.photoStyle === "circle"
+      ? "aspect-square rounded-full"
+      : config.photoStyle === "square"
+        ? "aspect-[4/5] rounded-[8px]"
+        : "aspect-[3/4] rounded-t-full rounded-b-md";
+  const border = config.borderEnabled ? "border-4 border-white" : "";
+
+  return `${shape} ${border} mx-auto w-16 object-cover shadow-sm`;
+}
+
+function couplePreviewNameClass(config = {}) {
+  if (config.fontPreset === "sans") {
+    return "mt-2 text-sm font-black text-[var(--color-primary)]";
+  }
+
+  if (config.fontPreset === "script") {
+    return "mt-2 font-serif text-lg italic text-[var(--color-primary)]";
+  }
+
+  return "mt-2 font-serif text-base font-black text-[var(--color-primary)]";
+}
+
+function CoupleSectionPreview({ config = {} }) {
+  const profiles = [
+    ["Salsa Kirana", "/assets/catin_wanita.jpg", "Mempelai Wanita"],
+    ["Dimas Pratama", "/assets/catin_pria.jpg", "Mempelai Pria"],
+  ];
+
+  return (
+    <WidgetPreviewShell title="Live Preview" label={config.photoStyle || "arch"} enabled>
+      <div className="grid grid-cols-2 gap-2">
+        {profiles.map(([name, image, role]) => (
+          <div key={name} className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3 text-center shadow-sm">
+            {config.photoEnabled ? (
+              <img src={image} alt="" className={couplePreviewImageClass(config)} />
+            ) : null}
+            <p className={couplePreviewNameClass(config)}>{name}</p>
+            {config.parentTextEnabled ? (
+              <p className="mt-1 text-[10px] font-semibold text-[var(--color-text)]">
+                {role}
+              </p>
+            ) : null}
+            {config.instagramEnabled ? (
+              <span className="mt-2 inline-flex rounded-lg bg-[var(--color-accent)] px-2 py-1 text-[9px] font-black text-[var(--color-primary)]">
+                Instagram
+              </span>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </WidgetPreviewShell>
   );
 }
 
@@ -2299,6 +2422,15 @@ function slugifyTemplateId(value) {
 }
 
 function TemplateAdminPage() {
+  const editorSteps = [
+    { id: 1, label: "Basic" },
+    { id: 2, label: "Style" },
+    { id: 3, label: "Opening" },
+    { id: 4, label: "Widgets" },
+    { id: 5, label: "Ornaments" },
+    { id: 6, label: "Preview" },
+    { id: 7, label: "Publish" },
+  ];
   const [items, setItems] = useState(templates);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("Semua");
@@ -2317,8 +2449,11 @@ function TemplateAdminPage() {
   const [dynamicOrnamentAssets, setDynamicOrnamentAssets] = useState([]);
   const [isLoadingOrnamentAssets, setIsLoadingOrnamentAssets] = useState(false);
   const [previewViewport, setPreviewViewport] = useState("mobile");
+  const [templatePreviewTick, setTemplatePreviewTick] = useState(0);
   const [uploadValidationWarning, setUploadValidationWarning] = useState("");
   const [selectedTemplatePreset, setSelectedTemplatePreset] = useState(templateStylePresets[0].id);
+  const [editorStep, setEditorStep] = useState(1);
+  const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -2531,7 +2666,9 @@ function TemplateAdminPage() {
     ...(parsedDesignConfig?.widgets?.gallery || {}),
   };
   const coverSectionConfig = getCoverSectionConfig(parsedDesignConfig || {});
+  const openingRevealWidgetConfig = getOpeningRevealConfig(parsedDesignConfig || {});
   const coupleSectionConfig = getCoupleSectionConfig(parsedDesignConfig || {});
+  const globalSectionStyleConfig = getSectionStyleConfig(parsedDesignConfig || {}, "global");
   const activeSectionStyleConfig = getSectionStyleConfig(
     parsedDesignConfig || {},
     activeDesignSection,
@@ -2549,18 +2686,73 @@ function TemplateAdminPage() {
   const activeTemplatePreset =
     templateStylePresets.find((preset) => preset.id === selectedTemplatePreset) ||
     templateStylePresets[0];
-  const templatePreviewData = useMemo(
-    () => ({
-      ...sampleInvitation,
-      templateId: templateDraft?.id || sampleInvitation.templateId,
-      designConfig: parsedDesignConfig || {},
-      coverImage:
-        templateDraft?.image ||
-        sampleInvitation.coverImage ||
-        sampleInvitation.gallery?.[0],
-    }),
-    [parsedDesignConfig, templateDraft?.id, templateDraft?.image],
-  );
+  const selectedBadgeOption = templateBadgeOptions.includes(templateDraft?.badge)
+    ? templateDraft?.badge
+    : "Custom";
+  const templatePreviewSrc = useMemo(() => {
+    const previewTemplateId = templateDraft?.id || sampleInvitation.templateId;
+    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&previewTick=${templatePreviewTick}`;
+  }, [templateDraft?.id, templatePreviewTick]);
+
+  useEffect(() => {
+    if (!templateDraft) {
+      return;
+    }
+
+    try {
+      const previewSnapshot = {
+        id: templateDraft.id,
+        image: templateDraft.image,
+        designConfig: parsedDesignConfig || {},
+      };
+      window.sessionStorage.setItem(
+        "nusa-invite:editor-preview-template",
+        JSON.stringify(previewSnapshot),
+      );
+    } catch {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setTemplatePreviewTick((current) => current + 1);
+    }, 120);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [parsedDesignConfig, templateDraft]);
+
+  const openEditorPreview = () => {
+    if (!templateDraft) {
+      return;
+    }
+
+    let nextConfig = {};
+    try {
+      nextConfig = normalizeDesignConfig(
+        designConfigText.trim() ? JSON.parse(designConfigText) : {},
+      );
+    } catch {
+      setManagerMessage("Design config JSON belum valid.");
+      return;
+    }
+
+    try {
+      const previewSnapshot = {
+        id: templateDraft.id,
+        image: templateDraft.image,
+        designConfig: nextConfig,
+      };
+      window.sessionStorage.setItem(
+        "nusa-invite:editor-preview-template",
+        JSON.stringify(previewSnapshot),
+      );
+    } catch {
+      setManagerMessage("Gagal menyiapkan editor preview.");
+      return;
+    }
+
+    const previewUrl = `/preview?templateId=${encodeURIComponent(templateDraft.id)}&editorPreview=1`;
+    window.open(previewUrl, "_blank", "noopener,noreferrer");
+  };
 
   const writeDesignConfig = (nextConfig) => {
     setDesignConfigText(JSON.stringify(nextConfig, null, 2));
@@ -2681,6 +2873,41 @@ function TemplateAdminPage() {
     });
   };
 
+  const updateOpeningRevealWidget = (field, value) => {
+    if (!parsedDesignConfig) {
+      return;
+    }
+
+    writeDesignConfig({
+      ...parsedDesignConfig,
+      widgets: {
+        ...(parsedDesignConfig.widgets || {}),
+        openingReveal: {
+          ...openingRevealWidgetConfig,
+          [field]: value,
+        },
+      },
+    });
+  };
+
+  const updateOpeningRevealImage = async (field, file) => {
+    if (!file || !parsedDesignConfig) {
+      return;
+    }
+
+    const previewUrl = await readFileAsDataUrl(file);
+    updateOpeningRevealWidget(field, previewUrl);
+  };
+
+  const updateCoverBackgroundImage = async (file) => {
+    if (!file || !parsedDesignConfig) {
+      return;
+    }
+
+    const previewUrl = await readFileAsDataUrl(file);
+    updateTemplateSectionConfig("home", "backgroundImage", previewUrl);
+  };
+
   const updateTemplateSectionConfig = (section, field, value) => {
     if (!parsedDesignConfig) {
       return;
@@ -2696,6 +2923,14 @@ function TemplateAdminPage() {
         },
       },
     });
+  };
+
+  const updateGlobalSectionStyle = (field, value) => {
+    updateTemplateSectionConfig("global", field, value);
+  };
+
+  const toggleSectionOverride = (section, enabled) => {
+    updateTemplateSectionConfig(section, "useGlobal", !enabled);
   };
 
   const updateSectionAnimation = (field, value) => {
@@ -2761,10 +2996,18 @@ function TemplateAdminPage() {
       },
     };
 
+    if (scope === "template") {
+      nextSections.global = {
+        ...(nextSections.global || {}),
+        ...activeTemplatePreset.sectionStyle,
+      };
+    }
+
     targetSections.forEach((section) => {
       nextSections[section] = {
         ...(nextSections[section] || {}),
         ...activeTemplatePreset.sectionStyle,
+        useGlobal: false,
         ...(section === "home" ? activeTemplatePreset.cover : {}),
       };
       nextAnimations.sections[section] = {
@@ -2779,6 +3022,10 @@ function TemplateAdminPage() {
       sections: nextSections,
       widgets: {
         ...(parsedDesignConfig.widgets || {}),
+        openingReveal: {
+          ...openingRevealWidgetConfig,
+          ...(activeTemplatePreset.widgets.openingReveal || {}),
+        },
         countdown: {
           ...countdownWidgetConfig,
           ...(activeTemplatePreset.widgets.countdown || {}),
@@ -3064,11 +3311,6 @@ function TemplateAdminPage() {
     setManagerMessage(`${asset.name} dipakai untuk ornament aktif.`);
   };
 
-  const applyBackgroundAsset = (section, asset) => {
-    updateTemplateSectionConfig(section, "backgroundImage", asset.src);
-    setManagerMessage(`${asset.name} dipakai sebagai background ${section}.`);
-  };
-
   const deleteDynamicOrnamentAsset = async (asset) => {
     if (!asset.storagePath) {
       setDynamicOrnamentAssets((currentAssets) =>
@@ -3206,6 +3448,8 @@ function TemplateAdminPage() {
     setDesignConfigText(JSON.stringify(designConfig, null, 2));
     setActiveDesignSection(firstSection);
     setSelectedOrnamentIndex(0);
+    setEditorStep(1);
+    setIsAdvancedOpen(false);
     setManagerMessage("");
   };
 
@@ -3228,7 +3472,7 @@ function TemplateAdminPage() {
     const nextTemplate = {
       id: nextId,
       name: "Template Baru",
-      category: "Modern",
+      category: "Standard",
       price: "Rp 99.000",
       badge: "New",
       status: "hidden",
@@ -3245,6 +3489,8 @@ function TemplateAdminPage() {
     setDesignConfigText(JSON.stringify(designConfig, null, 2));
     setActiveDesignSection("home");
     setSelectedOrnamentIndex(0);
+    setEditorStep(1);
+    setIsAdvancedOpen(false);
     setManagerMessage("Template baru dibuat sebagai draft. Simpan metadata untuk masuk katalog.");
   };
 
@@ -3287,7 +3533,7 @@ function TemplateAdminPage() {
       return;
     }
 
-    const previewUrl = URL.createObjectURL(file);
+    const previewUrl = await readFileAsDataUrl(file);
     updateTemplateDraft("image", previewUrl);
 
     if (!templateDraft?.id) {
@@ -3312,7 +3558,9 @@ function TemplateAdminPage() {
         throw new Error(result.error || "Gagal upload thumbnail");
       }
 
-      updateTemplateDraft("image", result.data.url);
+      if (result.source === "supabase" && result?.data?.url) {
+        updateTemplateDraft("image", result.data.url);
+      }
       setManagerMessage(
         result.source === "supabase"
           ? "Thumbnail berhasil diupload ke Supabase Storage."
@@ -3332,6 +3580,8 @@ function TemplateAdminPage() {
     setActiveDesignSection("home");
     setNewDesignSection("");
     setSelectedOrnamentIndex(0);
+    setEditorStep(1);
+    setIsAdvancedOpen(false);
     setManagerMessage("");
   };
 
@@ -3409,6 +3659,8 @@ function TemplateAdminPage() {
       setActiveDesignSection("home");
       setNewDesignSection("");
       setSelectedOrnamentIndex(0);
+      setEditorStep(1);
+      setIsAdvancedOpen(false);
       setManagerMessage(
         result.source === "supabase"
           ? "Template tersimpan ke Supabase."
@@ -3422,9 +3674,7 @@ function TemplateAdminPage() {
   };
 
   return (
-    <>
-      {!templateDraft ? <TemplateVisualEditor /> : null}
-      <motion.section
+    <motion.section
         variants={fadeUp}
         className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)] p-6 shadow-xl shadow-[var(--color-primary)]/8"
       >
@@ -3442,14 +3692,13 @@ function TemplateAdminPage() {
           </div>
           {templateDraft ? (
             <div className="flex flex-wrap gap-2">
-              <a
-                href={templateDraft.previewUrl || `/preview?templateId=${encodeURIComponent(templateDraft.id)}`}
-                target="_blank"
-                rel="noreferrer"
+              <button
+                type="button"
+                onClick={openEditorPreview}
                 className="rounded-2xl border border-[var(--color-accent-pale)] bg-white px-5 py-3 text-base font-black text-[var(--color-primary)]"
               >
                 Preview
-              </a>
+              </button>
               <button
                 type="button"
                 onClick={saveTemplateDraft}
@@ -3559,30 +3808,57 @@ function TemplateAdminPage() {
               />
             </div>
 
-            <div className="sticky top-3 z-20 mt-5 overflow-x-auto rounded-[8px] border border-[var(--color-accent-pale)] bg-white/95 p-2 shadow-lg shadow-[var(--color-primary)]/8 backdrop-blur">
-              <div className="flex min-w-max gap-2">
-                {[
-                  ["Basic", "template-basic"],
-                  ["Preset", "template-preset"],
-                  ["Cover", "template-cover"],
-                  ["Couple", "template-couple"],
-                  ["Widgets", "template-widgets"],
-                  ["Ornaments", "template-ornaments"],
-                  ["Preview", "template-preview"],
-                  ["Advanced", "template-advanced"],
-                ].map(([label, target]) => (
-                  <a
-                    key={target}
-                    href={`#${target}`}
-                    className="rounded-xl px-3 py-2 text-sm font-black text-[var(--color-primary)] transition-colors hover:bg-[var(--color-bg)]"
+            <div className="sticky top-3 z-20 mt-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-white/95 p-3 shadow-lg shadow-[var(--color-primary)]/8 backdrop-blur">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-sm font-black uppercase tracking-[0.12em] text-[var(--color-accent)]">
+                  Step {editorStep} / {editorSteps.length}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditorStep((current) => Math.max(1, current - 1))}
+                    disabled={editorStep === 1}
+                    className="rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-1.5 text-xs font-black text-[var(--color-primary)] disabled:opacity-40"
                   >
-                    {label}
-                  </a>
+                    Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setEditorStep((current) => Math.min(editorSteps.length, current + 1))
+                    }
+                    disabled={editorStep === editorSteps.length}
+                    className="rounded-xl bg-[var(--color-primary)] px-3 py-1.5 text-xs font-black text-white disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+              <div className="mt-3 h-2 rounded-full bg-[var(--color-bg)]">
+                <div
+                  className="h-2 rounded-full bg-[var(--color-accent)] transition-all duration-300"
+                  style={{ width: `${(editorStep / editorSteps.length) * 100}%` }}
+                />
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {editorSteps.map((step) => (
+                  <button
+                    key={step.id}
+                    type="button"
+                    onClick={() => setEditorStep(step.id)}
+                    className={`rounded-xl px-3 py-1.5 text-xs font-black transition-colors ${
+                      editorStep === step.id
+                        ? "bg-[var(--color-primary)] text-white"
+                        : "border border-[var(--color-accent-pale)] bg-white text-[var(--color-primary)]"
+                    }`}
+                  >
+                    {step.label}
+                  </button>
                 ))}
               </div>
             </div>
 
-            <div id="template-basic" className="mt-5 scroll-mt-24">
+            <div id="template-basic" className={`mt-5 scroll-mt-24 ${editorStep === 1 ? "" : "hidden"}`}>
               <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                 <div className="flex flex-col gap-1">
                   <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
@@ -3624,10 +3900,19 @@ function TemplateAdminPage() {
                       />
                     </Field>
                     <Field label="Badge">
-                      <TextInput
-                        value={templateDraft.badge}
-                        onChange={(event) => updateTemplateDraft("badge", event.target.value)}
-                      />
+                      <SelectInput
+                        value={selectedBadgeOption}
+                        onChange={(event) => {
+                          const nextValue = event.target.value;
+                          updateTemplateDraft("badge", nextValue === "Custom" ? "" : nextValue);
+                        }}
+                      >
+                        {templateBadgeOptions.map((badgeOption) => (
+                          <option key={badgeOption} value={badgeOption}>
+                            {badgeOption}
+                          </option>
+                        ))}
+                      </SelectInput>
                     </Field>
                     <Field label="Status">
                       <SelectInput
@@ -3656,6 +3941,17 @@ function TemplateAdminPage() {
                         />
                       </Field>
                     </div>
+                    {selectedBadgeOption === "Custom" ? (
+                      <div className="md:col-span-2">
+                        <Field label="Badge Custom">
+                          <TextInput
+                            value={templateDraft.badge || ""}
+                            onChange={(event) => updateTemplateDraft("badge", event.target.value)}
+                            placeholder="Contoh: Editor Pick"
+                          />
+                        </Field>
+                      </div>
+                    ) : null}
                   </div>
                   <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-4">
                     <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
@@ -3666,14 +3962,6 @@ function TemplateAdminPage() {
                       alt={`Preview ${templateDraft.name}`}
                       className="mt-3 aspect-[4/5] w-full rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] object-cover"
                     />
-                    <div className="mt-4">
-                      <Field label="Thumbnail URL">
-                        <TextInput
-                          value={templateDraft.image}
-                          onChange={(event) => updateTemplateDraft("image", event.target.value)}
-                        />
-                      </Field>
-                    </div>
                     <div className="mt-4">
                       <input
                         type="file"
@@ -3692,7 +3980,7 @@ function TemplateAdminPage() {
               </div>
             </div>
             <div className="mt-5 grid gap-5 md:grid-cols-2">
-              <div id="template-preset" className="scroll-mt-24 md:col-span-2">
+              <div id="template-preset" className={`scroll-mt-24 md:col-span-2 ${editorStep === 2 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -3744,172 +4032,176 @@ function TemplateAdminPage() {
                       <p className="mt-1 text-sm font-semibold leading-6 text-[var(--color-text)]">
                         {activeTemplatePreset.description}
                       </p>
+                      <div className="mt-4 grid gap-3 md:grid-cols-[160px_1fr]">
+                        <div
+                          className="relative overflow-hidden rounded-[8px] border border-[var(--color-accent-pale)]"
+                          style={{
+                            backgroundColor: activeTemplatePreset.sectionStyle.backgroundColor || "#f8f5ef",
+                          }}
+                        >
+                          {activeTemplatePreset.sectionStyle.backgroundImage ? (
+                            <img
+                              src={activeTemplatePreset.sectionStyle.backgroundImage}
+                              alt=""
+                              className="absolute inset-0 h-full w-full object-cover opacity-60"
+                            />
+                          ) : null}
+                          <div className="relative z-10 p-3">
+                            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[var(--color-primary)]">
+                              Mini Preview
+                            </p>
+                            <p
+                              className="mt-2 text-sm font-black"
+                              style={{
+                                color: activeTemplatePreset.sectionStyle.textColor || "#1f2937",
+                              }}
+                            >
+                              {activeTemplatePreset.label}
+                            </p>
+                            <p className="mt-2 text-xs font-semibold text-[var(--color-text)]">
+                              {activeTemplatePreset.widgets.gallery?.variant || "grid"} / {activeTemplatePreset.widgets.events?.variant || "cards"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-3 text-xs font-semibold text-[var(--color-text)]">
+                          Entrance: <strong>{activeTemplatePreset.sectionStyle.entranceAnimation}</strong><br />
+                          Font: <strong>{activeTemplatePreset.sectionStyle.fontPreset}</strong><br />
+                          Spacing: <strong>{activeTemplatePreset.sectionStyle.spacingPreset}</strong><br />
+                          Opening: <strong>{activeTemplatePreset.widgets.openingReveal?.animation || "off"}</strong>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-              <div id="template-cover" className="scroll-mt-24 md:col-span-2">
+              <div id="template-cover" className={`scroll-mt-24 md:col-span-2 ${editorStep === 2 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
                     Cover Section
                   </p>
                   <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
-                    Atur cover utama, foto, background, animasi opening, dan style nama tamu.
+                    Atur cover utama, foto, background, animasi konten, dan style nama tamu.
                   </p>
-                  <div className="mt-5 grid gap-4 md:grid-cols-3">
-                    <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(coverSectionConfig.photoEnabled)}
-                        onChange={(event) =>
-                          updateTemplateSectionConfig("home", "photoEnabled", event.target.checked)
-                        }
-                        className="h-4 w-4"
-                      />
-                      <span className="text-sm font-black text-[var(--color-primary)]">
-                        Foto aktif
-                      </span>
-                    </label>
-                    <label className="block">
-                      <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                        Layout
-                      </span>
-                      <select
-                        value={coverSectionConfig.layout}
-                        onChange={(event) =>
-                          updateTemplateSectionConfig("home", "layout", event.target.value)
-                        }
-                        className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                      >
-                        {coverLayoutOptions.map((layout) => (
-                          <option key={layout} value={layout}>
-                            {layout}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="block">
-                      <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                        Opening Animation
-                      </span>
-                      <select
-                        value={coverSectionConfig.openingAnimation}
-                        onChange={(event) =>
-                          updateTemplateSectionConfig("home", "openingAnimation", event.target.value)
-                        }
-                        className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                      >
-                        {coverOpeningAnimationOptions.map((animation) => (
-                          <option key={animation} value={animation}>
-                            {animation}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="block">
-                      <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                        Guest Block
-                      </span>
-                      <select
-                        value={coverSectionConfig.guestBlockStyle}
-                        onChange={(event) =>
-                          updateTemplateSectionConfig("home", "guestBlockStyle", event.target.value)
-                        }
-                        className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                      >
-                        {guestBlockStyleOptions.map((style) => (
-                          <option key={style} value={style}>
-                            {style}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(coverSectionConfig.revealEnabled)}
-                        onChange={(event) =>
-                          updateTemplateSectionConfig("home", "revealEnabled", event.target.checked)
-                        }
-                        className="h-4 w-4"
-                      />
-                      <span className="text-sm font-black text-[var(--color-primary)]">
-                        Opening reveal
-                      </span>
-                    </label>
-                    <label className="block">
-                      <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                        Reveal Style
-                      </span>
-                      <select
-                        value={coverSectionConfig.revealStyle}
-                        onChange={(event) =>
-                          updateTemplateSectionConfig("home", "revealStyle", event.target.value)
-                        }
-                        className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                      >
-                        {coverRevealStyleOptions.map((style) => (
-                          <option key={style} value={style}>
-                            {style}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <MiniInput
-                      label="Reveal Text"
-                      value={coverSectionConfig.revealText}
-                      onChange={(value) =>
-                        updateTemplateSectionConfig("home", "revealText", value)
-                      }
-                    />
-                    <MiniInput
-                      label="Background Image"
-                      value={coverSectionConfig.backgroundImage}
-                      onChange={(value) =>
-                        updateTemplateSectionConfig("home", "backgroundImage", value)
-                      }
-                    />
-                    <MiniInput
-                      label="Background Color"
-                      value={coverSectionConfig.backgroundColor}
-                      onChange={(value) =>
-                        updateTemplateSectionConfig("home", "backgroundColor", value)
-                      }
-                    />
-                  </div>
-                  <div className="mt-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3">
-                    <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-                      Background Library
-                    </p>
-                    <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-                      {backgroundAssetLibrary.map((asset) => (
-                        <button
-                          key={asset.id}
-                          type="button"
-                          onClick={() => applyBackgroundAsset("home", asset)}
-                          className={`group rounded-[8px] border p-2 text-left transition-colors hover:border-[var(--color-accent)] ${
-                            coverSectionConfig.backgroundImage === asset.src
-                              ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10"
-                              : "border-[var(--color-accent-pale)] bg-[var(--color-bg)]"
-                          }`}
+                  <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(coverSectionConfig.photoEnabled)}
+                          onChange={(event) =>
+                            updateTemplateSectionConfig("home", "photoEnabled", event.target.checked)
+                          }
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm font-black text-[var(--color-primary)]">
+                          Foto aktif
+                        </span>
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Layout
+                        </span>
+                        <select
+                          value={coverSectionConfig.layout}
+                          onChange={(event) =>
+                            updateTemplateSectionConfig("home", "layout", event.target.value)
+                          }
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
                         >
-                          <span className="block aspect-[9/16] overflow-hidden rounded-md bg-white">
-                            <img
-                              src={asset.src}
-                              alt=""
-                              className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                            />
+                          {coverLayoutOptions.map((layout) => (
+                            <option key={layout} value={layout}>
+                              {layout}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Opening Animation
+                        </span>
+                        <select
+                          value={coverSectionConfig.openingAnimation}
+                          onChange={(event) =>
+                            updateTemplateSectionConfig("home", "openingAnimation", event.target.value)
+                          }
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          {coverOpeningAnimationOptions.map((animation) => (
+                            <option key={animation} value={animation}>
+                              {animation}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Guest Block
+                        </span>
+                        <select
+                          value={coverSectionConfig.guestBlockStyle}
+                          onChange={(event) =>
+                            updateTemplateSectionConfig("home", "guestBlockStyle", event.target.value)
+                          }
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          {guestBlockStyleOptions.map((style) => (
+                            <option key={style} value={style}>
+                              {style}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Background
+                        </span>
+                        <select
+                          value={coverSectionConfig.backgroundMode || "color"}
+                          onChange={(event) =>
+                            updateTemplateSectionConfig("home", "backgroundMode", event.target.value)
+                          }
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          {coverBackgroundModeOptions.map((mode) => (
+                            <option key={mode} value={mode}>
+                              {mode}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      {coverSectionConfig.backgroundMode === "image" ? (
+                        <label className="block">
+                          <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                            Background Image
                           </span>
-                          <span className="mt-2 block truncate text-xs font-black text-[var(--color-primary)]">
-                            {asset.name}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(event) => updateCoverBackgroundImage(event.target.files?.[0])}
+                            className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--color-primary)] file:px-3 file:py-2 file:text-sm file:font-black file:text-white focus:border-[var(--color-accent)]"
+                          />
+                        </label>
+                      ) : (
+                        <label className="block">
+                          <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                            Background Color
                           </span>
-                        </button>
-                      ))}
+                          <input
+                            type="color"
+                            value={coverSectionConfig.backgroundColor || "#fbf7ef"}
+                            onChange={(event) =>
+                              updateTemplateSectionConfig("home", "backgroundColor", event.target.value)
+                            }
+                            className="mt-2 h-11 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white p-1 outline-none focus:border-[var(--color-accent)]"
+                          />
+                        </label>
+                      )}
                     </div>
+                    <CoverSectionPreview config={coverSectionConfig} />
                   </div>
                 </div>
               </div>
-              <div id="template-couple" className="scroll-mt-24 md:col-span-2">
+              <div id="template-couple" className={`scroll-mt-24 md:col-span-2 ${editorStep === 2 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
                     Couple Section
@@ -3917,99 +4209,225 @@ function TemplateAdminPage() {
                   <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
                     Atur foto mempelai, border foto, font, teks orang tua, dan tombol Instagram.
                   </p>
-                  <div className="mt-5 grid gap-4 md:grid-cols-3">
-                    <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(coupleSectionConfig.photoEnabled)}
-                        onChange={(event) =>
-                          updateTemplateSectionConfig("couple", "photoEnabled", event.target.checked)
-                        }
-                        className="h-4 w-4"
-                      />
-                      <span className="text-sm font-black text-[var(--color-primary)]">
-                        Foto aktif
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(coupleSectionConfig.borderEnabled)}
-                        onChange={(event) =>
-                          updateTemplateSectionConfig("couple", "borderEnabled", event.target.checked)
-                        }
-                        className="h-4 w-4"
-                      />
-                      <span className="text-sm font-black text-[var(--color-primary)]">
-                        Border foto
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(coupleSectionConfig.parentTextEnabled)}
-                        onChange={(event) =>
-                          updateTemplateSectionConfig("couple", "parentTextEnabled", event.target.checked)
-                        }
-                        className="h-4 w-4"
-                      />
-                      <span className="text-sm font-black text-[var(--color-primary)]">
-                        Teks orang tua
-                      </span>
-                    </label>
-                    <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(coupleSectionConfig.instagramEnabled)}
-                        onChange={(event) =>
-                          updateTemplateSectionConfig("couple", "instagramEnabled", event.target.checked)
-                        }
-                        className="h-4 w-4"
-                      />
-                      <span className="text-sm font-black text-[var(--color-primary)]">
-                        Instagram
-                      </span>
-                    </label>
-                    <label className="block">
-                      <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                        Photo Style
-                      </span>
-                      <select
-                        value={coupleSectionConfig.photoStyle}
-                        onChange={(event) =>
-                          updateTemplateSectionConfig("couple", "photoStyle", event.target.value)
-                        }
-                        className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                      >
-                        {couplePhotoStyleOptions.map((style) => (
-                          <option key={style} value={style}>
-                            {style}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="block">
-                      <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                        Font Preset
-                      </span>
-                      <select
-                        value={coupleSectionConfig.fontPreset}
-                        onChange={(event) =>
-                          updateTemplateSectionConfig("couple", "fontPreset", event.target.value)
-                        }
-                        className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                      >
-                        {coupleFontPresetOptions.map((preset) => (
-                          <option key={preset} value={preset}>
-                            {preset}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                  <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(coupleSectionConfig.photoEnabled)}
+                          onChange={(event) =>
+                            updateTemplateSectionConfig("couple", "photoEnabled", event.target.checked)
+                          }
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm font-black text-[var(--color-primary)]">
+                          Foto aktif
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(coupleSectionConfig.borderEnabled)}
+                          onChange={(event) =>
+                            updateTemplateSectionConfig("couple", "borderEnabled", event.target.checked)
+                          }
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm font-black text-[var(--color-primary)]">
+                          Border foto
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(coupleSectionConfig.parentTextEnabled)}
+                          onChange={(event) =>
+                            updateTemplateSectionConfig("couple", "parentTextEnabled", event.target.checked)
+                          }
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm font-black text-[var(--color-primary)]">
+                          Teks orang tua
+                        </span>
+                      </label>
+                      <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(coupleSectionConfig.instagramEnabled)}
+                          onChange={(event) =>
+                            updateTemplateSectionConfig("couple", "instagramEnabled", event.target.checked)
+                          }
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm font-black text-[var(--color-primary)]">
+                          Instagram
+                        </span>
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Photo Style
+                        </span>
+                        <select
+                          value={coupleSectionConfig.photoStyle}
+                          onChange={(event) =>
+                            updateTemplateSectionConfig("couple", "photoStyle", event.target.value)
+                          }
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          {couplePhotoStyleOptions.map((style) => (
+                            <option key={style} value={style}>
+                              {style}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Font Preset
+                        </span>
+                        <select
+                          value={coupleSectionConfig.fontPreset}
+                          onChange={(event) =>
+                            updateTemplateSectionConfig("couple", "fontPreset", event.target.value)
+                          }
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          {coupleFontPresetOptions.map((preset) => (
+                            <option key={preset} value={preset}>
+                              {preset}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <CoupleSectionPreview config={coupleSectionConfig} />
                   </div>
                 </div>
               </div>
-              <div id="template-widgets" className="scroll-mt-24 md:col-span-2">
+              <div id="template-opening-reveal" className={`scroll-mt-24 md:col-span-2 ${editorStep === 3 ? "" : "hidden"}`}>
+                <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                        Opening Reveal
+                      </p>
+                      <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
+                        Overlay pembuka sebelum undangan tampil, berisi judul cover, nama tamu, dan tombol buka.
+                      </p>
+                    </div>
+                    <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(openingRevealWidgetConfig.enabled)}
+                        onChange={(event) => updateOpeningRevealWidget("enabled", event.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      <span className="text-sm font-black text-[var(--color-primary)]">
+                        Reveal aktif
+                      </span>
+                    </label>
+                  </div>
+
+                  <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Opening Animation
+                        </span>
+                        <select
+                          value={openingRevealWidgetConfig.animation}
+                          onChange={(event) => updateOpeningRevealWidget("animation", event.target.value)}
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          {openingRevealAnimationOptions.map((animation) => (
+                            <option key={animation} value={animation}>
+                              {animation}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <MiniInput
+                        label="Button Text"
+                        value={openingRevealWidgetConfig.buttonText}
+                        onChange={(value) => updateOpeningRevealWidget("buttonText", value)}
+                      />
+                      <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={openingRevealWidgetConfig.coverImageEnabled !== false}
+                          onChange={(event) =>
+                            updateOpeningRevealWidget("coverImageEnabled", event.target.checked)
+                          }
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm font-black text-[var(--color-primary)]">
+                          Cover image aktif
+                        </span>
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Background
+                        </span>
+                        <select
+                          value={openingRevealWidgetConfig.backgroundMode}
+                          onChange={(event) =>
+                            updateOpeningRevealWidget("backgroundMode", event.target.value)
+                          }
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          {openingRevealBackgroundModeOptions.map((mode) => (
+                            <option key={mode} value={mode}>
+                              {mode}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      {openingRevealWidgetConfig.backgroundMode === "image" ? (
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Background Image
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(event) =>
+                            updateOpeningRevealImage("backgroundImage", event.target.files?.[0])
+                          }
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--color-primary)] file:px-3 file:py-2 file:text-sm file:font-black file:text-white focus:border-[var(--color-accent)]"
+                        />
+                      </label>
+                      ) : (
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Background Color
+                        </span>
+                        <input
+                          type="color"
+                          value={openingRevealWidgetConfig.backgroundColor || "#fbf7ef"}
+                          onChange={(event) =>
+                            updateOpeningRevealWidget("backgroundColor", event.target.value)
+                          }
+                          className="mt-2 h-11 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white p-1 outline-none focus:border-[var(--color-accent)]"
+                        />
+                      </label>
+                      )}
+                      <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(openingRevealWidgetConfig.autoPlayMusic)}
+                          onChange={(event) => updateOpeningRevealWidget("autoPlayMusic", event.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm font-black text-[var(--color-primary)]">
+                          Auto play musik
+                        </span>
+                      </label>
+                    </div>
+                    <OpeningRevealPreview config={openingRevealWidgetConfig} />
+                  </div>
+                </div>
+              </div>
+              <div id="template-widgets" className={`scroll-mt-24 md:col-span-2 ${editorStep === 4 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -4033,50 +4451,56 @@ function TemplateAdminPage() {
                     </label>
                   </div>
 
-                  <div className="mt-5 grid gap-4 md:grid-cols-3">
-                    <label className="block">
-                      <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                        Target Event
-                      </span>
-                      <select
-                        value={countdownWidgetConfig.eventIndex}
-                        onChange={(event) =>
-                          updateCountdownWidget("eventIndex", Number(event.target.value))
-                        }
-                        className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                      >
-                        {[0, 1, 2].map((eventIndex) => (
-                          <option key={eventIndex} value={eventIndex}>
-                            Event {eventIndex + 1}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="block">
-                      <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                        Variant
-                      </span>
-                      <select
-                        value={countdownWidgetConfig.variant}
-                        onChange={(event) => updateCountdownWidget("variant", event.target.value)}
-                        className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                      >
-                        {countdownVariantOptions.map((variant) => (
-                          <option key={variant} value={variant}>
-                            {variant}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <MiniInput
-                      label="Complete Text"
-                      value={countdownWidgetConfig.completeText}
-                      onChange={(value) => updateCountdownWidget("completeText", value)}
+                  <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Target Event
+                        </span>
+                        <select
+                          value={countdownWidgetConfig.eventIndex}
+                          onChange={(event) =>
+                            updateCountdownWidget("eventIndex", Number(event.target.value))
+                          }
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          {[0, 1, 2].map((eventIndex) => (
+                            <option key={eventIndex} value={eventIndex}>
+                              Event {eventIndex + 1}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Variant
+                        </span>
+                        <select
+                          value={countdownWidgetConfig.variant}
+                          onChange={(event) => updateCountdownWidget("variant", event.target.value)}
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          {countdownVariantOptions.map((variant) => (
+                            <option key={variant} value={variant}>
+                              {variant}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <MiniInput
+                        label="Complete Text"
+                        value={countdownWidgetConfig.completeText}
+                        onChange={(value) => updateCountdownWidget("completeText", value)}
+                      />
+                    </div>
+                    <CountdownWidgetPreview
+                      variant={countdownWidgetConfig.variant}
+                      enabled={Boolean(countdownWidgetConfig.enabled)}
                     />
                   </div>
                 </div>
               </div>
-              <div className="md:col-span-2">
+              <div className={`md:col-span-2 ${editorStep === 4 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -4099,43 +4523,49 @@ function TemplateAdminPage() {
                       </span>
                     </label>
                   </div>
-                  <div className="mt-5 grid gap-4 md:grid-cols-2">
-                    <label className="block">
-                      <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                        Variant
-                      </span>
-                      <select
-                        value={storyWidgetConfig.variant}
-                        onChange={(event) => updateStoryWidget("variant", event.target.value)}
-                        className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                      >
-                        {storyVariantOptions.map((variant) => (
-                          <option key={variant} value={variant}>
-                            {variant}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="block">
-                      <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                        Animation
-                      </span>
-                      <select
-                        value={storyWidgetConfig.animation}
-                        onChange={(event) => updateStoryWidget("animation", event.target.value)}
-                        className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                      >
-                        {storyAnimationOptions.map((animation) => (
-                          <option key={animation} value={animation}>
-                            {animation}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                  <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start">
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Variant
+                        </span>
+                        <select
+                          value={storyWidgetConfig.variant}
+                          onChange={(event) => updateStoryWidget("variant", event.target.value)}
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          {storyVariantOptions.map((variant) => (
+                            <option key={variant} value={variant}>
+                              {variant}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Animation
+                        </span>
+                        <select
+                          value={storyWidgetConfig.animation}
+                          onChange={(event) => updateStoryWidget("animation", event.target.value)}
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          {storyAnimationOptions.map((animation) => (
+                            <option key={animation} value={animation}>
+                              {animation}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                    </div>
+                    <StoryWidgetPreview
+                      variant={storyWidgetConfig.variant}
+                      enabled={Boolean(storyWidgetConfig.enabled)}
+                    />
                   </div>
                 </div>
               </div>
-              <div className="md:col-span-2">
+              <div className={`md:col-span-2 ${editorStep === 4 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -4158,44 +4588,50 @@ function TemplateAdminPage() {
                       </span>
                     </label>
                   </div>
-                  <div className="mt-5 grid gap-4 md:grid-cols-3">
-                    <label className="block">
-                      <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                        Variant
-                      </span>
-                      <select
-                        value={galleryWidgetConfig.variant}
-                        onChange={(event) => updateGalleryWidget("variant", event.target.value)}
-                        className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                      >
-                        {galleryVariantOptions.map((variant) => (
-                          <option key={variant} value={variant}>
-                            {variant}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <MiniInput
-                      label="Limit"
-                      type="number"
-                      value={galleryWidgetConfig.limit}
-                      onChange={(value) => updateGalleryWidget("limit", value)}
-                    />
-                    <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(galleryWidgetConfig.includeCover)}
-                        onChange={(event) => updateGalleryWidget("includeCover", event.target.checked)}
-                        className="h-4 w-4"
+                  <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Variant
+                        </span>
+                        <select
+                          value={galleryWidgetConfig.variant}
+                          onChange={(event) => updateGalleryWidget("variant", event.target.value)}
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          {galleryVariantOptions.map((variant) => (
+                            <option key={variant} value={variant}>
+                              {variant}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <MiniInput
+                        label="Limit"
+                        type="number"
+                        value={galleryWidgetConfig.limit}
+                        onChange={(value) => updateGalleryWidget("limit", value)}
                       />
-                      <span className="text-sm font-black text-[var(--color-primary)]">
-                        Cover di awal
-                      </span>
-                    </label>
+                      <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(galleryWidgetConfig.includeCover)}
+                          onChange={(event) => updateGalleryWidget("includeCover", event.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm font-black text-[var(--color-primary)]">
+                          Cover di awal
+                        </span>
+                      </label>
+                    </div>
+                    <GalleryWidgetPreview
+                      variant={galleryWidgetConfig.variant}
+                      enabled={Boolean(galleryWidgetConfig.enabled)}
+                    />
                   </div>
                 </div>
               </div>
-              <div className="md:col-span-2">
+              <div className={`md:col-span-2 ${editorStep === 4 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -4219,49 +4655,57 @@ function TemplateAdminPage() {
                     </label>
                   </div>
 
-                  <div className="mt-5 grid gap-4 md:grid-cols-3">
-                    <label className="block">
-                      <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                        Variant
-                      </span>
-                      <select
-                        value={eventWidgetConfig.variant}
-                        onChange={(event) => updateEventWidget("variant", event.target.value)}
-                        className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                      >
-                        {eventVariantOptions.map((variant) => (
-                          <option key={variant} value={variant}>
-                            {variant}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(eventWidgetConfig.showMaps)}
-                        onChange={(event) => updateEventWidget("showMaps", event.target.checked)}
-                        className="h-4 w-4"
-                      />
-                      <span className="text-sm font-black text-[var(--color-primary)]">
-                        Tampilkan Maps
-                      </span>
-                    </label>
-                    <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
-                      <input
-                        type="checkbox"
-                        checked={Boolean(eventWidgetConfig.showIcon)}
-                        onChange={(event) => updateEventWidget("showIcon", event.target.checked)}
-                        className="h-4 w-4"
-                      />
-                      <span className="text-sm font-black text-[var(--color-primary)]">
-                        Tampilkan Icon
-                      </span>
-                    </label>
+                  <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Variant
+                        </span>
+                        <select
+                          value={eventWidgetConfig.variant}
+                          onChange={(event) => updateEventWidget("variant", event.target.value)}
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          {eventVariantOptions.map((variant) => (
+                            <option key={variant} value={variant}>
+                              {variant}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(eventWidgetConfig.showMaps)}
+                          onChange={(event) => updateEventWidget("showMaps", event.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm font-black text-[var(--color-primary)]">
+                          Tampilkan Maps
+                        </span>
+                      </label>
+                      <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(eventWidgetConfig.showIcon)}
+                          onChange={(event) => updateEventWidget("showIcon", event.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm font-black text-[var(--color-primary)]">
+                          Tampilkan Icon
+                        </span>
+                      </label>
+                    </div>
+                    <EventWidgetPreview
+                      variant={eventWidgetConfig.variant}
+                      enabled={Boolean(eventWidgetConfig.enabled)}
+                      showMaps={Boolean(eventWidgetConfig.showMaps)}
+                      showIcon={Boolean(eventWidgetConfig.showIcon)}
+                    />
                   </div>
                 </div>
               </div>
-              <div id="template-ornaments" className="scroll-mt-24 md:col-span-2">
+              <div id="template-ornaments" className={`scroll-mt-24 md:col-span-2 ${editorStep === 5 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -4363,6 +4807,36 @@ function TemplateAdminPage() {
                           <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
                             Section Style
                           </p>
+                          <div className="mt-3 rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-3">
+                            <p className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                              Global Style
+                            </p>
+                            <div className="mt-2 grid grid-cols-2 gap-2">
+                              <MiniInput
+                                label="Global BG"
+                                value={globalSectionStyleConfig.backgroundColor}
+                                onChange={(value) => updateGlobalSectionStyle("backgroundColor", value)}
+                              />
+                              <MiniInput
+                                label="Global Text"
+                                value={globalSectionStyleConfig.textColor}
+                                onChange={(value) => updateGlobalSectionStyle("textColor", value)}
+                              />
+                            </div>
+                          </div>
+                          <label className="mt-3 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-3 py-2">
+                            <input
+                              type="checkbox"
+                              checked={activeSectionStyleConfig.useGlobal === false}
+                              onChange={(event) =>
+                                toggleSectionOverride(activeDesignSection, event.target.checked)
+                              }
+                              className="h-4 w-4"
+                            />
+                            <span className="text-sm font-black text-[var(--color-primary)]">
+                              Override section ini
+                            </span>
+                          </label>
                           <div className="mt-3 grid grid-cols-2 gap-2">
                             <MiniInput
                               label="BG Color"
@@ -4447,36 +4921,6 @@ function TemplateAdminPage() {
                               ))}
                             </select>
                           </label>
-                          <div className="mt-4 border-t border-[var(--color-accent-pale)] pt-3">
-                            <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-                              Background Library
-                            </p>
-                            <div className="mt-3 grid grid-cols-2 gap-2">
-                              {backgroundAssetLibrary.map((asset) => (
-                                <button
-                                  key={asset.id}
-                                  type="button"
-                                  onClick={() => applyBackgroundAsset(activeDesignSection, asset)}
-                                  className={`group rounded-[8px] border p-2 text-left transition-colors hover:border-[var(--color-accent)] ${
-                                    activeSectionStyleConfig.backgroundImage === asset.src
-                                      ? "border-[var(--color-accent)] bg-[var(--color-accent)]/10"
-                                      : "border-[var(--color-accent-pale)] bg-[var(--color-bg)]"
-                                  }`}
-                                >
-                                  <span className="block aspect-[9/16] overflow-hidden rounded-md bg-white">
-                                    <img
-                                      src={asset.src}
-                                      alt=""
-                                      className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                                    />
-                                  </span>
-                                  <span className="mt-2 block truncate text-xs font-black text-[var(--color-primary)]">
-                                    {asset.name}
-                                  </span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
                         </div>
                         <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3">
                           <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
@@ -4827,7 +5271,7 @@ function TemplateAdminPage() {
                   )}
                 </div>
               </div>
-              <div id="template-preview" className="scroll-mt-24 md:col-span-2">
+              <div id="template-preview" className={`scroll-mt-24 md:col-span-2 ${editorStep === 6 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-primary)] p-4 shadow-xl shadow-[var(--color-primary)]/12">
                   <div className="mb-3 flex flex-col gap-1 text-white sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
@@ -4857,39 +5301,62 @@ function TemplateAdminPage() {
                     <div
                       className={`mx-auto overflow-auto rounded-[8px] bg-white ${activePreviewViewport.frameClass}`}
                     >
-                      <div
-                        className="origin-top-left"
+                      <iframe
+                        key={templatePreviewSrc}
+                        src={templatePreviewSrc}
+                        title="Template live preview"
+                        className="origin-top-left border-0"
                         style={{
+                          width: `${activePreviewViewport.viewportWidth}px`,
+                          height: `${activePreviewViewport.viewportHeight}px`,
                           transform: `scale(${activePreviewViewport.scale})`,
-                          width: activePreviewViewport.innerWidth,
+                          transformOrigin: "top left",
                         }}
-                      >
-                        <InvitationRenderer
-                          data={templatePreviewData}
-                          guestName="Bapak/Ibu Tamu"
-                        />
-                      </div>
+                      />
                     </div>
                   </div>
                 </div>
               </div>
-              <div id="template-advanced" className="scroll-mt-24 md:col-span-2">
-                <Field label="Design Config JSON">
-                  <textarea
-                    value={designConfigText}
-                    onChange={(event) => {
-                      setDesignConfigText(event.target.value);
-                      setManagerMessage("");
-                    }}
-                    rows={10}
-                    spellCheck={false}
-                    className="w-full rounded-2xl border border-[var(--color-accent-pale)] bg-[#111827] px-4 py-3 font-mono text-sm leading-6 text-white outline-none focus:border-[var(--color-accent)]"
-                  />
-                </Field>
+              <div id="template-advanced" className={`scroll-mt-24 md:col-span-2 ${editorStep === 7 ? "" : "hidden"}`}>
+                <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                        Publish
+                      </p>
+                      <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
+                        Final check sebelum publish. Advanced config opsional.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsAdvancedOpen((current) => !current)}
+                      className="rounded-xl border border-[var(--color-accent-pale)] bg-white px-4 py-2 text-sm font-black text-[var(--color-primary)]"
+                    >
+                      {isAdvancedOpen ? "Sembunyikan Advanced" : "Tampilkan Advanced"}
+                    </button>
+                  </div>
+                  {isAdvancedOpen ? (
+                    <div className="mt-4">
+                      <Field label="Design Config JSON">
+                        <textarea
+                          value={designConfigText}
+                          onChange={(event) => {
+                            setDesignConfigText(event.target.value);
+                            setManagerMessage("");
+                          }}
+                          rows={10}
+                          spellCheck={false}
+                          className="w-full rounded-2xl border border-[var(--color-accent-pale)] bg-[#111827] px-4 py-3 font-mono text-sm leading-6 text-white outline-none focus:border-[var(--color-accent)]"
+                        />
+                      </Field>
+                    </div>
+                  ) : null}
+                </div>
               </div>
             </div>
 
-            <div className="mt-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-4 py-3 text-sm font-black text-[var(--color-primary)]">
+            <div className={`mt-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-4 py-3 text-sm font-black text-[var(--color-primary)] ${editorStep === 7 ? "" : "hidden"}`}>
               Gunakan tombol Simpan di header editor untuk menyimpan perubahan.
             </div>
           </div>
@@ -4993,7 +5460,6 @@ function TemplateAdminPage() {
         </div>
         ) : null}
       </motion.section>
-    </>
   );
 }
 

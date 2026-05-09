@@ -1,7 +1,7 @@
 export const sampleInvitation = {
   id: "INV-001",
   slug: "dimas-salsa",
-  templateId: "rana-kirana",
+  templateId: "standard",
   status: "published",
   package: "Premium",
   couple: {
@@ -125,7 +125,7 @@ export function createInvitationFromDashboardForm(form) {
   return {
     id: "DRAFT-LOCAL",
     slug: form.slug || "preview-undangan",
-    templateId: form.templateId || "rana-kirana",
+    templateId: form.templateId || "standard",
     status: "draft",
     package: form.package || "Premium",
     couple: {
@@ -137,9 +137,17 @@ export function createInvitationFromDashboardForm(form) {
     },
     events: [
       {
-        title: form.eventTitle || "Akad & Resepsi",
+        title: form.eventTitle || "Akad Nikah",
         date: form.eventDate || "Tanggal acara",
-        time: form.eventTime || "Jam acara",
+        time: form.eventTime || "09.00 WIB",
+        venue: form.venue || "Lokasi acara",
+        address: form.venue || "Alamat acara",
+        mapsUrl: form.mapsUrl || "https://maps.google.com",
+      },
+      {
+        title: "Resepsi",
+        date: form.eventDate || "Tanggal acara",
+        time: "11.00 - 14.00 WIB",
         venue: form.venue || "Lokasi acara",
         address: form.venue || "Alamat acara",
         mapsUrl: form.mapsUrl || "https://maps.google.com",

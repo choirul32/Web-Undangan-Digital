@@ -1,53 +1,4 @@
-export const defaultDesignConfigs = {
-  "blue-watercolor-muslim": {
-    canvas: {
-      maxWidth: 430,
-      background: "#fff8ee",
-    },
-    sections: {
-      default: {
-        backgroundImage: "/assets/blue-watercolor-frame.svg",
-        overlayClass: "bg-[#fff8ee]/42",
-      },
-      soft: {
-        backgroundImage: "/assets/blue-watercolor-frame.svg",
-        overlayClass: "bg-white/62",
-      },
-    },
-    ornaments: {
-      home: [
-        {
-          id: "home-frame",
-          src: "/assets/blue-watercolor-frame.svg",
-          slot: "fill",
-          width: "100%",
-          height: "100%",
-          x: 0,
-          y: 0,
-          rotate: 0,
-          opacity: 1,
-          zIndex: 0,
-          objectFit: "cover",
-        },
-      ],
-      section: [
-        {
-          id: "section-frame",
-          src: "/assets/blue-watercolor-frame.svg",
-          slot: "fill",
-          width: "100%",
-          height: "100%",
-          x: 0,
-          y: 0,
-          rotate: 0,
-          opacity: 1,
-          zIndex: 0,
-          objectFit: "cover",
-        },
-      ],
-    },
-  },
-};
+export const defaultDesignConfigs = {};
 
 const emptyDesignConfig = {
   canvas: {},
@@ -141,13 +92,23 @@ export function getSectionOrnaments(designConfig, sectionName) {
 export const defaultCoverSectionConfig = {
   photoEnabled: true,
   layout: "centered",
+  backgroundMode: "color",
   backgroundImage: "",
   backgroundColor: "",
   openingAnimation: "fade-up",
   guestBlockStyle: "card",
-  revealEnabled: false,
-  revealStyle: "curtain",
-  revealText: "Buka Undangan",
+};
+
+export const defaultOpeningRevealConfig = {
+  enabled: false,
+  buttonText: "Buka Undangan",
+  coverImageEnabled: true,
+  coverImage: "/assets/CoverPasangan.png",
+  backgroundMode: "color",
+  backgroundImage: "",
+  backgroundColor: "",
+  animation: "fade",
+  autoPlayMusic: true,
 };
 
 export const defaultCoupleSectionConfig = {
@@ -167,6 +128,7 @@ export const defaultSectionStyleConfig = {
   fontPreset: "default",
   spacingPreset: "normal",
   entranceAnimation: "fade-up",
+  useGlobal: true,
 };
 
 export function getCoverSectionConfig(designConfig = {}) {
@@ -176,6 +138,45 @@ export function getCoverSectionConfig(designConfig = {}) {
     ...defaultCoverSectionConfig,
     ...(normalizedConfig.sections?.home || {}),
     ...(normalizedConfig.sections?.cover || {}),
+  };
+}
+
+function normalizeOpeningRevealAnimation(animation = "") {
+  const animationMap = {
+    "fade-up": "fade",
+    "zoom-in": "zoom",
+    "slide-left": "curtain",
+    "pop-up": "paper",
+    "card-fade": "fade",
+    wayang: "curtain",
+  };
+
+  return animationMap[animation] || animation || defaultOpeningRevealConfig.animation;
+}
+
+export function getOpeningRevealConfig(designConfig = {}) {
+  const normalizedConfig = normalizeDesignConfig(designConfig);
+  const legacyHomeConfig = normalizedConfig.sections?.home || {};
+  const widgetConfig = normalizedConfig.widgets?.openingReveal || {};
+  const animation =
+    widgetConfig.animation ||
+    widgetConfig.variant ||
+    legacyHomeConfig.revealAnimation ||
+    legacyHomeConfig.revealStyle ||
+    legacyHomeConfig.openingAnimation ||
+    defaultOpeningRevealConfig.animation;
+
+  return {
+    ...defaultOpeningRevealConfig,
+    enabled: legacyHomeConfig.revealEnabled ?? defaultOpeningRevealConfig.enabled,
+    buttonText: legacyHomeConfig.revealText || defaultOpeningRevealConfig.buttonText,
+    coverImageEnabled: legacyHomeConfig.revealCoverImageEnabled ?? defaultOpeningRevealConfig.coverImageEnabled,
+    coverImage: legacyHomeConfig.revealCoverImage || defaultOpeningRevealConfig.coverImage,
+    backgroundMode: legacyHomeConfig.revealBackgroundMode || defaultOpeningRevealConfig.backgroundMode,
+    backgroundImage: legacyHomeConfig.revealBackgroundImage || defaultOpeningRevealConfig.backgroundImage,
+    backgroundColor: legacyHomeConfig.revealBackgroundColor || defaultOpeningRevealConfig.backgroundColor,
+    ...widgetConfig,
+    animation: normalizeOpeningRevealAnimation(animation),
   };
 }
 
@@ -190,9 +191,19 @@ export function getCoupleSectionConfig(designConfig = {}) {
 
 export function getSectionStyleConfig(designConfig = {}, sectionName = "") {
   const normalizedConfig = normalizeDesignConfig(designConfig);
+  const globalStyle = normalizedConfig.sections?.global || {};
+  const sectionStyle = normalizedConfig.sections?.[sectionName] || {};
+  const useGlobal = sectionStyle.useGlobal !== false;
+
+  const localStyle = sectionName === "global"
+    ? sectionStyle
+    : useGlobal
+    ? { useGlobal: true }
+    : sectionStyle;
 
   return {
     ...defaultSectionStyleConfig,
-    ...(normalizedConfig.sections?.[sectionName] || {}),
+    ...(useGlobal ? globalStyle : {}),
+    ...localStyle,
   };
 }

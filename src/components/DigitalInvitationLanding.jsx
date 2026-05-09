@@ -46,231 +46,10 @@ const features = [
 
 const trustItems = ["Gratis konsultasi", "Revisi dibantu", "Selesai 1 hari"];
 
-const heroSlides = [
-  {
-    title: "Modern Jawa",
-    desc: "Batik, melati, dan aksen gold untuk nuansa adat Jawa premium.",
-    image: "/assets/template-adat-jawa-premium.png",
-  },
-  {
-    title: "Songket Luxe",
-    desc: "Nuansa kain tradisional dengan tampilan premium.",
-    image: "/assets/nusantara-songket.svg",
-  },
-  {
-    title: "Bali Botanical",
-    desc: "Hijau tropis, bunga lokal, dan kesan intimate.",
-    image: "/assets/nusantara-botanical.svg",
-  },
-  {
-    title: "Adat Jawa",
-    desc: "Frame wayang modern dengan detail floral yang elegan.",
-    image: "/assets/template-adat-jawa-premium.png",
-  },
-];
+const heroSlides = [];
 
-const catalogItems = [
-  {
-    title: "Sekar Arum",
-    category: "Modern",
-    style: "Modern Jawa",
-    badge: "Best Seller",
-    price: "Rp 90.000",
-    oldPrice: "Rp 159.000",
-    image: "/assets/nusantara-jawa.svg",
-  },
-  {
-    title: "Rana Kirana",
-    category: "Adat",
-    style: "Songket Luxe",
-    badge: "Premium",
-    price: "Rp 129.000",
-    oldPrice: "Rp 199.000",
-    image: "/assets/nusantara-songket.svg",
-  },
-  {
-    title: "Sadajiwa",
-    category: "Muslim",
-    style: "Modern Muslim",
-    badge: "Favorit",
-    price: "Rp 99.000",
-    oldPrice: "Rp 169.000",
-    image: "/assets/nusantara-muslim.svg",
-  },
-  {
-    title: "Melati Senja",
-    category: "Modern",
-    style: "Botanical",
-    badge: "New",
-    price: "Rp 109.000",
-    oldPrice: "Rp 179.000",
-    image: "/assets/nusantara-botanical.svg",
-  },
-  {
-    title: "Nawasena",
-    category: "Adat",
-    style: "Adat Jawa",
-    badge: "Custom",
-    price: "Rp 149.000",
-    oldPrice: "Rp 229.000",
-    image: "/assets/template-adat-jawa-premium.png",
-  },
-  {
-    title: "Larasati",
-    category: "Non Foto",
-    style: "Premium Motion",
-    badge: "Motion",
-    price: "Rp 189.000",
-    oldPrice: "Rp 299.000",
-    image: "/assets/nusantara-premium.svg",
-  },
-  {
-    title: "Arunika",
-    category: "Modern",
-    style: "Clean Elegant",
-    badge: "New",
-    price: "Rp 99.000",
-    oldPrice: "Rp 169.000",
-    image: "/assets/nusantara-premium.svg",
-  },
-  {
-    title: "Kirana Ayu",
-    category: "Modern",
-    style: "Royal Navy",
-    badge: "Favorit",
-    price: "Rp 119.000",
-    oldPrice: "Rp 189.000",
-    image: "/assets/nusantara-botanical.svg",
-  },
-  {
-    title: "Cakrawala",
-    category: "Modern",
-    style: "Minimal Premium",
-    badge: "Simple",
-    price: "Rp 89.000",
-    oldPrice: "Rp 149.000",
-    image: "/assets/nusantara-jawa.svg",
-  },
-  {
-    title: "Puspawarna",
-    category: "Modern",
-    style: "Floral Modern",
-    badge: "Soft",
-    price: "Rp 109.000",
-    oldPrice: "Rp 179.000",
-    image: "/assets/nusantara-botanical.svg",
-  },
-  {
-    title: "Srikandi",
-    category: "Adat",
-    style: "Jawa Klasik",
-    badge: "Adat",
-    price: "Rp 139.000",
-    oldPrice: "Rp 219.000",
-    image: "/assets/nusantara-jawa.svg",
-  },
-  {
-    title: "Rangkiang",
-    category: "Adat",
-    style: "Minang Luxe",
-    badge: "Gold",
-    price: "Rp 159.000",
-    oldPrice: "Rp 249.000",
-    image: "/assets/nusantara-songket.svg",
-  },
-  {
-    title: "Puri Dewata",
-    category: "Adat",
-    style: "Bali Elegant",
-    badge: "Premium",
-    price: "Rp 149.000",
-    oldPrice: "Rp 229.000",
-    image: "/assets/nusantara-botanical.svg",
-  },
-  {
-    title: "Parahyangan",
-    category: "Adat",
-    style: "Sunda Chic",
-    badge: "Custom",
-    price: "Rp 129.000",
-    oldPrice: "Rp 199.000",
-    image: "/assets/nusantara-adat.svg",
-  },
-  {
-    title: "Sakinah",
-    category: "Muslim",
-    style: "Soft Islamic",
-    badge: "Favorit",
-    price: "Rp 99.000",
-    oldPrice: "Rp 169.000",
-    image: "/assets/nusantara-muslim.svg",
-  },
-  {
-    title: "Azzahra",
-    category: "Muslim",
-    style: "Mosque Arch",
-    badge: "New",
-    price: "Rp 109.000",
-    oldPrice: "Rp 179.000",
-    image: "/assets/nusantara-muslim.svg",
-  },
-  {
-    title: "Qalbun",
-    category: "Muslim",
-    style: "Minimal Akad",
-    badge: "Simple",
-    price: "Rp 89.000",
-    oldPrice: "Rp 149.000",
-    image: "/assets/nusantara-premium.svg",
-  },
-  {
-    title: "Mawaddah",
-    category: "Muslim",
-    style: "Elegant Gold",
-    badge: "Premium",
-    price: "Rp 129.000",
-    oldPrice: "Rp 199.000",
-    image: "/assets/nusantara-songket.svg",
-  },
-  {
-    title: "Kidung",
-    category: "Non Foto",
-    style: "Typography",
-    badge: "No Photo",
-    price: "Rp 79.000",
-    oldPrice: "Rp 129.000",
-    image: "/assets/nusantara-premium.svg",
-  },
-  {
-    title: "Aksara",
-    category: "Non Foto",
-    style: "Letterpress",
-    badge: "Clean",
-    price: "Rp 89.000",
-    oldPrice: "Rp 149.000",
-    image: "/assets/nusantara-songket.svg",
-  },
-  {
-    title: "Ruang Rasa",
-    category: "Non Foto",
-    style: "Minimal Text",
-    badge: "Simple",
-    price: "Rp 79.000",
-    oldPrice: "Rp 129.000",
-    image: "/assets/nusantara-muslim.svg",
-  },
-  {
-    title: "Temaram",
-    category: "Non Foto",
-    style: "Classic Card",
-    badge: "Elegant",
-    price: "Rp 99.000",
-    oldPrice: "Rp 169.000",
-    image: "/assets/nusantara-adat.svg",
-  },
-];
-
-const catalogTabs = ["Modern", "Adat", "Non Foto", "Muslim"];
+const catalogItems = [];
+const catalogTabs = [];
 
 const plans = [
   {
@@ -392,15 +171,51 @@ function Navbar() {
 
 function HeroCarousel() {
   const [activeSlide, setActiveSlide] = useState(0);
-  const currentSlide = heroSlides[activeSlide];
+  const [slides, setSlides] = useState(heroSlides);
+  const currentSlide = slides[activeSlide] || null;
 
   useEffect(() => {
+    let isMounted = true;
+
+    fetch("/api/templates")
+      .then((response) => response.json())
+      .then((result) => {
+        if (!isMounted || !Array.isArray(result.data)) {
+          return;
+        }
+
+        const mappedSlides = mergeTemplateOverrides(result.data)
+          .map((template) => ({
+            title: template.name,
+            desc: template.description || `Template kategori ${template.category || "Custom"}.`,
+            image: template.image || "/assets/nusantara-premium.svg",
+          }));
+
+        if (mappedSlides.length > 0) {
+          setSlides(mappedSlides);
+          setActiveSlide(0);
+        }
+      })
+      .catch(() => {
+        setSlides([]);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (slides.length <= 1) {
+      return undefined;
+    }
+
     const timer = window.setInterval(() => {
-      setActiveSlide((current) => (current + 1) % heroSlides.length);
+      setActiveSlide((current) => (current + 1) % slides.length);
     }, 3800);
 
     return () => window.clearInterval(timer);
-  }, []);
+  }, [slides]);
 
   return (
     <motion.div
@@ -423,37 +238,65 @@ function HeroCarousel() {
           <div className="songket-line absolute inset-x-0 top-0 z-20 h-3 opacity-70" />
           <div className="relative h-[600px] w-full">
             <AnimatePresence mode="wait">
-              <motion.img
-                key={currentSlide.image}
-                src={currentSlide.image}
-                alt={`Preview undangan tema ${currentSlide.title}`}
-                initial={{ opacity: 0, scale: 1.08 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.65, ease: "easeOut" }}
-                className="absolute inset-0 h-full w-full object-cover"
-              />
+              {currentSlide ? (
+                <motion.img
+                  key={currentSlide.image}
+                  src={currentSlide.image}
+                  alt={`Preview undangan tema ${currentSlide.title}`}
+                  initial={{ opacity: 0, scale: 1.08 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.65, ease: "easeOut" }}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              ) : (
+                <motion.div
+                  key="empty-slide"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="absolute inset-0 bg-[var(--color-muted)]"
+                />
+              )}
             </AnimatePresence>
             <div className="absolute inset-0 bg-gradient-to-t from-[var(--color-primary)]/82 via-[var(--color-primary)]/8 to-transparent" />
             <div className="absolute inset-x-0 bottom-0 z-10 p-7 text-white">
               <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentSlide.title}
-                  initial={{ opacity: 0, y: 16 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -10 }}
-                  transition={{ duration: 0.38, ease: "easeOut" }}
-                >
-                  <p className="text-base font-black uppercase tracking-[0.12em] text-[var(--color-accent-soft)]">
-                    Tema Undangan
-                  </p>
-                  <h3 className="mt-2 text-4xl font-black">
-                    {currentSlide.title}
-                  </h3>
-                  <p className="mt-2 text-base font-semibold leading-7 text-white/92">
-                    {currentSlide.desc}
-                  </p>
-                </motion.div>
+                {currentSlide ? (
+                  <motion.div
+                    key={currentSlide.title}
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.38, ease: "easeOut" }}
+                  >
+                    <p className="text-base font-black uppercase tracking-[0.12em] text-[var(--color-accent-soft)]">
+                      Tema Undangan
+                    </p>
+                    <h3 className="mt-2 text-4xl font-black">
+                      {currentSlide.title}
+                    </h3>
+                    <p className="mt-2 text-base font-semibold leading-7 text-white/92">
+                      {currentSlide.desc}
+                    </p>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="empty-slide-caption"
+                    initial={{ opacity: 0, y: 16 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.38, ease: "easeOut" }}
+                  >
+                    <p className="text-base font-black uppercase tracking-[0.12em] text-[var(--color-accent-soft)]">
+                      Tema Undangan
+                    </p>
+                    <h3 className="mt-2 text-4xl font-black">Belum Ada Template</h3>
+                    <p className="mt-2 text-base font-semibold leading-7 text-white/92">
+                      Buat template baru dari Template Manager untuk menampilkan carousel.
+                    </p>
+                  </motion.div>
+                )}
               </AnimatePresence>
             </div>
           </div>
@@ -467,7 +310,7 @@ function HeroCarousel() {
         </div>
 
         <div className="mt-5 flex justify-center gap-2">
-          {heroSlides.map((slide, index) => (
+          {slides.map((slide, index) => (
             <button
               key={slide.title}
               type="button"
@@ -707,7 +550,7 @@ function CatalogSection() {
       ...landingCatalogItems.map((item) => item.category).filter(Boolean),
     ]),
   );
-  const [activeCatalog, setActiveCatalog] = useState(activeCatalogTabs[0]);
+  const [activeCatalog, setActiveCatalog] = useState(activeCatalogTabs[0] || "");
   const filteredItems = landingCatalogItems.filter(
     (item) => item.category === activeCatalog,
   );
@@ -718,7 +561,7 @@ function CatalogSection() {
     fetch("/api/templates")
       .then((response) => response.json())
       .then((result) => {
-        if (!isMounted || !Array.isArray(result.data) || result.data.length === 0) {
+        if (!isMounted || !Array.isArray(result.data)) {
           return;
         }
 
@@ -737,11 +580,12 @@ function CatalogSection() {
         setLandingCatalogItems(mappedItems);
 
         if (!mappedItems.some((item) => item.category === activeCatalog)) {
-          setActiveCatalog(mappedItems[0]?.category || catalogTabs[0]);
+          setActiveCatalog(mappedItems[0]?.category || "");
         }
       })
       .catch(() => {
-        setLandingCatalogItems(catalogItems);
+        setLandingCatalogItems([]);
+        setActiveCatalog("");
       });
 
     return () => {
@@ -759,47 +603,49 @@ function CatalogSection() {
           desc="Filter berdasarkan gaya favorit: Modern, Adat, Non Foto, atau Muslim. Harga promo sudah termasuk bantuan setup dari admin."
         />
 
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.2 }}
-          variants={staggerContainer}
-          className="mt-10 flex flex-wrap justify-center gap-3"
-        >
-          {activeCatalogTabs.map((tab) => {
-            const total = landingCatalogItems.filter(
-              (item) => item.category === tab,
-            ).length;
-            const isActive = activeCatalog === tab;
+        {activeCatalogTabs.length > 0 ? (
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={staggerContainer}
+            className="mt-10 flex flex-wrap justify-center gap-3"
+          >
+            {activeCatalogTabs.map((tab) => {
+              const total = landingCatalogItems.filter(
+                (item) => item.category === tab,
+              ).length;
+              const isActive = activeCatalog === tab;
 
-            return (
-              <motion.button
-                key={tab}
-                type="button"
-                variants={fadeUp}
-                whileHover={{ y: -2, scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => setActiveCatalog(tab)}
-                className={`rounded-2xl border px-5 py-3 text-base font-black transition-colors ${
-                  isActive
-                    ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/16"
-                    : "border-[var(--color-accent-pale)] bg-[var(--color-surface)] text-[var(--color-primary-hover)] hover:border-[var(--color-accent)] hover:bg-white"
-                }`}
-              >
-                {tab}
-                <span
-                  className={`ml-2 rounded-full px-2 py-0.5 text-sm ${
+              return (
+                <motion.button
+                  key={tab}
+                  type="button"
+                  variants={fadeUp}
+                  whileHover={{ y: -2, scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => setActiveCatalog(tab)}
+                  className={`rounded-2xl border px-5 py-3 text-base font-black transition-colors ${
                     isActive
-                      ? "bg-[var(--color-accent)] text-[var(--color-primary)]"
-                      : "bg-[var(--color-muted-strong)] text-[var(--color-primary-hover)]"
+                      ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-white shadow-lg shadow-[var(--color-primary)]/16"
+                      : "border-[var(--color-accent-pale)] bg-[var(--color-surface)] text-[var(--color-primary-hover)] hover:border-[var(--color-accent)] hover:bg-white"
                   }`}
                 >
-                  {total}
-                </span>
-              </motion.button>
-            );
-          })}
-        </motion.div>
+                  {tab}
+                  <span
+                    className={`ml-2 rounded-full px-2 py-0.5 text-sm ${
+                      isActive
+                        ? "bg-[var(--color-accent)] text-[var(--color-primary)]"
+                        : "bg-[var(--color-muted-strong)] text-[var(--color-primary-hover)]"
+                    }`}
+                  >
+                    {total}
+                  </span>
+                </motion.button>
+              );
+            })}
+          </motion.div>
+        ) : null}
 
         <motion.div
           key={activeCatalog}
@@ -808,9 +654,15 @@ function CatalogSection() {
           variants={staggerContainer}
           className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
         >
-          {filteredItems.map((item) => (
-            <CatalogCard key={item.title} item={item} />
-          ))}
+          {filteredItems.length > 0 ? (
+            filteredItems.map((item) => (
+              <CatalogCard key={item.title} item={item} />
+            ))
+          ) : (
+            <p className="col-span-full rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)] px-5 py-6 text-center text-base font-semibold text-[var(--color-text)]">
+              Belum ada template di katalog. Buat template baru dari Template Manager.
+            </p>
+          )}
         </motion.div>
       </div>
     </section>

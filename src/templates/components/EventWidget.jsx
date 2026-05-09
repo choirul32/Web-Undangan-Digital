@@ -37,6 +37,10 @@ export default function EventWidget({
     <>
       {config.showIcon && iconSrc ? (
         <img src={iconSrc} alt="" className={classes.icon || "mx-auto mt-7 w-16"} />
+      ) : config.showIcon ? (
+        <div className={classes.icon || "mx-auto mt-7 flex h-14 w-14 items-center justify-center rounded-full border border-current"}>
+          <span className="h-5 w-5 rounded-full bg-current" />
+        </div>
       ) : null}
       <div className={classes.container || "mt-8 space-y-5"}>
         {events.map((event) => (

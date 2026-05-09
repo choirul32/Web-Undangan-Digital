@@ -63,6 +63,7 @@ export default function StoryWidget({ stories = [], config = defaultStoryWidgetC
             transition={animation.transition || { duration: 0.45, ease: "easeOut" }}
             className={classes.item || ""}
           >
+            {classes.marker ? <span className={classes.marker} /> : null}
             {item.year ? <p className={classes.year || ""}>{item.year}</p> : null}
             <h3 className={classes.title || ""}>{item.title}</h3>
             <p className={classes.description || ""}>{item.desc || item.description}</p>
