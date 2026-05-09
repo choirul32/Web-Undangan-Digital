@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { sampleInvitation } from "../data/sampleInvitation";
 import {
@@ -123,6 +123,8 @@ function SectionFrame({
       {...sectionMotion(styleConfig.entranceAnimation)}
       viewport={{ once: true, amount: 0.18 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
+      id={`section-${section}`}
+      data-preview-section={section}
       className={`relative overflow-hidden ${spacingClass(styleConfig.spacingPreset)} ${fontClass(styleConfig.fontPreset)} ${baseClassName}`}
       style={applySectionStyle ? cssVars(styleConfig) : undefined}
     >
@@ -614,6 +616,32 @@ export default function UniversalTemplate({
     }
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const rawSection = params.get("focusSection");
+
+    if (!rawSection) {
+      return;
+    }
+
+    const normalizedSection = rawSection === "acara"
+      ? "events"
+      : rawSection === "countdown"
+        ? "home"
+        : rawSection;
+    const targetElement = document.querySelector(
+      `[data-preview-section="${normalizedSection}"]`,
+    );
+
+    if (!targetElement) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      targetElement.scrollIntoView({ block: "start", behavior: "smooth" });
+    });
+  }, [invitation.templateId]);
+
   return (
     <main
       className="min-h-screen bg-[var(--color-bg)] text-[var(--color-primary)]"
@@ -630,6 +658,8 @@ export default function UniversalTemplate({
         ) : null}
       </AnimatePresence>
       <section
+        id="section-home"
+        data-preview-section="home"
         className="relative isolate flex min-h-screen items-center justify-center overflow-hidden px-6 py-20 text-center"
         style={{ backgroundColor: coverBackgroundColor }}
       >

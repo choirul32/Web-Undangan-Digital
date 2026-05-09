@@ -436,6 +436,22 @@ const templatePreviewViewports = {
   },
 };
 
+function mapDesignSectionToPreviewSection(section = "home") {
+  if (section === "acara") {
+    return "events";
+  }
+
+  if (section === "countdown") {
+    return "home";
+  }
+
+  if (section === "doa-ucapan") {
+    return "rsvp";
+  }
+
+  return section || "home";
+}
+
 const activities = [
   "RSVP baru dari keluarga Dimas & Salsa",
   "Fahri & Nabila mengirim revisi data acara",
@@ -2390,6 +2406,74 @@ function CoupleSectionPreview({ config = {} }) {
   );
 }
 
+function OrnamentSectionCanvasPreview({ section = "home", styleConfig = {} }) {
+  const bgColor = styleConfig.backgroundColor || "#f8f5ef";
+  const textColor = styleConfig.textColor || "#0f2a52";
+  const accentColor = styleConfig.accentColor || "#d2a84d";
+  const label = section === "acara" ? "events" : section;
+
+  if (label === "home") {
+    return (
+      <div className="relative h-full w-full p-4" style={{ backgroundColor: bgColor, color: textColor }}>
+        <div className="mx-auto mt-8 max-w-[220px] text-center">
+          <p className="text-[10px] font-black uppercase tracking-[0.14em]" style={{ color: accentColor }}>
+            The Wedding Of
+          </p>
+          <p className="mt-2 font-serif text-xl font-black">Dimas & Salsa</p>
+          <div className="mx-auto mt-4 max-w-[170px] rounded-[8px] border bg-white/75 px-3 py-2 text-xs font-black">
+            Kepada Yth. Tamu Undangan
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (label === "couple") {
+    return (
+      <div className="h-full w-full p-4" style={{ backgroundColor: bgColor, color: textColor }}>
+        <div className="mt-6 grid grid-cols-2 gap-2">
+          {["Mempelai Wanita", "Mempelai Pria"].map((item) => (
+            <div key={item} className="rounded-[8px] border bg-white/75 p-3 text-center">
+              <div className="mx-auto h-12 w-12 rounded-full bg-[var(--color-bg)]" />
+              <p className="mt-2 text-[11px] font-black">{item}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (label === "events") {
+    return (
+      <div className="h-full w-full p-4" style={{ backgroundColor: bgColor, color: textColor }}>
+        <div className="mt-5 space-y-2">
+          {["Akad Nikah", "Resepsi"].map((item) => (
+            <div key={item} className="rounded-[8px] border bg-white/78 p-3 text-center">
+              <p className="text-[10px] font-black uppercase tracking-[0.1em]" style={{ color: accentColor }}>
+                {item}
+              </p>
+              <p className="mt-1 text-xs font-black">12 Juni 2026 • 09:00</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative h-full w-full p-4" style={{ backgroundColor: bgColor, color: textColor }}>
+      <div className="mt-8 rounded-[8px] border bg-white/78 p-4 text-center">
+        <p className="text-xs font-black uppercase tracking-[0.12em]" style={{ color: accentColor }}>
+          {label} section
+        </p>
+        <p className="mt-2 text-[11px] font-semibold text-[var(--color-text)]">
+          Preview konteks section untuk penempatan ornament
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function readFileAsDataUrl(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -2439,7 +2523,6 @@ function TemplateAdminPage() {
   const [templateDraft, setTemplateDraft] = useState(null);
   const [designConfigText, setDesignConfigText] = useState("");
   const [activeDesignSection, setActiveDesignSection] = useState("home");
-  const [newDesignSection, setNewDesignSection] = useState("");
   const [selectedOrnamentIndex, setSelectedOrnamentIndex] = useState(0);
   const [managerMessage, setManagerMessage] = useState("");
   const [templateSource, setTemplateSource] = useState("registry");
@@ -2689,10 +2772,14 @@ function TemplateAdminPage() {
   const selectedBadgeOption = templateBadgeOptions.includes(templateDraft?.badge)
     ? templateDraft?.badge
     : "Custom";
+  const previewFocusSection = useMemo(
+    () => mapDesignSectionToPreviewSection(activeDesignSection),
+    [activeDesignSection],
+  );
   const templatePreviewSrc = useMemo(() => {
     const previewTemplateId = templateDraft?.id || sampleInvitation.templateId;
-    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&previewTick=${templatePreviewTick}`;
-  }, [templateDraft?.id, templatePreviewTick]);
+    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&focusSection=${encodeURIComponent(previewFocusSection)}&previewTick=${templatePreviewTick}`;
+  }, [previewFocusSection, templateDraft?.id, templatePreviewTick]);
 
   useEffect(() => {
     if (!templateDraft) {
@@ -3085,60 +3172,6 @@ function TemplateAdminPage() {
       },
     });
     setSelectedOrnamentIndex(sectionOrnaments.length - 1);
-  };
-
-  const addDesignSection = () => {
-    const section = newDesignSection
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9-]+/g, "-")
-      .replace(/(^-|-$)/g, "");
-
-    if (!section) {
-      setManagerMessage("Nama section belum valid.");
-      return;
-    }
-
-    const baseConfig = parsedDesignConfig || {};
-
-    if (baseConfig.ornaments?.[section]) {
-      setActiveDesignSection(section);
-      setNewDesignSection("");
-      setSelectedOrnamentIndex(0);
-      return;
-    }
-
-    writeDesignConfig({
-      ...baseConfig,
-      sections: {
-        ...(baseConfig.sections || {}),
-        [section]: baseConfig.sections?.[section] || {},
-      },
-      ornaments: {
-        ...(baseConfig.ornaments || {}),
-        [section]: [],
-      },
-    });
-    setActiveDesignSection(section);
-    setNewDesignSection("");
-    setSelectedOrnamentIndex(0);
-  };
-
-  const applyPresetSections = () => {
-    if (!templateDraft) {
-      return;
-    }
-
-    const nextConfig = ensurePresetSections(templateDraft.id, parsedDesignConfig || {});
-    const firstSection =
-      templateSectionPresets[templateDraft.id]?.[0] ||
-      Object.keys(nextConfig.ornaments || {})[0] ||
-      "home";
-
-    writeDesignConfig(nextConfig);
-    setActiveDesignSection(firstSection);
-    setSelectedOrnamentIndex(0);
-    setManagerMessage("Preset section template sudah diterapkan.");
   };
 
   const removeOrnament = () => {
@@ -3578,7 +3611,6 @@ function TemplateAdminPage() {
     setTemplateDraft(null);
     setDesignConfigText("");
     setActiveDesignSection("home");
-    setNewDesignSection("");
     setSelectedOrnamentIndex(0);
     setEditorStep(1);
     setIsAdvancedOpen(false);
@@ -3657,7 +3689,6 @@ function TemplateAdminPage() {
       setTemplateDraft(null);
       setDesignConfigText("");
       setActiveDesignSection("home");
-      setNewDesignSection("");
       setSelectedOrnamentIndex(0);
       setEditorStep(1);
       setIsAdvancedOpen(false);
@@ -3808,7 +3839,7 @@ function TemplateAdminPage() {
               />
             </div>
 
-            <div className="sticky top-3 z-20 mt-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-white/95 p-3 shadow-lg shadow-[var(--color-primary)]/8 backdrop-blur">
+            <div className="mt-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-white/95 p-3 shadow-lg shadow-[var(--color-primary)]/8 backdrop-blur">
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm font-black uppercase tracking-[0.12em] text-[var(--color-accent)]">
                   Step {editorStep} / {editorSteps.length}
@@ -4075,6 +4106,169 @@ function TemplateAdminPage() {
                 </div>
               </div>
               <div id="template-cover" className={`scroll-mt-24 md:col-span-2 ${editorStep === 2 ? "" : "hidden"}`}>
+                <div className="mb-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                        Section Style
+                      </p>
+                      <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
+                        Atur style global dan override per section tanpa masuk ke editor ornament.
+                      </p>
+                    </div>
+                    <label className="block min-w-[220px]">
+                      <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                        Section
+                      </span>
+                      <select
+                        value={activeDesignSection}
+                        onChange={(event) => {
+                          setActiveDesignSection(event.target.value);
+                          setSelectedOrnamentIndex(0);
+                        }}
+                        className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                      >
+                        {designSectionNames.map((sectionName) => (
+                          <option key={sectionName}>{sectionName}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+
+                  <div className="mt-5 grid gap-5 lg:grid-cols-[300px_1fr]">
+                    <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-4">
+                      <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
+                        Global Style
+                      </p>
+                      <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                        <MiniInput
+                          label="Global BG"
+                          value={globalSectionStyleConfig.backgroundColor}
+                          onChange={(value) => updateGlobalSectionStyle("backgroundColor", value)}
+                        />
+                        <MiniInput
+                          label="Global Text"
+                          value={globalSectionStyleConfig.textColor}
+                          onChange={(value) => updateGlobalSectionStyle("textColor", value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-4">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                          <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
+                            {activeDesignSection} Override
+                          </p>
+                          <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">
+                            Aktifkan override kalau section ini perlu style berbeda dari global.
+                          </p>
+                        </div>
+                        <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-3 py-2">
+                          <input
+                            type="checkbox"
+                            checked={activeSectionStyleConfig.useGlobal === false}
+                            onChange={(event) =>
+                              toggleSectionOverride(activeDesignSection, event.target.checked)
+                            }
+                            className="h-4 w-4"
+                          />
+                          <span className="text-sm font-black text-[var(--color-primary)]">
+                            Override
+                          </span>
+                        </label>
+                      </div>
+
+                      <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                        <MiniInput
+                          label="BG Color"
+                          value={activeSectionStyleConfig.backgroundColor}
+                          onChange={(value) =>
+                            updateTemplateSectionConfig(activeDesignSection, "backgroundColor", value)
+                          }
+                        />
+                        <MiniInput
+                          label="Text Color"
+                          value={activeSectionStyleConfig.textColor}
+                          onChange={(value) =>
+                            updateTemplateSectionConfig(activeDesignSection, "textColor", value)
+                          }
+                        />
+                        <MiniInput
+                          label="Accent"
+                          value={activeSectionStyleConfig.accentColor}
+                          onChange={(value) =>
+                            updateTemplateSectionConfig(activeDesignSection, "accentColor", value)
+                          }
+                        />
+                        <MiniInput
+                          label="BG Image"
+                          value={activeSectionStyleConfig.backgroundImage}
+                          onChange={(value) =>
+                            updateTemplateSectionConfig(activeDesignSection, "backgroundImage", value)
+                          }
+                        />
+                      </div>
+
+                      <div className="mt-4 grid gap-3 md:grid-cols-3">
+                        <label className="block">
+                          <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                            Font Preset
+                          </span>
+                          <select
+                            value={activeSectionStyleConfig.fontPreset}
+                            onChange={(event) =>
+                              updateTemplateSectionConfig(activeDesignSection, "fontPreset", event.target.value)
+                            }
+                            className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                          >
+                            {sectionFontPresetOptions.map((preset) => (
+                              <option key={preset} value={preset}>
+                                {preset}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                            Spacing
+                          </span>
+                          <select
+                            value={activeSectionStyleConfig.spacingPreset}
+                            onChange={(event) =>
+                              updateTemplateSectionConfig(activeDesignSection, "spacingPreset", event.target.value)
+                            }
+                            className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                          >
+                            {sectionSpacingPresetOptions.map((preset) => (
+                              <option key={preset} value={preset}>
+                                {preset}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label className="block">
+                          <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                            Entrance
+                          </span>
+                          <select
+                            value={activeSectionStyleConfig.entranceAnimation}
+                            onChange={(event) =>
+                              updateTemplateSectionConfig(activeDesignSection, "entranceAnimation", event.target.value)
+                            }
+                            className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                          >
+                            {sectionEntranceOptions.map((animation) => (
+                              <option key={animation} value={animation}>
+                                {animation}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
                     Cover Section
@@ -4744,7 +4938,7 @@ function TemplateAdminPage() {
                   </div>
 
                   {parsedDesignConfig ? (
-                    <div className="mt-5 grid gap-5 xl:grid-cols-[260px_1fr]">
+                    <div className="mt-5 grid gap-5 xl:grid-cols-[280px_minmax(320px,1fr)_360px]">
                       <div className="space-y-4">
                         <Field label="Section">
                           <SelectInput
@@ -4759,169 +4953,6 @@ function TemplateAdminPage() {
                             ))}
                           </SelectInput>
                         </Field>
-                        <button
-                          type="button"
-                          onClick={applyPresetSections}
-                          className="w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] transition-colors hover:bg-[var(--color-bg)]"
-                        >
-                          Apply Template Sections
-                        </button>
-                        <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3">
-                          <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-                            Add Section
-                          </p>
-                          <div className="mt-3 flex gap-2">
-                            <input
-                              value={newDesignSection}
-                              onChange={(event) => setNewDesignSection(event.target.value)}
-                              placeholder="contoh: rsvp"
-                              className="min-w-0 flex-1 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                            />
-                            <button
-                              type="button"
-                              onClick={addDesignSection}
-                              className="rounded-xl bg-[var(--color-primary)] px-3 py-2 text-sm font-black text-white"
-                            >
-                              Add
-                            </button>
-                          </div>
-                        </div>
-                        {validationWarnings.length > 0 ? (
-                          <div className="rounded-[8px] border border-[var(--color-accent)] bg-[var(--color-accent)]/10 p-3">
-                            <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-primary)]">
-                              Validation Warnings
-                            </p>
-                            <ul className="mt-3 space-y-2">
-                              {validationWarnings.map((warning) => (
-                                <li
-                                  key={warning}
-                                  className="text-sm font-semibold leading-6 text-[var(--color-text)]"
-                                >
-                                  {warning}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        ) : null}
-                        <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3">
-                          <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-                            Section Style
-                          </p>
-                          <div className="mt-3 rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-3">
-                            <p className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                              Global Style
-                            </p>
-                            <div className="mt-2 grid grid-cols-2 gap-2">
-                              <MiniInput
-                                label="Global BG"
-                                value={globalSectionStyleConfig.backgroundColor}
-                                onChange={(value) => updateGlobalSectionStyle("backgroundColor", value)}
-                              />
-                              <MiniInput
-                                label="Global Text"
-                                value={globalSectionStyleConfig.textColor}
-                                onChange={(value) => updateGlobalSectionStyle("textColor", value)}
-                              />
-                            </div>
-                          </div>
-                          <label className="mt-3 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-3 py-2">
-                            <input
-                              type="checkbox"
-                              checked={activeSectionStyleConfig.useGlobal === false}
-                              onChange={(event) =>
-                                toggleSectionOverride(activeDesignSection, event.target.checked)
-                              }
-                              className="h-4 w-4"
-                            />
-                            <span className="text-sm font-black text-[var(--color-primary)]">
-                              Override section ini
-                            </span>
-                          </label>
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            <MiniInput
-                              label="BG Color"
-                              value={activeSectionStyleConfig.backgroundColor}
-                              onChange={(value) =>
-                                updateTemplateSectionConfig(activeDesignSection, "backgroundColor", value)
-                              }
-                            />
-                            <MiniInput
-                              label="Text Color"
-                              value={activeSectionStyleConfig.textColor}
-                              onChange={(value) =>
-                                updateTemplateSectionConfig(activeDesignSection, "textColor", value)
-                              }
-                            />
-                            <MiniInput
-                              label="Accent"
-                              value={activeSectionStyleConfig.accentColor}
-                              onChange={(value) =>
-                                updateTemplateSectionConfig(activeDesignSection, "accentColor", value)
-                              }
-                            />
-                            <MiniInput
-                              label="BG Image"
-                              value={activeSectionStyleConfig.backgroundImage}
-                              onChange={(value) =>
-                                updateTemplateSectionConfig(activeDesignSection, "backgroundImage", value)
-                              }
-                            />
-                          </div>
-                          <label className="mt-3 block">
-                            <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                              Font Preset
-                            </span>
-                            <select
-                              value={activeSectionStyleConfig.fontPreset}
-                              onChange={(event) =>
-                                updateTemplateSectionConfig(activeDesignSection, "fontPreset", event.target.value)
-                              }
-                              className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                            >
-                              {sectionFontPresetOptions.map((preset) => (
-                                <option key={preset} value={preset}>
-                                  {preset}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <label className="mt-3 block">
-                            <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                              Spacing
-                            </span>
-                            <select
-                              value={activeSectionStyleConfig.spacingPreset}
-                              onChange={(event) =>
-                                updateTemplateSectionConfig(activeDesignSection, "spacingPreset", event.target.value)
-                              }
-                              className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                            >
-                              {sectionSpacingPresetOptions.map((preset) => (
-                                <option key={preset} value={preset}>
-                                  {preset}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <label className="mt-3 block">
-                            <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                              Entrance
-                            </span>
-                            <select
-                              value={activeSectionStyleConfig.entranceAnimation}
-                              onChange={(event) =>
-                                updateTemplateSectionConfig(activeDesignSection, "entranceAnimation", event.target.value)
-                              }
-                              className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                            >
-                              {sectionEntranceOptions.map((animation) => (
-                                <option key={animation} value={animation}>
-                                  {animation}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                        </div>
                         <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3">
                           <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
                             Section Sequence
@@ -5038,25 +5069,76 @@ function TemplateAdminPage() {
                           </div>
                         </div>
 
-                        <div className="relative aspect-[9/16] overflow-hidden rounded-[8px] border border-[var(--color-accent-pale)] bg-white shadow-inner">
-                          <OrnamentLayer ornaments={activeOrnaments} />
-                          <div className="absolute inset-0 border border-dashed border-[var(--color-accent)]/50" />
-                          <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 rounded-[8px] bg-white/78 p-3 text-center text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-                            Preview Layer
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-4 xl:sticky xl:top-24">
+                          <div className="flex items-center justify-between gap-3">
+                            <div>
+                              <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
+                                Canvas Preview
+                              </p>
+                              <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">
+                                {activeDesignSection} section, {activeOrnaments.length} ornament
+                              </p>
+                            </div>
+                            <span className="rounded-full bg-[var(--color-bg)] px-3 py-1 text-xs font-black text-[var(--color-primary)]">
+                              430px
+                            </span>
+                          </div>
+                          <div className="mt-4 flex justify-center">
+                            <div className="relative aspect-[9/16] w-full max-w-[360px] overflow-hidden rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] shadow-inner">
+                              <OrnamentSectionCanvasPreview
+                                section={activeDesignSection}
+                                styleConfig={activeSectionStyleConfig}
+                              />
+                              <OrnamentLayer ornaments={activeOrnaments} />
+                              <div className="absolute inset-0 border border-dashed border-[var(--color-accent)]/50" />
+                              <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 rounded-[8px] bg-white/78 p-3 text-center text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
+                                {activeDesignSection} Section
+                              </div>
+                            </div>
                           </div>
                         </div>
+
+                        {validationWarnings.length > 0 ? (
+                          <div className="rounded-[8px] border border-[var(--color-accent)] bg-[var(--color-accent)]/10 p-4">
+                            <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-primary)]">
+                              Validation Warnings
+                            </p>
+                            <ul className="mt-3 space-y-2">
+                              {validationWarnings.map((warning) => (
+                                <li
+                                  key={warning}
+                                  className="text-sm font-semibold leading-6 text-[var(--color-text)]"
+                                >
+                                  {warning}
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        ) : (
+                          <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-4">
+                            <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
+                              Validation
+                            </p>
+                            <p className="mt-2 text-sm font-semibold text-[var(--color-text)]">
+                              Tidak ada warning untuk section ini.
+                            </p>
+                          </div>
+                        )}
                       </div>
 
                       {selectedOrnament ? (
-                        <div className="grid gap-4 md:grid-cols-2">
-                          <div className="md:col-span-2">
+                        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
+                          <div className="md:col-span-2 xl:col-span-1">
                             <MiniInput
                               label="ID"
                               value={selectedOrnament.id}
                               onChange={(value) => updateOrnament("id", value)}
                             />
                           </div>
-                          <div className="md:col-span-2">
+                          <div className="md:col-span-2 xl:col-span-1">
                             <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-3">
                               <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
                                 Layer Controls
@@ -5097,7 +5179,7 @@ function TemplateAdminPage() {
                               </div>
                             </div>
                           </div>
-                          <div className="md:col-span-2">
+                          <div className="md:col-span-2 xl:col-span-1">
                             <MiniInput
                               label="SRC"
                               value={selectedOrnament.src}
@@ -5271,7 +5353,10 @@ function TemplateAdminPage() {
                   )}
                 </div>
               </div>
-              <div id="template-preview" className={`scroll-mt-24 md:col-span-2 ${editorStep === 6 ? "" : "hidden"}`}>
+              <div
+                id="template-preview"
+                className={`scroll-mt-24 md:col-span-2 ${editorStep === 6 ? "" : "hidden"}`}
+              >
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-primary)] p-4 shadow-xl shadow-[var(--color-primary)]/12">
                   <div className="mb-3 flex flex-col gap-1 text-white sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
@@ -5295,7 +5380,7 @@ function TemplateAdminPage() {
                     </div>
                   </div>
                   <p className="mb-3 text-sm font-bold text-white/70">
-                    {activeDesignSection} section draft
+                    {activeDesignSection} section draft (focus: {previewFocusSection})
                   </p>
                   <div className="overflow-x-auto">
                     <div
