@@ -102,54 +102,58 @@ function OrnamentImage({ ornament, animation, animationDelay }) {
   );
 }
 
-// Group configuration for sequence timing
-const groupOrder = ["primary", "secondary", "accent", "none"];
-const groupBaseDelay = {
-  primary: 0,
-  secondary: 0.5,
-  accent: 1,
-  none: 0,
-};
-const groupStaggerStep = 0.15;
+// Track-based timeline configuration
+const TRACK_COUNT = 4; // 4 tracks (0-3)
+const TRACK_BASE_DELAY = 0.5; // Gap between tracks in seconds
+const STAGGER_STEP = 0.2; // Delay between ornaments in same track
 
 export default function OrnamentLayer({ ornaments = [], className = "" }) {
   if (!ornaments.length) {
     return null;
   }
 
-  // Calculate group-aware entrance delay
+  // Process ornaments with track-based timeline
   const processedOrnaments = useMemo(() => {
-    // Group ornaments by their sequenceGroup
-    const groups = {};
+    // Group ornaments by track
+    const trackGroups = {};
+    for (let i = 0; i < TRACK_COUNT; i++) {
+      trackGroups[i] = [];
+    }
+    
     ornaments.forEach((ornament, index) => {
-      const group = ornament.sequenceGroup || "none";
-      if (!groups[group]) {
-        groups[group] = [];
-      }
-      groups[group].push({ ornament, originalIndex: index });
+      const track = ornament.timelineTrack ?? 0;
+      trackGroups[track].push({ ornament, originalIndex: index });
     });
 
-    // Calculate entrance delay for each ornament based on group
+    // Sort each track by timelinePosition
+    Object.keys(trackGroups).forEach((track) => {
+      trackGroups[track].sort((a, b) =>
+        (a.ornament.timelinePosition ?? 0) - (b.ornament.timelinePosition ?? 0)
+      );
+    });
+
+    // Calculate entrance delay based on track and position
     return ornaments.map((ornament, index) => {
-      const group = ornament.sequenceGroup || "none";
-      const groupIndex = groups[group].findIndex(
+      const track = ornament.timelineTrack ?? 0;
+      const position = ornament.timelinePosition ?? 0;
+      
+      // Find index within track
+      const trackIndex = trackGroups[track].findIndex(
         (item) => item.originalIndex === index
       );
       
-      // Calculate stagger delay within the group
-      let groupEntranceDelay = ornament.entranceDelay ?? 0;
+      // Calculate delay: track offset + position offset + stagger within track
+      const trackDelay = track * TRACK_BASE_DELAY;
+      const positionDelay = position;
+      const staggerDelay = trackIndex * STAGGER_STEP;
       
-      if (group !== "none") {
-        // Base delay from group order
-        const baseDelay = groupBaseDelay[group] || 0;
-        // Stagger within the group
-        const staggerDelay = groupIndex * groupStaggerStep;
-        groupEntranceDelay = baseDelay + staggerDelay;
-      }
+      const timelineEntranceDelay = Math.max(0, trackDelay + positionDelay + staggerDelay);
       
       return {
         ...ornament,
-        _groupEntranceDelay: groupEntranceDelay,
+        _timelineEntranceDelay: timelineEntranceDelay,
+        _track: track,
+        _position: position,
       };
     });
   }, [ornaments]);
@@ -226,8 +230,8 @@ export default function OrnamentLayer({ ornaments = [], className = "" }) {
           ornament.animation && ornament.animation !== "none"
             ? ornament.animation
             : sequence.animation || "none";
-        // Use group-aware entrance delay, fallback to individual
-        const entranceDelay = ornament._groupEntranceDelay ?? ornament.entranceDelay ?? sequence.entranceDelay ?? 0;
+        // Use timeline-aware entrance delay
+        const entranceDelay = ornament._timelineEntranceDelay ?? ornament.entranceDelay ?? 0;
         const animationDelay = ornament.delay ?? sequence.animationDelay ?? 0;
         const transform = `${anchorTransform} translate(${sizeValue(ornament.x) || "0px"}, ${
           sizeValue(ornament.y) || "0px"

@@ -121,12 +121,7 @@ const ornamentEntranceOptions = [
   "slide-right",
   "drop-in",
 ];
-const ornamentSequenceGroupOptions = [
-  "none",
-  "primary",
-  "secondary",
-  "accent",
-];
+const ornamentTimelineTrackOptions = [0, 1, 2, 3];
 const ornamentMaxRasterFileSize = 1024 * 1024;
 const countdownVariantOptions = ["cards", "minimal", "circle", "flip-clock", "ring", "neon-glow"];
 const eventVariantOptions = ["cards", "list", "elegant", "minimal", "corner-bracket"];
@@ -1959,7 +1954,30 @@ function TemplateStatusPill({ status }) {
   );
 }
 
-function MiniInput({ label, value, onChange, type = "text", step }) {
+function MiniInput({ label, value, onChange, type = "text", step, disabled }) {
+  const handleChange = (event) => {
+    if (disabled) return;
+    onChange(type === "number" ? Number(event.target.value) : event.target.value);
+  };
+  return (
+    <label className="block">
+      <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+        {label}
+      </span>
+      <input
+        type={type}
+        step={step}
+        value={value ?? ""}
+        disabled={disabled}
+        readOnly={disabled}
+        onChange={handleChange}
+        className={`mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)] ${disabled ? 'bg-[var(--color-bg)] text-[var(--color-text)]/50 cursor-not-allowed' : ''}`}
+      />
+    </label>
+  );
+}
+
+function MiniInputOld({ label, value, onChange, type = "text", step }) {
   return (
     <label className="block">
       <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
@@ -3066,6 +3084,9 @@ function TemplateAdminPage() {
       ...parsedDesignConfig,
       ornaments,
     });
+    
+    // Trigger preview refresh for immediate visual feedback
+    setPreviewEntranceKey(k => k + 1);
   };
 
   const updateCountdownWidget = (field, value) => {
@@ -3344,10 +3365,11 @@ function TemplateAdminPage() {
       mirror: false,
       entrance: "fade-in",
       entranceDuration: 0.8,
-      entranceDelay: 0,
       animation: "none",
       duration: 6,
       delay: 0,
+      timelineTrack: 0,
+      timelinePosition: 0,
     };
     const sectionOrnaments = [...(baseConfig.ornaments?.[section] || []), nextOrnament];
 
@@ -5080,31 +5102,130 @@ function TemplateAdminPage() {
                         Edit posisi ornament berdasarkan canvas 430px.
                       </p>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={addOrnament}
-                        className="rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-black text-white"
-                      >
-                        Tambah Ornament
-                      </button>
-                      <button
-                        type="button"
-                        onClick={removeOrnament}
-                        disabled={!selectedOrnament}
-                        className="rounded-xl border border-[var(--color-accent-pale)] bg-white px-4 py-2 text-sm font-black text-[var(--color-primary)] disabled:opacity-45"
-                      >
-                        Hapus
-                      </button>
-                      <button
-                        type="button"
-                        onClick={duplicateOrnament}
-                        disabled={!selectedOrnament}
-                        className="rounded-xl border border-[var(--color-accent-pale)] bg-white px-4 py-2 text-sm font-black text-[var(--color-primary)] disabled:opacity-45"
-                      >
-                        Duplicate
-                      </button>
+                  </div>
+
+                  {/* Visual Timeline Track - Full Width at Top */}
+                  <div className="mt-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
+                          Timeline Track
+                        </p>
+                        <p className="mt-1 text-[10px] text-[var(--color-text)]/60">
+                          Visual urutan animasi entrance · Blok pada track berbeda bisa bersamaan
+                        </p>
+                      </div>
                     </div>
+                    {/* Calculate dynamic timeline based on max ornament position */}
+                    {(() => {
+                      const maxPos = activeOrnaments.reduce((max, o) => Math.max(max, o.timelinePosition ?? 0), 0);
+                      const timelineEnd = Math.max(3, Math.ceil(maxPos + 1));
+                      const timeSteps = [];
+                      for (let t = 0; t <= timelineEnd; t += 0.5) {
+                        timeSteps.push(parseFloat(t.toFixed(1)));
+                      }
+                      const triggerReplay = () => {
+                        setPreviewEntranceKey(k => k + 1);
+                        document.querySelectorAll('.timeline-replay-indicator').forEach(el => {
+                          el.classList.remove('replaying');
+                          void el.offsetWidth;
+                          el.classList.add('replaying');
+                        });
+                      };
+                      return (
+                        <>
+                          {/* Update replay button with dynamic duration */}
+                          <button
+                            onClick={triggerReplay}
+                            className="rounded-lg bg-[var(--color-primary)] px-3 py-1 text-xs font-black text-white shadow hover:bg-[var(--color-accent)]"
+                          >
+                            ▶ Replay
+                          </button>
+                          <div className="mt-4 space-y-3">
+                            {[0, 1, 2, 3].map((track) => {
+                              const trackOrnaments = activeOrnaments.filter(
+                                (o) => (o.timelineTrack ?? 0) === track
+                              );
+                              const trackColors = [
+                                "bg-blue-500",
+                                "bg-green-500",
+                                "bg-yellow-500",
+                                "bg-purple-500",
+                              ];
+                              const trackLabels = ["T1", "T2", "T3", "T4"];
+                              return (
+                                <div key={track} className="flex items-center gap-3">
+                                  <span className="w-8 text-[11px] font-bold text-[var(--color-text)]">
+                                    {trackLabels[track]}
+                                  </span>
+                                  <div className="relative h-8 flex-1 rounded bg-[var(--color-bg)]">
+                                    {/* Time markers */}
+                                    <div className="absolute inset-0 flex justify-between px-2">
+                                      {timeSteps.map((t) => (
+                                        <span key={t} className="text-[9px] text-[var(--color-text)]/40">
+                                          {t}s
+                                        </span>
+                                      ))}
+                                    </div>
+                                    {/* Grid lines */}
+                                    <div className="absolute inset-0 flex justify-between px-2">
+                                      {timeSteps.map((t) => (
+                                        <div key={t} className="h-full w-px bg-[var(--color-text)]/10" />
+                                      ))}
+                                    </div>
+                                    {/* Replay indicator line */}
+                                    <div className="timeline-replay-indicator" style={{
+                                      '--replay-color': track === 0 ? '#3b82f6' : track === 1 ? '#22c55e' : track === 2 ? '#eab308' : '#a855f7',
+                                      '--replay-duration': `${timelineEnd}s`,
+                                    }} />
+                                    {/* Ornament blocks on timeline */}
+                                    {trackOrnaments.map((ornament, idx) => {
+                                      const pos = ornament.timelinePosition ?? 0;
+                                      const leftPercent = Math.min(95, (pos / timelineEnd) * 100);
+                                      return (
+                                        <button
+                                          key={ornament.id || idx}
+                                          onClick={() => {
+                                            const realIndex = activeOrnaments.indexOf(ornament);
+                                            if (realIndex !== -1) setSelectedOrnamentIndex(realIndex);
+                                          }}
+                                          title={`${ornament.id} @ ${pos}s`}
+                                          className={`absolute top-1/2 -translate-y-1/2 h-6 rounded ${trackColors[track]} opacity-80 hover:opacity-100 transition-opacity shadow-sm`}
+                                          style={{
+                                            left: `${leftPercent}%`,
+                                            width: "24px",
+                                          }}
+                                        />
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </>
+                      );
+                    })()}
+                    <style>{`
+                      @keyframes timeline-replay {
+                        0% { left: 0%; opacity: 1; }
+                        100% { left: 100%; opacity: 1; }
+                      }
+                      .timeline-replay-indicator {
+                        position: absolute;
+                        top: 0;
+                        bottom: 0;
+                        width: 2px;
+                        background: var(--replay-color, #ef4444);
+                        opacity: 0;
+                        pointer-events: none;
+                        z-index: 10;
+                      }
+                      .timeline-replay-indicator.replaying {
+                        opacity: 1;
+                        animation: timeline-replay var(--replay-duration, 3s) ease-out forwards;
+                      }
+                    `}</style>
                   </div>
 
                   {parsedDesignConfig ? (
@@ -5124,113 +5245,61 @@ function TemplateAdminPage() {
                           </SelectInput>
                         </Field>
                         <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3">
-                          <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-                            Section Sequence
-                          </p>
-                          <label className="mt-3 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-3 py-2">
-                            <input
-                              type="checkbox"
-                              checked={Boolean(sectionAnimationConfig.enabled)}
-                              onChange={(event) =>
-                                updateSectionAnimation("enabled", event.target.checked)
-                              }
-                              className="h-4 w-4"
-                            />
-                            <span className="text-sm font-black text-[var(--color-primary)]">
-                              Aktifkan sequence
-                            </span>
-                          </label>
-                          <label className="mt-3 block">
-                            <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                              Preset
-                            </span>
-                            <select
-                              value={sectionAnimationConfig.preset}
-                              onChange={(event) => applySectionAnimationPreset(event.target.value)}
-                              className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
+                              Ornament
+                            </p>
+                            <button
+                              type="button"
+                              onClick={addOrnament}
+                              title="Tambah Ornament"
+                              className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--color-primary)] text-sm font-black text-white hover:bg-[var(--color-accent)]"
                             >
-                              {sectionAnimationPresets.map((preset) => (
-                                <option key={preset.id} value={preset.id}>
-                                  {preset.label}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            <MiniInput
-                              label="Stagger"
-                              type="number"
-                              step="0.05"
-                              value={sectionAnimationConfig.staggerStep}
-                              onChange={(value) => updateSectionAnimation("staggerStep", value)}
-                            />
-                            <MiniInput
-                              label="Start Delay"
-                              type="number"
-                              step="0.1"
-                              value={sectionAnimationConfig.entranceDelay}
-                              onChange={(value) => updateSectionAnimation("entranceDelay", value)}
-                            />
+                              +
+                            </button>
                           </div>
-                          <div className="mt-3 grid grid-cols-2 gap-2">
-                            <label className="block">
-                              <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                                Entrance
-                              </span>
-                              <select
-                                value={sectionAnimationConfig.entrancePreset}
-                                onChange={(event) =>
-                                  updateSectionAnimation("entrancePreset", event.target.value)
-                                }
-                                className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                              >
-                                {ornamentEntranceOptions.map((entrance) => (
-                                  <option key={entrance} value={entrance}>
-                                    {entrance}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                            <label className="block">
-                              <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                                Loop
-                              </span>
-                              <select
-                                value={sectionAnimationConfig.loopPreset}
-                                onChange={(event) =>
-                                  updateSectionAnimation("loopPreset", event.target.value)
-                                }
-                                className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                              >
-                                {ornamentAnimationOptions.map((animation) => (
-                                  <option key={animation} value={animation}>
-                                    {animation}
-                                  </option>
-                                ))}
-                              </select>
-                            </label>
-                          </div>
-                        </div>
-
-                        <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3">
-                          <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-                            Ornament
-                          </p>
                           <div className="mt-3 space-y-2">
-                            {activeOrnaments.map((ornament, index) => (
-                              <button
-                                key={ornament.id || index}
-                                type="button"
-                                onClick={() => setSelectedOrnamentIndex(index)}
-                                className={`w-full rounded-xl px-3 py-2 text-left text-sm font-black transition-colors ${
-                                  selectedOrnamentIndex === index
-                                    ? "bg-[var(--color-primary)] text-white"
-                                    : "bg-[var(--color-bg)] text-[var(--color-primary)]"
-                                }`}
-                              >
-                                {ornament.id || `Ornament ${index + 1}`}
-                              </button>
-                            ))}
+                            {activeOrnaments.map((ornament, index) => {
+                              const isSelected = selectedOrnamentIndex === index;
+                              return (
+                                <div
+                                  key={ornament.id || index}
+                                  className={`flex items-center gap-2 rounded-xl px-3 py-2 transition-colors ${
+                                    isSelected
+                                      ? "bg-[var(--color-primary)] text-white"
+                                      : "bg-[var(--color-bg)] text-[var(--color-primary)]"
+                                  }`}
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => setSelectedOrnamentIndex(index)}
+                                    className="flex-1 text-left text-sm font-black"
+                                  >
+                                    {ornament.id || `Ornament ${index + 1}`}
+                                  </button>
+                                  {isSelected && (
+                                    <div className="flex gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); duplicateOrnament(); }}
+                                        title="Duplicate"
+                                        className="flex h-6 w-6 items-center justify-center rounded bg-white/20 text-xs hover:bg-white/30"
+                                      >
+                                        ⧉
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={(e) => { e.stopPropagation(); removeOrnament(); }}
+                                        title="Hapus"
+                                        className="flex h-6 w-6 items-center justify-center rounded bg-white/20 text-xs hover:bg-white/30"
+                                      >
+                                        🗑
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
                             {activeOrnaments.length === 0 ? (
                               <p className="text-sm font-semibold text-[var(--color-text)]">
                                 Belum ada ornament di section ini.
@@ -5238,7 +5307,6 @@ function TemplateAdminPage() {
                             ) : null}
                           </div>
                         </div>
-
                       </div>
 
                       <div className="space-y-4">
@@ -5320,53 +5388,53 @@ function TemplateAdminPage() {
                             />
                           </div>
                           <div className="md:col-span-2 xl:col-span-1">
-                            <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-3">
-                              <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
+                            <details className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)]">
+                              <summary className="flex cursor-pointer items-center justify-between px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)] hover:bg-[var(--color-accent-pale)]">
                                 Layer Controls
-                              </p>
-                              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                <span className="text-[var(--color-text)]/40">▼</span>
+                              </summary>
+                              <div className="flex flex-wrap gap-2 px-3 pb-3">
                                 <button
                                   type="button"
                                   onClick={() => reorderSelectedOrnament("down")}
                                   disabled={selectedOrnamentIndex <= 0}
-                                  className="rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] disabled:opacity-45"
+                                  title="Move Down"
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] bg-white text-xs font-black text-[var(--color-primary)] disabled:opacity-45 hover:bg-[var(--color-accent-pale)]"
                                 >
-                                  Move Down
+                                  ↓
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => reorderSelectedOrnament("up")}
                                   disabled={selectedOrnamentIndex >= activeOrnaments.length - 1}
-                                  className="rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] disabled:opacity-45"
+                                  title="Move Up"
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] bg-white text-xs font-black text-[var(--color-primary)] disabled:opacity-45 hover:bg-[var(--color-accent-pale)]"
                                 >
-                                  Move Up
+                                  ↑
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => reorderSelectedOrnament("back")}
                                   disabled={selectedOrnamentIndex <= 0}
-                                  className="rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] disabled:opacity-45"
+                                  title="Send Back"
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] bg-white text-xs font-black text-[var(--color-primary)] disabled:opacity-45 hover:bg-[var(--color-accent-pale)]"
                                 >
-                                  Send Back
+                                  ⎗
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => reorderSelectedOrnament("front")}
                                   disabled={selectedOrnamentIndex >= activeOrnaments.length - 1}
-                                  className="rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] disabled:opacity-45"
+                                  title="Bring Front"
+                                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] bg-white text-xs font-black text-[var(--color-primary)] disabled:opacity-45 hover:bg-[var(--color-accent-pale)]"
                                 >
-                                  Bring Front
+                                  ⎘
                                 </button>
                               </div>
-                            </div>
+                            </details>
                           </div>
                           <div className="md:col-span-2 xl:col-span-1">
-                            <MiniInput
-                              label="SRC"
-                              value={selectedOrnament.src}
-                              onChange={(value) => updateOrnament("src", value)}
-                            />
-                            <div className="mt-3">
+                            <div>
                               <input
                                 type="file"
                                 accept="image/*"
@@ -5436,34 +5504,133 @@ function TemplateAdminPage() {
                               ) : null}
                             </div>
                           </div>
-                          <label className="block">
+                          <div className="block">
                             <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
                               Slot
                             </span>
-                            <select
-                              value={selectedOrnament.slot || "top-left"}
-                              onChange={(event) => updateOrnament("slot", event.target.value)}
-                              className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                            >
-                              {ornamentSlots.map((slot) => (
-                                <option key={slot}>{slot}</option>
-                              ))}
-                            </select>
-                          </label>
-                          <label className="block">
-                            <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                              Object Fit
-                            </span>
-                            <select
-                              value={selectedOrnament.objectFit || "contain"}
-                              onChange={(event) => updateOrnament("objectFit", event.target.value)}
-                              className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                            >
-                              {ornamentObjectFitOptions.map((fit) => (
-                                <option key={fit}>{fit}</option>
-                              ))}
-                            </select>
-                          </label>
+                            <div className={`mt-2 grid grid-cols-3 grid-rows-3 gap-1 ${selectedOrnament.useSlot === false ? 'opacity-50 pointer-events-none' : ''}`}>
+                              <button
+                                type="button"
+                                onClick={() => updateOrnament("slot", "top-left")}
+                                className={`h-8 rounded-lg border text-xs font-black transition-all ${
+                                  selectedOrnament.slot === "top-left"
+                                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                                    : "border-[var(--color-accent-pale)] bg-white text-[var(--color-primary)] hover:bg-[var(--color-accent-pale)]"
+                                }`}
+                              >
+                                TL
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateOrnament("slot", "center-top")}
+                                className={`h-8 rounded-lg border text-xs font-black transition-all ${
+                                  selectedOrnament.slot === "center-top"
+                                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                                    : "border-[var(--color-accent-pale)] bg-white text-[var(--color-primary)] hover:bg-[var(--color-accent-pale)]"
+                                }`}
+                              >
+                                T
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateOrnament("slot", "top-right")}
+                                className={`h-8 rounded-lg border text-xs font-black transition-all ${
+                                  selectedOrnament.slot === "top-right"
+                                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                                    : "border-[var(--color-accent-pale)] bg-white text-[var(--color-primary)] hover:bg-[var(--color-accent-pale)]"
+                                }`}
+                              >
+                                TR
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateOrnament("slot", "side-left")}
+                                className={`h-8 rounded-lg border text-xs font-black transition-all ${
+                                  selectedOrnament.slot === "side-left"
+                                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                                    : "border-[var(--color-accent-pale)] bg-white text-[var(--color-primary)] hover:bg-[var(--color-accent-pale)]"
+                                }`}
+                              >
+                                L
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateOrnament("slot", "center")}
+                                className={`h-8 rounded-lg border text-xs font-black transition-all ${
+                                  selectedOrnament.slot === "center"
+                                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                                    : "border-[var(--color-accent-pale)] bg-white text-[var(--color-primary)] hover:bg-[var(--color-accent-pale)]"
+                                }`}
+                              >
+                                C
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateOrnament("slot", "side-right")}
+                                className={`h-8 rounded-lg border text-xs font-black transition-all ${
+                                  selectedOrnament.slot === "side-right"
+                                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                                    : "border-[var(--color-accent-pale)] bg-white text-[var(--color-primary)] hover:bg-[var(--color-accent-pale)]"
+                                }`}
+                              >
+                                R
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateOrnament("slot", "bottom-left")}
+                                className={`h-8 rounded-lg border text-xs font-black transition-all ${
+                                  selectedOrnament.slot === "bottom-left"
+                                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                                    : "border-[var(--color-accent-pale)] bg-white text-[var(--color-primary)] hover:bg-[var(--color-accent-pale)]"
+                                }`}
+                              >
+                                BL
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateOrnament("slot", "center-bottom")}
+                                className={`h-8 rounded-lg border text-xs font-black transition-all ${
+                                  selectedOrnament.slot === "center-bottom"
+                                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                                    : "border-[var(--color-accent-pale)] bg-white text-[var(--color-primary)] hover:bg-[var(--color-accent-pale)]"
+                                }`}
+                              >
+                                B
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => updateOrnament("slot", "bottom-right")}
+                                className={`h-8 rounded-lg border text-xs font-black transition-all ${
+                                  selectedOrnament.slot === "bottom-right"
+                                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-white"
+                                    : "border-[var(--color-accent-pale)] bg-white text-[var(--color-primary)] hover:bg-[var(--color-accent-pale)]"
+                                }`}
+                              >
+                                BR
+                              </button>
+                            </div>
+                            <p className="mt-1 text-[10px] text-[var(--color-text)]/60">
+                              TL=Top-Left, TR=Top-Right, BL=Bottom-Left, BR=Bottom-Right, C=Center, L/R=Side
+                            </p>
+                            <label className="mt-3 flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={selectedOrnament.useSlot !== false}
+                                onChange={(event) => {
+                                  const useSlot = event.target.checked;
+                                  if (useSlot) {
+                                    updateOrnament("useSlot", true);
+                                  } else {
+                                    updateOrnament("useSlot", false);
+                                  }
+                                }}
+                                className="h-4 w-4"
+                              />
+                              <span className="text-xs font-black text-[var(--color-text)]">
+                                Use Slot (X/Y auto dari slot)
+                              </span>
+                            </label>
+                          </div>
                           <label className="block">
                             <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
                               Animation
@@ -5496,33 +5663,44 @@ function TemplateAdminPage() {
                               ))}
                             </select>
                           </label>
-                          <MiniInput label="Width" value={selectedOrnament.width} onChange={(value) => updateOrnament("width", value)} />
-                          <MiniInput label="Height" value={selectedOrnament.height} onChange={(value) => updateOrnament("height", value)} />
-                          <MiniInput label="X" type="number" value={selectedOrnament.x || 0} onChange={(value) => updateOrnament("x", value)} />
-                          <MiniInput label="Y" type="number" value={selectedOrnament.y || 0} onChange={(value) => updateOrnament("y", value)} />
-                          <MiniInput label="Rotate" type="number" value={selectedOrnament.rotate || 0} onChange={(value) => updateOrnament("rotate", value)} />
-                          <MiniInput label="Opacity" type="number" step="0.05" value={selectedOrnament.opacity ?? 1} onChange={(value) => updateOrnament("opacity", value)} />
-                          <MiniInput label="Z Index" type="number" value={selectedOrnament.zIndex || 0} onChange={(value) => updateOrnament("zIndex", value)} />
-                          <MiniInput label="Entrance Duration" type="number" step="0.1" value={selectedOrnament.entranceDuration ?? 0.8} onChange={(value) => updateOrnament("entranceDuration", value)} />
+                          <div className="grid grid-cols-2 gap-2">
+                            <MiniInput label="Width" value={selectedOrnament.width} onChange={(value) => updateOrnament("width", value)} />
+                            <MiniInput label="Height" value={selectedOrnament.height} onChange={(value) => updateOrnament("height", value)} />
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <MiniInput label="X" type="number" value={selectedOrnament.useSlot !== false ? 0 : (selectedOrnament.x || 0)} onChange={(value) => updateOrnament("x", value)} disabled={selectedOrnament.useSlot !== false} />
+                            <MiniInput label="Y" type="number" value={selectedOrnament.useSlot !== false ? 0 : (selectedOrnament.y || 0)} onChange={(value) => updateOrnament("y", value)} disabled={selectedOrnament.useSlot !== false} />
+                            <MiniInput label="Rotate" type="number" value={selectedOrnament.rotate || 0} onChange={(value) => updateOrnament("rotate", value)} />
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            <MiniInput label="Opacity" type="number" step="0.05" value={selectedOrnament.opacity ?? 1} onChange={(value) => updateOrnament("opacity", value)} />
+                            <MiniInput label="Z Index" type="number" value={selectedOrnament.zIndex || 0} onChange={(value) => updateOrnament("zIndex", value)} />
+                            <MiniInput label="Entrance Dur" type="number" step="0.1" value={selectedOrnament.entranceDuration ?? 0.8} onChange={(value) => updateOrnament("entranceDuration", value)} />
+                          </div>
                           <label className="block">
                             <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                              Sequence Group
+                              Timeline Track
                             </span>
                             <select
-                              value={selectedOrnament.sequenceGroup || "none"}
-                              onChange={(event) => updateOrnament("sequenceGroup", event.target.value)}
+                              value={selectedOrnament.timelineTrack ?? 0}
+                              onChange={(event) => updateOrnament("timelineTrack", Number(event.target.value))}
                               className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
                             >
-                              {ornamentSequenceGroupOptions.map((group) => (
-                                <option key={group} value={group}>
-                                  {group === "none" ? "None (manual)" : group}
+                              {ornamentTimelineTrackOptions.map((track) => (
+                                <option key={track} value={track}>
+                                  Track {track + 1}
                                 </option>
                               ))}
                             </select>
+                            <p className="mt-1 text-[10px] text-[var(--color-text)]/60">
+                              Ornamen di track berbeda bisa animate bersamaan
+                            </p>
                           </label>
-                          <MiniInput label="Entrance Delay" type="number" step="0.1" value={selectedOrnament.entranceDelay ?? 0} onChange={(value) => updateOrnament("entranceDelay", value)} />
-                          <MiniInput label="Duration" type="number" step="0.5" value={selectedOrnament.duration ?? 6} onChange={(value) => updateOrnament("duration", value)} />
-                          <MiniInput label="Delay" type="number" step="0.25" value={selectedOrnament.delay ?? 0} onChange={(value) => updateOrnament("delay", value)} />
+                          <div className="grid grid-cols-3 gap-2">
+                            <MiniInput label="Timeline Pos" type="number" step="0.1" value={selectedOrnament.timelinePosition ?? 0} onChange={(value) => updateOrnament("timelinePosition", value)} />
+                            <MiniInput label="Duration" type="number" step="0.5" value={selectedOrnament.duration ?? 6} onChange={(value) => updateOrnament("duration", value)} />
+                            <MiniInput label="Delay" type="number" step="0.25" value={selectedOrnament.delay ?? 0} onChange={(value) => updateOrnament("delay", value)} />
+                          </div>
                           <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
                             <input
                               type="checkbox"
