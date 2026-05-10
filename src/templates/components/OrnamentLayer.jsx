@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
 const slotClasses = {
   fill: "inset-0",
@@ -52,10 +52,107 @@ function entranceName(value) {
   return `ornament-entrance-${value}`;
 }
 
+function OrnamentImage({ ornament, animation, animationDelay }) {
+  const [hasError, setHasError] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Reset state when src changes
+  useEffect(() => {
+    setHasError(false);
+    setIsLoading(true);
+  }, [ornament.src]);
+
+  if (hasError || !ornament.src) {
+    return (
+      <div
+        className="flex h-full w-full items-center justify-center bg-[var(--color-muted)]/30"
+        style={{ objectFit: ornament.objectFit || "contain" }}
+      >
+        <span className="text-[10px] font-black uppercase tracking-wider text-[var(--color-text)]/40">
+          No Image
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {isLoading && (
+        <div className="absolute inset-0 animate-pulse rounded-full bg-[var(--color-muted)]/20" />
+      )}
+      <img
+        src={ornament.src}
+        alt=""
+        className="nusa-ornament-animated block h-full w-full"
+        style={{
+          objectFit: ornament.objectFit || "contain",
+          animationName: animationName(animation),
+          animationDuration: secondsValue(ornament.duration, 6),
+          animationDelay: secondsValue(animationDelay, 0),
+          animationTimingFunction: "ease-in-out",
+          animationIterationCount: "infinite",
+        }}
+        onLoad={() => setIsLoading(false)}
+        onError={() => {
+          setIsLoading(false);
+          setHasError(true);
+        }}
+      />
+    </>
+  );
+}
+
+// Group configuration for sequence timing
+const groupOrder = ["primary", "secondary", "accent", "none"];
+const groupBaseDelay = {
+  primary: 0,
+  secondary: 0.5,
+  accent: 1,
+  none: 0,
+};
+const groupStaggerStep = 0.15;
+
 export default function OrnamentLayer({ ornaments = [], className = "" }) {
   if (!ornaments.length) {
     return null;
   }
+
+  // Calculate group-aware entrance delay
+  const processedOrnaments = useMemo(() => {
+    // Group ornaments by their sequenceGroup
+    const groups = {};
+    ornaments.forEach((ornament, index) => {
+      const group = ornament.sequenceGroup || "none";
+      if (!groups[group]) {
+        groups[group] = [];
+      }
+      groups[group].push({ ornament, originalIndex: index });
+    });
+
+    // Calculate entrance delay for each ornament based on group
+    return ornaments.map((ornament, index) => {
+      const group = ornament.sequenceGroup || "none";
+      const groupIndex = groups[group].findIndex(
+        (item) => item.originalIndex === index
+      );
+      
+      // Calculate stagger delay within the group
+      let groupEntranceDelay = ornament.entranceDelay ?? 0;
+      
+      if (group !== "none") {
+        // Base delay from group order
+        const baseDelay = groupBaseDelay[group] || 0;
+        // Stagger within the group
+        const staggerDelay = groupIndex * groupStaggerStep;
+        groupEntranceDelay = baseDelay + staggerDelay;
+      }
+      
+      return {
+        ...ornament,
+        _groupEntranceDelay: groupEntranceDelay,
+      };
+    });
+  }, [ornaments]);
 
   return (
     <div className={`pointer-events-none absolute inset-0 overflow-hidden ${className}`}>
@@ -116,7 +213,7 @@ export default function OrnamentLayer({ ornaments = [], className = "" }) {
           }
         }
       `}</style>
-      {ornaments.map((ornament) => {
+      {processedOrnaments.map((ornament) => {
         const sequence = ornament.sequence || {};
         const slot = ornament.slot || "top-left";
         const mirrorScale = ornament.mirror ? -1 : 1;
@@ -129,7 +226,8 @@ export default function OrnamentLayer({ ornaments = [], className = "" }) {
           ornament.animation && ornament.animation !== "none"
             ? ornament.animation
             : sequence.animation || "none";
-        const entranceDelay = ornament.entranceDelay ?? sequence.entranceDelay ?? 0;
+        // Use group-aware entrance delay, fallback to individual
+        const entranceDelay = ornament._groupEntranceDelay ?? ornament.entranceDelay ?? sequence.entranceDelay ?? 0;
         const animationDelay = ornament.delay ?? sequence.animationDelay ?? 0;
         const transform = `${anchorTransform} translate(${sizeValue(ornament.x) || "0px"}, ${
           sizeValue(ornament.y) || "0px"
@@ -153,18 +251,11 @@ export default function OrnamentLayer({ ornaments = [], className = "" }) {
               animationFillMode: "both",
             }}
           >
-            <img
-              src={ornament.src}
-              alt=""
-              className="nusa-ornament-animated block h-full w-full"
-              style={{
-                objectFit: ornament.objectFit || "contain",
-                animationName: animationName(animation),
-                animationDuration: secondsValue(ornament.duration, 6),
-                animationDelay: secondsValue(animationDelay, 0),
-                animationTimingFunction: "ease-in-out",
-                animationIterationCount: "infinite",
-              }}
+            <OrnamentImage
+              key={`${ornament.id}-${ornament.src}`}
+              ornament={ornament}
+              animation={animation}
+              animationDelay={animationDelay}
             />
           </span>
         );

@@ -256,6 +256,33 @@ function countdownClasses(variant = "cards") {
     };
   }
 
+  if (variant === "flip-clock") {
+    return {
+      container: "grid grid-cols-4 gap-2 md:gap-4",
+      item: "flex flex-col items-center",
+      value: "text-3xl md:text-4xl font-black text-[var(--color-primary)]",
+      label: "mt-1 text-[9px] font-black uppercase tracking-[0.1em] text-[var(--color-accent)]",
+    };
+  }
+
+  if (variant === "ring") {
+    return {
+      container: "grid grid-cols-4 gap-3 md:gap-4",
+      item: "flex flex-col items-center justify-center rounded-full border-4 border-[var(--color-accent)] bg-[var(--color-surface)] shadow-lg shadow-[var(--color-primary)]/10 aspect-square",
+      value: "text-2xl md:text-3xl font-black text-[var(--color-primary)] leading-none",
+      label: "text-[9px] md:text-[10px] font-black uppercase tracking-[0.08em] text-[var(--color-accent)] mt-1",
+    };
+  }
+
+  if (variant === "neon-glow") {
+    return {
+      container: "grid grid-cols-4 gap-4",
+      item: "flex flex-col items-center justify-center px-4 py-6",
+      value: "text-4xl md:text-5xl font-black text-[var(--color-accent)] [text-shadow:_0_0_10px_var(--color-accent),_0_0_20px_var(--color-accent),_0_0_40px_var(--color-accent)]",
+      label: "mt-2 text-[10px] font-black uppercase tracking-[0.12em] text-[var(--color-text)]",
+    };
+  }
+
   return {
     container: "grid grid-cols-4 gap-3",
     item: "rounded-[8px] bg-[var(--color-surface)]/90 px-3 py-4 shadow-lg shadow-[var(--color-primary)]/8",
@@ -284,6 +311,34 @@ function eventClasses(variant = "cards") {
       container: "mx-auto mt-10 grid max-w-5xl justify-center gap-6 md:grid-cols-[minmax(0,28rem)_minmax(0,28rem)]",
       icon: "mx-auto mt-8 flex h-16 w-16 items-center justify-center rounded-t-full rounded-b-[10px] border border-[var(--color-accent)] bg-[var(--color-surface)] text-[var(--color-accent)] shadow-lg shadow-[var(--color-primary)]/8",
       item: "rounded-t-full rounded-b-[16px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)] px-7 pb-7 pt-12 text-center shadow-lg shadow-[var(--color-primary)]/8",
+      eyebrow: "text-sm font-black uppercase tracking-[0.16em] text-[var(--color-accent)]",
+      title: "mt-4 text-3xl font-black text-[var(--color-primary)]",
+      time: "mt-3 text-xl font-black text-[var(--color-primary-hover)]",
+      venue: "mt-5 text-lg font-black text-[var(--color-primary)]",
+      address: "mt-2 text-base font-semibold leading-7 text-[var(--color-text)]",
+      button: "mt-6 inline-flex rounded-2xl bg-[var(--color-primary)] px-5 py-3 text-base font-black text-white transition-colors hover:bg-[var(--color-primary-hover)]",
+    };
+  }
+
+  if (variant === "minimal") {
+    return {
+      container: "mx-auto mt-10 grid max-w-4xl justify-center gap-8",
+      icon: "flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-accent)] text-white",
+      item: "flex flex-col items-center border-b border-[var(--color-accent-pale)] pb-8 text-center last:border-0",
+      eyebrow: "text-xs font-black uppercase tracking-[0.2em] text-[var(--color-accent)]",
+      title: "mt-3 text-xl font-black text-[var(--color-primary)]",
+      time: "mt-2 text-base font-medium text-[var(--color-primary-hover)]",
+      venue: "mt-3 text-sm font-semibold text-[var(--color-primary)]",
+      address: "mt-1 text-sm text-[var(--color-text)]",
+      button: "mt-4 text-sm font-black uppercase tracking-[0.1em] text-[var(--color-accent)] underline underline-offset-4",
+    };
+  }
+
+  if (variant === "corner-bracket") {
+    return {
+      container: "mx-auto mt-10 grid max-w-5xl justify-center gap-6 md:grid-cols-[minmax(0,28rem)_minmax(0,28rem)]",
+      icon: "mx-auto flex h-12 w-12 items-center justify-center border border-[var(--color-accent)] text-[var(--color-accent)]",
+      item: "relative border border-[var(--color-accent-pale)] bg-[var(--color-surface)] p-7 text-center shadow-lg shadow-[var(--color-primary)]/8 before:absolute before:top-0 before:left-0 before:h-6 before:w-6 before:border-t-2 before:border-l-2 before:border-[var(--color-accent)] before:content-[''] after:absolute after:bottom-0 after:right-0 after:h-6 after:w-6 after:border-b-2 after:border-r-2 after:border-[var(--color-accent)] after:content-['']",
       eyebrow: "text-sm font-black uppercase tracking-[0.16em] text-[var(--color-accent)]",
       title: "mt-4 text-3xl font-black text-[var(--color-primary)]",
       time: "mt-3 text-xl font-black text-[var(--color-primary-hover)]",
@@ -325,6 +380,16 @@ function storyClasses(variant = "card") {
       year: "text-sm font-black uppercase tracking-[0.16em] text-[var(--color-accent)]",
       title: "mt-2 text-2xl font-black text-[var(--color-primary)]",
       description: "mt-3 text-base font-semibold leading-7 text-[var(--color-text)]",
+    };
+  }
+
+  if (variant === "photo-album") {
+    return {
+      container: "mt-10 grid grid-cols-2 gap-4 md:grid-cols-3",
+      item: "group relative aspect-[4/5] overflow-hidden rounded-[8px] bg-[var(--color-surface)] shadow-lg shadow-[var(--color-primary)]/8",
+      year: "absolute bottom-2 left-2 rounded bg-[var(--color-accent)]/90 px-2 py-1 text-xs font-black text-white backdrop-blur-sm",
+      title: "absolute bottom-2 right-2 text-right text-sm font-black text-white [text-shadow:_0_1px_3px_rgba(0,0,0,0.5)]",
+      description: "sr-only",
     };
   }
 

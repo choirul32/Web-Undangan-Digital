@@ -121,18 +121,23 @@ const ornamentEntranceOptions = [
   "slide-right",
   "drop-in",
 ];
+const ornamentSequenceGroupOptions = [
+  "none",
+  "primary",
+  "secondary",
+  "accent",
+];
 const ornamentMaxRasterFileSize = 1024 * 1024;
-const countdownVariantOptions = ["cards", "minimal", "circle"];
-const eventVariantOptions = ["cards", "list", "elegant"];
-const storyVariantOptions = ["card", "timeline", "stacked"];
-const storyAnimationOptions = ["fade-up", "zoom-in", "slide-left", "stagger"];
+const countdownVariantOptions = ["cards", "minimal", "circle", "flip-clock", "ring", "neon-glow"];
+const eventVariantOptions = ["cards", "list", "elegant", "minimal", "corner-bracket"];
+const storyVariantOptions = ["card", "timeline", "stacked", "photo-album"];
+const storyAnimationOptions = ["fade-up", "zoom-in", "slide-left", "stagger", "heartbeat", "blur-to-clear", "scale-bounce", "flip"];
 const galleryVariantOptions = ["grid", "carousel", "masonry"];
 const coverLayoutOptions = ["centered", "split", "minimal"];
 const coverOpeningAnimationOptions = ["none", "fade-up", "zoom-in", "slide-left", "pop-up"];
 const openingRevealAnimationOptions = ["fade", "zoom", "slide-up", "curtain", "gate", "paper"];
 const openingRevealBackgroundModeOptions = ["color", "image"];
 const coverBackgroundModeOptions = ["color", "image"];
-const guestBlockStyleOptions = ["card", "pill", "minimal", "hidden"];
 const couplePhotoStyleOptions = ["circle", "arch", "square"];
 const coupleFontPresetOptions = ["serif", "sans", "script"];
 const sectionFontPresetOptions = ["default", "serif", "sans", "script"];
@@ -210,7 +215,6 @@ const templateStylePresets = [
     },
     cover: {
       openingAnimation: "fade-up",
-      guestBlockStyle: "minimal",
     },
   },
   {
@@ -240,7 +244,6 @@ const templateStylePresets = [
     },
     cover: {
       openingAnimation: "zoom-in",
-      guestBlockStyle: "card",
     },
   },
   {
@@ -270,7 +273,6 @@ const templateStylePresets = [
     },
     cover: {
       openingAnimation: "pop-up",
-      guestBlockStyle: "pill",
     },
   },
   {
@@ -300,7 +302,6 @@ const templateStylePresets = [
     },
     cover: {
       openingAnimation: "slide-left",
-      guestBlockStyle: "card",
     },
   },
   {
@@ -331,7 +332,6 @@ const templateStylePresets = [
     },
     cover: {
       openingAnimation: "pop-up",
-      guestBlockStyle: "pill",
     },
   },
   {
@@ -361,7 +361,6 @@ const templateStylePresets = [
     },
     cover: {
       openingAnimation: "zoom-in",
-      guestBlockStyle: "minimal",
     },
   },
   {
@@ -1998,6 +1997,33 @@ function countdownPreviewClasses(variant = "cards") {
     };
   }
 
+  if (variant === "flip-clock") {
+    return {
+      container: "grid grid-cols-4 gap-2 md:gap-4",
+      item: "flex flex-col items-center",
+      value: "text-3xl md:text-4xl font-black text-[var(--color-primary)] [text-shadow:_0_2px_4px_rgba(0,0,0,0.1)]",
+      label: "mt-1 text-[9px] font-black uppercase tracking-[0.1em] text-[var(--color-accent)]",
+    };
+  }
+
+  if (variant === "ring") {
+    return {
+      container: "grid grid-cols-4 gap-3 md:gap-4",
+      item: "flex flex-col items-center justify-center rounded-full border-4 border-[var(--color-accent)] bg-white shadow-lg shadow-[var(--color-primary)]/10 aspect-square",
+      value: "text-2xl md:text-3xl font-black text-[var(--color-primary)] leading-none",
+      label: "text-[9px] md:text-[10px] font-black uppercase tracking-[0.08em] text-[var(--color-accent)] mt-1",
+    };
+  }
+
+  if (variant === "neon-glow") {
+    return {
+      container: "grid grid-cols-4 gap-4",
+      item: "flex flex-col items-center justify-center px-4 py-6",
+      value: "text-4xl md:text-5xl font-black text-[var(--color-accent)] [text-shadow:_0_0_10px_var(--color-accent),_0_0_20px_var(--color-accent),_0_0_40px_var(--color-accent)]",
+      label: "mt-2 text-[10px] font-black uppercase tracking-[0.12em] text-[var(--color-text)]",
+    };
+  }
+
   return {
     container: "grid grid-cols-4 gap-3",
     item: "rounded-[8px] bg-white px-3 py-4 text-center shadow-lg shadow-[var(--color-primary)]/8",
@@ -2008,11 +2034,35 @@ function countdownPreviewClasses(variant = "cards") {
 
 function CountdownWidgetPreview({ variant = "cards", enabled = true }) {
   const classes = countdownPreviewClasses(variant);
+  const [timeLeft, setTimeLeft] = useState({ days: 30, hours: 8, minutes: 32, seconds: 45 });
+
+  useEffect(() => {
+    const targetDate = new Date();
+    targetDate.setDate(targetDate.getDate() + 30);
+    targetDate.setHours(targetDate.getHours() + 8);
+
+    const updateCountdown = () => {
+      const now = new Date();
+      const diff = Math.max(0, targetDate.getTime() - now.getTime());
+      const totalSeconds = Math.floor(diff / 1000);
+      const days = Math.floor(totalSeconds / 86400);
+      const hours = Math.floor((totalSeconds % 86400) / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const seconds = totalSeconds % 60;
+      setTimeLeft({ days, hours, minutes, seconds });
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const pad = (n) => String(n).padStart(2, "0");
   const previewItems = [
-    ["45", "Hari"],
-    ["08", "Jam"],
-    ["32", "Menit"],
-    ["18", "Detik"],
+    [pad(timeLeft.days), "Hari"],
+    [pad(timeLeft.hours), "Jam"],
+    [pad(timeLeft.minutes), "Menit"],
+    [pad(timeLeft.seconds), "Detik"],
   ];
 
   return (
@@ -2055,22 +2105,103 @@ function WidgetPreviewShell({ title, label, enabled = true, children }) {
   );
 }
 
-function StoryWidgetPreview({ variant = "card", enabled = true }) {
+function StoryWidgetPreview({ variant = "card", animation = "fade-up", enabled = true }) {
   const items = [
-    ["2021", "Bertemu"],
-    ["2024", "Lamaran"],
-    ["2026", "Menikah"],
+    { year: "2021", title: "Bertemu" },
+    { year: "2024", title: "Lamaran" },
+    { year: "2026", title: "Menikah" },
   ];
+
+  // Animation props helper (same as StoryWidget.jsx)
+  const getAnimationProps = (anim, index) => {
+    if (anim === "zoom-in") {
+      return {
+        initial: { opacity: 0, scale: 0.94 },
+        whileInView: { opacity: 1, scale: 1 },
+        viewport: { once: true, amount: 0.25 },
+      };
+    }
+    if (anim === "slide-left") {
+      return {
+        initial: { opacity: 0, x: 24 },
+        whileInView: { opacity: 1, x: 0 },
+        viewport: { once: true, amount: 0.25 },
+      };
+    }
+    if (anim === "stagger") {
+      return {
+        initial: { opacity: 0, x: -30 },
+        whileInView: { opacity: 1, x: 0 },
+        transition: { delay: index * 0.15, duration: 0.5, ease: "easeOut" },
+        viewport: { once: true, amount: 0.25 },
+      };
+    }
+    if (anim === "heartbeat") {
+      return {
+        initial: { opacity: 0, scale: 0.85 },
+        whileInView: { opacity: 1, scale: 1 },
+        transition: { delay: index * 0.1, duration: 0.4, ease: "easeOut" },
+        viewport: { once: true, amount: 0.25 },
+      };
+    }
+    if (anim === "blur-to-clear") {
+      return {
+        initial: { opacity: 0, filter: "blur(12px)" },
+        whileInView: { opacity: 1, filter: "blur(0px)" },
+        transition: { delay: index * 0.08, duration: 0.6, ease: "easeOut" },
+        viewport: { once: true, amount: 0.25 },
+      };
+    }
+    if (anim === "scale-bounce") {
+      return {
+        initial: { opacity: 0, scale: 0.5 },
+        whileInView: { opacity: 1, scale: 1 },
+        transition: { delay: index * 0.1, duration: 0.7, ease: [0.34, 1.56, 0.64, 1] },
+        viewport: { once: true, amount: 0.25 },
+      };
+    }
+    if (anim === "flip") {
+      return {
+        initial: { opacity: 0, rotateY: 90 },
+        whileInView: { opacity: 1, rotateY: 0 },
+        transition: { delay: index * 0.1, duration: 0.6, ease: "easeOut" },
+        viewport: { once: true, amount: 0.25 },
+      };
+    }
+    // Default: fade-up
+    return {
+      initial: { opacity: 0, y: 20 },
+      whileInView: { opacity: 1, y: 0 },
+      viewport: { once: true, amount: 0.25 },
+    };
+  };
+
+  const renderStoryItem = (item, index) => {
+    const animProps = getAnimationProps(animation, index);
+    return (
+      <motion.div
+        key={item.year}
+        {...animProps}
+        transition={{ duration: 0.45, ease: "easeOut" }}
+        className="relative rounded-[8px] bg-white p-3 shadow-sm"
+      >
+        <p className="text-[10px] font-black text-[var(--color-accent)]">{item.year}</p>
+        <p className="mt-1 text-sm font-black text-[var(--color-primary)]">{item.title}</p>
+      </motion.div>
+    );
+  };
+
+  // Key to force re-mount animation when variant or animation changes
+  const animationKey = `${variant}-${animation}`;
 
   if (variant === "timeline") {
     return (
       <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
-        <div className="space-y-3 border-l-2 border-[var(--color-accent)]/50 pl-4">
-          {items.map(([year, title]) => (
-            <div key={year} className="relative rounded-[8px] bg-white p-3 shadow-sm">
+        <div key={animationKey} className="space-y-3 border-l-2 border-[var(--color-accent)]/50 pl-4">
+          {items.map((item, index) => (
+            <div key={item.year} className="relative">
               <span className="absolute -left-[23px] top-4 h-3 w-3 rounded-full bg-[var(--color-accent)]" />
-              <p className="text-[10px] font-black text-[var(--color-accent)]">{year}</p>
-              <p className="mt-1 text-sm font-black text-[var(--color-primary)]">{title}</p>
+              {renderStoryItem(item, index)}
             </div>
           ))}
         </div>
@@ -2081,12 +2212,35 @@ function StoryWidgetPreview({ variant = "card", enabled = true }) {
   if (variant === "stacked") {
     return (
       <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
-        <div className="divide-y divide-[var(--color-accent-pale)] rounded-[8px] bg-white shadow-sm">
-          {items.map(([year, title]) => (
-            <div key={year} className="p-3">
-              <p className="text-[10px] font-black text-[var(--color-accent)]">{year}</p>
-              <p className="mt-1 text-sm font-black text-[var(--color-primary)]">{title}</p>
-            </div>
+        <div key={animationKey} className="divide-y divide-[var(--color-accent-pale)] rounded-[8px] bg-white shadow-sm">
+          {items.map((item, index) => renderStoryItem(item, index))}
+        </div>
+      </WidgetPreviewShell>
+    );
+  }
+
+  if (variant === "photo-album") {
+    return (
+      <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
+        <div key={animationKey} className="grid grid-cols-3 gap-2">
+          {items.map((item, index) => (
+            <motion.div
+              key={item.year}
+              {...getAnimationProps(animation, index)}
+              transition={{ duration: 0.45, ease: "easeOut" }}
+              className="group relative aspect-[4/5] overflow-hidden rounded-[8px] bg-white shadow-sm"
+            >
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+              <div className="absolute inset-0 flex items-center justify-center bg-[var(--color-accent-pale)]">
+                <span className="text-2xl font-black text-[var(--color-accent)]/30">📷</span>
+              </div>
+              <p className="absolute bottom-2 left-2 rounded bg-[var(--color-accent)]/90 px-2 py-1 text-xs font-black text-white backdrop-blur-sm">
+                {item.year}
+              </p>
+              <p className="absolute bottom-2 right-2 text-right text-xs font-black text-white [text-shadow:_0_1px_3px_rgba(0,0,0,0.5)]">
+                {item.title}
+              </p>
+            </motion.div>
           ))}
         </div>
       </WidgetPreviewShell>
@@ -2095,13 +2249,8 @@ function StoryWidgetPreview({ variant = "card", enabled = true }) {
 
   return (
     <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
-      <div className="grid grid-cols-3 gap-2">
-        {items.map(([year, title]) => (
-          <div key={year} className="rounded-[8px] bg-white p-3 text-center shadow-sm">
-            <p className="text-[10px] font-black text-[var(--color-accent)]">{year}</p>
-            <p className="mt-1 text-xs font-black text-[var(--color-primary)]">{title}</p>
-          </div>
-        ))}
+      <div key={animationKey} className="grid grid-cols-3 gap-2">
+        {items.map((item, index) => renderStoryItem(item, index))}
       </div>
     </WidgetPreviewShell>
   );
@@ -2172,7 +2321,7 @@ function EventWidgetPreview({ variant = "cards", enabled = true, showMaps = true
   if (variant === "list") {
     return (
       <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
-        {showIcon ? <div className="mx-auto mb-3 h-8 w-8 rounded-full border border-[var(--color-accent)]" /> : null}
+        {showIcon ? <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-[var(--color-accent)] text-[var(--color-accent)] text-lg font-black">♥</div> : null}
         <div className="divide-y divide-[var(--color-accent-pale)] rounded-[8px] bg-white text-center shadow-sm">
           {items.map((item) => (
             <div key={item} className="p-3">{cardContent(item)}</div>
@@ -2185,7 +2334,7 @@ function EventWidgetPreview({ variant = "cards", enabled = true, showMaps = true
   if (variant === "elegant") {
     return (
       <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
-        {showIcon ? <div className="mx-auto mb-3 h-9 w-9 rounded-t-full rounded-b-md border border-[var(--color-accent)] bg-white" /> : null}
+        {showIcon ? <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-t-full rounded-b-md border-2 border-[var(--color-accent)] bg-white text-[var(--color-accent)] text-lg font-black">♥</div> : null}
         <div className="grid grid-cols-2 gap-2">
           {items.map((item) => (
             <div key={item} className="rounded-t-full rounded-b-[8px] border border-[var(--color-accent-pale)] bg-white px-2 pb-3 pt-6 text-center shadow-sm">
@@ -2197,9 +2346,41 @@ function EventWidgetPreview({ variant = "cards", enabled = true, showMaps = true
     );
   }
 
+  if (variant === "minimal") {
+    return (
+      <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
+        {showIcon ? <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-accent)] text-white text-lg font-black">♥</div> : null}
+        <div className="space-y-6 border-b border-[var(--color-accent-pale)] pb-6 text-center last:border-0 last:pb-0">
+          {items.map((item) => (
+            <div key={item} className="flex flex-col items-center">
+              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--color-accent)]">{item}</p>
+              <p className="mt-2 text-sm font-black text-[var(--color-primary)]">12 Jun 2026</p>
+              <p className="mt-1 text-xs text-[var(--color-primary-hover)]">09.00 WIB</p>
+            </div>
+          ))}
+        </div>
+      </WidgetPreviewShell>
+    );
+  }
+
+  if (variant === "corner-bracket") {
+    return (
+      <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
+        {showIcon ? <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center border-2 border-[var(--color-accent)] text-[var(--color-accent)] text-lg font-black">♥</div> : null}
+        <div className="grid grid-cols-2 gap-2">
+          {items.map((item) => (
+            <div key={item} className="relative border border-[var(--color-accent-pale)] bg-white p-3 text-center shadow-sm before:absolute before:top-0 before:left-0 before:h-4 before:w-4 before:border-t-2 before:border-l-2 before:border-[var(--color-accent)] before:content-[''] after:absolute after:bottom-0 after:right-0 after:h-4 after:w-4 after:border-b-2 after:border-r-2 after:border-[var(--color-accent)] after:content-['']">
+              {cardContent(item)}
+            </div>
+          ))}
+        </div>
+      </WidgetPreviewShell>
+    );
+  }
+
   return (
     <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
-      {showIcon ? <div className="mx-auto mb-3 h-8 w-8 rounded-[8px] border border-[var(--color-accent-pale)] bg-white" /> : null}
+      {showIcon ? <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-[8px] border-2 border-[var(--color-accent-pale)] bg-white text-[var(--color-accent)] text-lg font-black">♥</div> : null}
       <div className="grid grid-cols-2 gap-2">
         {items.map((item) => (
           <div key={item} className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3 text-center shadow-sm">
@@ -2302,7 +2483,6 @@ function CoverSectionPreview({ config = {} }) {
   const backgroundColor = config.backgroundColor || "#fbf7ef";
   const useImageBackground = config.backgroundMode === "image";
   const layout = config.layout || "centered";
-  const showGuest = config.guestBlockStyle !== "hidden";
 
   return (
     <WidgetPreviewShell title="Live Preview" label={layout} enabled>
@@ -2334,16 +2514,6 @@ function CoverSectionPreview({ config = {} }) {
             <p className="mt-1 font-serif text-xl font-black leading-none text-[var(--color-primary)]">
               Dimas & Salsa
             </p>
-            {showGuest ? (
-              <div className={`mx-auto mt-3 max-w-[170px] px-3 py-2 ${config.guestBlockStyle === "minimal" ? "border-t border-[var(--color-accent-pale)]" : config.guestBlockStyle === "pill" ? "rounded-full border border-[var(--color-accent-pale)] bg-white/80" : "rounded-[8px] border border-[var(--color-accent-pale)] bg-white/80"}`}>
-                <p className="text-[9px] font-black uppercase tracking-[0.1em] text-[var(--color-accent)]">
-                  Kepada Yth.
-                </p>
-                <p className="mt-1 text-xs font-black text-[var(--color-primary)]">
-                  Tamu Undangan
-                </p>
-              </div>
-            ) : null}
           </div>
         </div>
       </div>
@@ -2538,6 +2708,7 @@ function TemplateAdminPage() {
   const [selectedTemplatePreset, setSelectedTemplatePreset] = useState(templateStylePresets[0].id);
   const [editorStep, setEditorStep] = useState(1);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
+  const [previewEntranceKey, setPreviewEntranceKey] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -3054,8 +3225,19 @@ function TemplateAdminPage() {
       return;
     }
 
+    // Update all ornaments in the section with the preset's entrance animation
+    const sectionOrnaments = parsedDesignConfig.ornaments?.[activeDesignSection] || [];
+    const updatedOrnaments = sectionOrnaments.map((ornament) => ({
+      ...ornament,
+      entrance: preset.entrancePreset,
+    }));
+
     writeDesignConfig({
       ...parsedDesignConfig,
+      ornaments: {
+        ...(parsedDesignConfig.ornaments || {}),
+        [activeDesignSection]: updatedOrnaments,
+      },
       animations: {
         ...(parsedDesignConfig.animations || {}),
         sections: {
@@ -4334,24 +4516,6 @@ function TemplateAdminPage() {
                       </label>
                       <label className="block">
                         <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                          Guest Block
-                        </span>
-                        <select
-                          value={coverSectionConfig.guestBlockStyle}
-                          onChange={(event) =>
-                            updateTemplateSectionConfig("home", "guestBlockStyle", event.target.value)
-                          }
-                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-                        >
-                          {guestBlockStyleOptions.map((style) => (
-                            <option key={style} value={style}>
-                              {style}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <label className="block">
-                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
                           Background
                         </span>
                         <select
@@ -4759,6 +4923,7 @@ function TemplateAdminPage() {
                     </div>
                     <StoryWidgetPreview
                       variant={storyWidgetConfig.variant}
+                      animation={storyWidgetConfig.animation}
                       enabled={Boolean(storyWidgetConfig.enabled)}
                     />
                   </div>
@@ -5080,9 +5245,17 @@ function TemplateAdminPage() {
                         <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-4 xl:sticky xl:top-24">
                           <div className="flex items-center justify-between gap-3">
                             <div>
-                              <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-                                Canvas Preview
-                              </p>
+                              <div className="flex items-center gap-3">
+                                <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
+                                  Canvas Preview
+                                </p>
+                                <button
+                                  onClick={() => setPreviewEntranceKey(k => k + 1)}
+                                  className="rounded-lg bg-[var(--color-primary)] px-3 py-1 text-xs font-black text-white shadow hover:bg-[var(--color-accent)]"
+                                >
+                                  ▶ Replay
+                                </button>
+                              </div>
                               <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">
                                 {activeDesignSection} section, {activeOrnaments.length} ornament
                               </p>
@@ -5091,13 +5264,16 @@ function TemplateAdminPage() {
                               430px
                             </span>
                           </div>
-                          <div className="mt-4 flex justify-center">
+                            <div className="mt-4 flex justify-center">
                             <div className="relative aspect-[9/16] w-full max-w-[360px] overflow-hidden rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] shadow-inner">
                               <OrnamentSectionCanvasPreview
                                 section={activeDesignSection}
                                 styleConfig={activeSectionStyleConfig}
                               />
-                              <OrnamentLayer ornaments={previewOrnaments} />
+                              <OrnamentLayer 
+                                key={`ornament-preview-${activeDesignSection}-${previewEntranceKey}-${previewOrnaments.length}`}
+                                ornaments={previewOrnaments} 
+                              />
                               <div className="absolute inset-0 border border-dashed border-[var(--color-accent)]/50" />
                               <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 rounded-[8px] bg-white/78 p-3 text-center text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
                                 {activeDesignSection} Section
@@ -5328,6 +5504,22 @@ function TemplateAdminPage() {
                           <MiniInput label="Opacity" type="number" step="0.05" value={selectedOrnament.opacity ?? 1} onChange={(value) => updateOrnament("opacity", value)} />
                           <MiniInput label="Z Index" type="number" value={selectedOrnament.zIndex || 0} onChange={(value) => updateOrnament("zIndex", value)} />
                           <MiniInput label="Entrance Duration" type="number" step="0.1" value={selectedOrnament.entranceDuration ?? 0.8} onChange={(value) => updateOrnament("entranceDuration", value)} />
+                          <label className="block">
+                            <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                              Sequence Group
+                            </span>
+                            <select
+                              value={selectedOrnament.sequenceGroup || "none"}
+                              onChange={(event) => updateOrnament("sequenceGroup", event.target.value)}
+                              className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                            >
+                              {ornamentSequenceGroupOptions.map((group) => (
+                                <option key={group} value={group}>
+                                  {group === "none" ? "None (manual)" : group}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
                           <MiniInput label="Entrance Delay" type="number" step="0.1" value={selectedOrnament.entranceDelay ?? 0} onChange={(value) => updateOrnament("entranceDelay", value)} />
                           <MiniInput label="Duration" type="number" step="0.5" value={selectedOrnament.duration ?? 6} onChange={(value) => updateOrnament("duration", value)} />
                           <MiniInput label="Delay" type="number" step="0.25" value={selectedOrnament.delay ?? 0} onChange={(value) => updateOrnament("delay", value)} />

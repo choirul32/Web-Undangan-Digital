@@ -33,9 +33,41 @@ function animationProps(animation, index) {
 
   if (animation === "stagger") {
     return {
-      initial: { opacity: 0, y: 20 },
-      whileInView: { opacity: 1, y: 0 },
-      transition: { delay: index * 0.08, duration: 0.45, ease: "easeOut" },
+      initial: { opacity: 0, x: -30 },
+      whileInView: { opacity: 1, x: 0 },
+      transition: { delay: index * 0.15, duration: 0.5, ease: "easeOut" },
+    };
+  }
+
+  if (animation === "heartbeat") {
+    return {
+      initial: { opacity: 0, scale: 0.85 },
+      whileInView: { opacity: 1, scale: 1 },
+      transition: { delay: index * 0.1, duration: 0.4, ease: "easeOut" },
+    };
+  }
+
+  if (animation === "blur-to-clear") {
+    return {
+      initial: { opacity: 0, filter: "blur(12px)" },
+      whileInView: { opacity: 1, filter: "blur(0px)" },
+      transition: { delay: index * 0.08, duration: 0.6, ease: "easeOut" },
+    };
+  }
+
+  if (animation === "scale-bounce") {
+    return {
+      initial: { opacity: 0, scale: 0.5 },
+      whileInView: { opacity: 1, scale: 1 },
+      transition: { delay: index * 0.1, duration: 0.7, ease: [0.34, 1.56, 0.64, 1] },
+    };
+  }
+
+  if (animation === "flip") {
+    return {
+      initial: { opacity: 0, rotateY: 90 },
+      whileInView: { opacity: 1, rotateY: 0 },
+      transition: { delay: index * 0.1, duration: 0.6, ease: "easeOut" },
     };
   }
 
