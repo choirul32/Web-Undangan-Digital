@@ -16,10 +16,11 @@ import CountdownTimer, {
   getCountdownWidgetConfig,
 } from "./components/CountdownTimer";
 import EventWidget, { getEventWidgetConfig } from "./components/EventWidget";
-import { getGalleryWidgetConfig } from "./components/GalleryWidget";
+import GalleryWidget, { getGalleryWidgetConfig } from "./components/GalleryWidget";
 import OrnamentLayer from "./components/OrnamentLayer";
 import RSVPForm from "./components/RSVPForm";
 import StoryWidget, { getStoryWidgetConfig } from "./components/StoryWidget";
+import MusicPlayer, { getMusicWidgetConfig } from "./components/MusicPlayer";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -58,6 +59,23 @@ function spacingClass(preset = "normal") {
   return "px-6 py-20 sm:px-8 lg:px-10";
 }
 
+// Font family mapping for heading and body fonts
+const FONT_FAMILIES = {
+  "playfair": "'Playfair Display', serif",
+  "cormorant": "'Cormorant Garamond', serif",
+  "great-vibes": "'Great Vibes', cursive",
+  "dancing": "'Dancing Script', cursive",
+  "cinzel": "'Cinzel', serif",
+  "josefin": "'Josefin Sans', sans-serif",
+  "lora": "'Lora', serif",
+  "alex-brush": "'Alex Brush', cursive",
+  "inter": "'Inter', sans-serif",
+  "poppins": "'Poppins', sans-serif",
+  "nunito": "'Nunito', sans-serif",
+  "source-serif": "'Source Serif 4', serif",
+  "dm-sans": "'DM Sans', sans-serif",
+};
+
 function fontClass(preset = "default") {
   if (preset === "serif") {
     return "font-serif";
@@ -75,13 +93,20 @@ function fontClass(preset = "default") {
 }
 
 function cssVars(styleConfig = {}) {
+  const headingFamily = FONT_FAMILIES[styleConfig.headingFont] || undefined;
+  const bodyFamily = FONT_FAMILIES[styleConfig.bodyFont] || undefined;
+  const cardRadius = styleConfig.cardStyle === "sharp" ? "0px" : styleConfig.cardStyle === "pill" ? "24px" : "8px";
+
   return {
     backgroundColor: styleConfig.backgroundColor || undefined,
     color: styleConfig.textColor || undefined,
+    fontFamily: bodyFamily || undefined,
     "--color-primary": styleConfig.textColor || undefined,
     "--color-heading": styleConfig.textColor || undefined,
     "--color-text": styleConfig.textColor || undefined,
     "--color-accent": styleConfig.accentColor || undefined,
+    "--font-heading": headingFamily || "inherit",
+    "--card-radius": cardRadius,
   };
 }
 
@@ -97,7 +122,7 @@ function SectionTitle({ eyebrow, title, desc }) {
       <p className="text-sm font-black uppercase tracking-[0.18em] text-[var(--color-accent)]">
         {eyebrow}
       </p>
-      <h2 className="mt-3 text-4xl font-black leading-tight text-[var(--color-primary)] sm:text-5xl">
+      <h2 className="mt-3 text-4xl font-black leading-tight text-[var(--color-primary)] sm:text-5xl" style={{ fontFamily: "var(--font-heading)" }}>
         {title}
       </h2>
       {desc ? (
@@ -117,6 +142,9 @@ function SectionFrame({
   children,
 }) {
   const styleConfig = getSectionStyleConfig(designConfig, section);
+  const musicWidgetConfig = getMusicWidgetConfig(designConfig);
+  const pulseSync = musicWidgetConfig.pulseSync || false;
+  const pulseIntensity = musicWidgetConfig.pulseIntensity || "subtle";
 
   return (
     <motion.section
@@ -135,7 +163,11 @@ function SectionFrame({
           className="absolute inset-0 z-0 h-full w-full object-cover opacity-[0.42]"
         />
       ) : null}
-      <OrnamentLayer ornaments={getSectionOrnaments(designConfig, section)} />
+      <OrnamentLayer
+        ornaments={getSectionOrnaments(designConfig, section)}
+        pulseSync={pulseSync}
+        pulseIntensity={pulseIntensity}
+      />
       {children}
     </motion.section>
   );
@@ -432,6 +464,30 @@ function dummyGallerySizeClass(variant, index) {
   return sizeClasses[index % sizeClasses.length];
 }
 
+function galleryClasses(variant = "grid") {
+  if (variant === "carousel") {
+    return {
+      container: "mt-10 flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide",
+      item: "aspect-[3/4] w-60 shrink-0 snap-center overflow-hidden rounded-[8px] shadow-lg shadow-[var(--color-primary)]/8",
+      image: "h-full w-full object-cover transition-transform duration-300 hover:scale-105",
+    };
+  }
+
+  if (variant === "masonry") {
+    return {
+      container: "mt-10 columns-2 gap-3 space-y-3 md:columns-3",
+      item: "mb-3 w-full break-inside-avoid overflow-hidden rounded-[8px] shadow-lg shadow-[var(--color-primary)]/8",
+      image: "h-full w-full object-cover transition-transform duration-300 hover:scale-105",
+    };
+  }
+
+  return {
+    container: "mt-10 grid grid-cols-2 gap-3 lg:grid-cols-3",
+    item: "aspect-[4/5] overflow-hidden rounded-[8px] shadow-lg shadow-[var(--color-primary)]/8",
+    image: "h-full w-full object-cover transition-transform duration-300 hover:scale-105",
+  };
+}
+
 function normalizeEventExamples(events = []) {
   if (events.length !== 1) {
     return events;
@@ -563,7 +619,7 @@ function OpeningRevealOverlay({
         <p className="text-sm font-black uppercase tracking-[0.24em] text-[var(--color-accent)]">
           The Wedding Of
         </p>
-        <h1 className="mt-5 font-serif text-5xl font-black leading-none text-[var(--color-heading)] sm:text-7xl">
+        <h1 className="mt-5 font-serif text-5xl font-black leading-none text-[var(--color-heading)] sm:text-7xl" style={{ fontFamily: "var(--font-heading)" }}>
           {couple.groomNickname} & {couple.brideNickname}
         </h1>
         <p className="mx-auto mt-6 max-w-2xl text-lg font-semibold leading-8 text-[var(--color-text)]">
@@ -587,6 +643,119 @@ function OpeningRevealOverlay({
         </button>
       </motion.div>
     </motion.div>
+  );
+}
+
+function CoverDateDisplay({ date, variant = "separator-dot" }) {
+  const d = new Date(date);
+  const day = d.getDate();
+  const monthShort = d.toLocaleDateString("id-ID", { month: "short" });
+  const monthLong = d.toLocaleDateString("id-ID", { month: "long" });
+  const year = d.getFullYear();
+  const dayName = d.toLocaleDateString("id-ID", { weekday: "long" });
+  const dayNameShort = d.toLocaleDateString("id-ID", { weekday: "short" });
+
+  if (variant === "plain") {
+    return (
+      <p className="mt-5 text-lg font-black tracking-[0.08em] text-[var(--color-primary)]">
+        {day} {monthLong} {year}
+      </p>
+    );
+  }
+
+  if (variant === "separator-dot") {
+    return (
+      <p className="mt-5 text-lg font-black tracking-[0.12em] text-[var(--color-primary)]">
+        {day} <span className="text-[var(--color-accent)]">·</span> {monthLong} <span className="text-[var(--color-accent)]">·</span> {year}
+      </p>
+    );
+  }
+
+  if (variant === "separator-line") {
+    return (
+      <div className="mx-auto mt-6 flex items-center justify-center gap-4">
+        <span className="h-px w-10 bg-[var(--color-accent)]" />
+        <p className="text-lg font-black tracking-[0.1em] text-[var(--color-primary)]">
+          {day} {monthLong} {year}
+        </p>
+        <span className="h-px w-10 bg-[var(--color-accent)]" />
+      </div>
+    );
+  }
+
+  if (variant === "stacked") {
+    return (
+      <div className="mx-auto mt-6 text-center">
+        <p className="text-5xl font-black text-[var(--color-primary)]">{day}</p>
+        <p className="mt-1 text-sm font-black uppercase tracking-[0.2em] text-[var(--color-accent)]">{monthLong}</p>
+        <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">{year}</p>
+      </div>
+    );
+  }
+
+  if (variant === "badge") {
+    return (
+      <div className="mx-auto mt-6 inline-flex rounded-full border border-[var(--color-accent-pale)] bg-[var(--color-surface)]/80 px-6 py-3 shadow-lg shadow-[var(--color-primary)]/8 backdrop-blur-sm">
+        <p className="text-sm font-black tracking-[0.1em] text-[var(--color-primary)]">
+          {day} {monthLong} {year}
+        </p>
+      </div>
+    );
+  }
+
+  if (variant === "columns") {
+    return (
+      <div className="mx-auto mt-6 flex items-center justify-center gap-0">
+        <div className="border-r border-[var(--color-accent-pale)] px-5 text-center">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--color-accent)]">{monthShort}</p>
+        </div>
+        <div className="border-r border-[var(--color-accent-pale)] px-5 text-center">
+          <p className="text-3xl font-black text-[var(--color-primary)]">{day}</p>
+        </div>
+        <div className="px-5 text-center">
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-[var(--color-accent)]">{year}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === "full-day") {
+    return (
+      <div className="mx-auto mt-6 text-center">
+        <p className="text-sm font-black uppercase tracking-[0.2em] text-[var(--color-accent)]">{dayName}</p>
+        <div className="mt-2 flex items-center justify-center gap-3">
+          <span className="h-px w-8 bg-[var(--color-accent-pale)]" />
+          <p className="text-lg font-black text-[var(--color-primary)]">{day} {monthLong} {year}</p>
+          <span className="h-px w-8 bg-[var(--color-accent-pale)]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === "block") {
+    return (
+      <div className="mx-auto mt-6 grid max-w-xs grid-cols-3 divide-x divide-[var(--color-accent-pale)] rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)]/80 py-4 shadow-lg shadow-[var(--color-primary)]/8 backdrop-blur-sm">
+        <div className="text-center">
+          <p className="text-2xl font-black text-[var(--color-primary)]">{day}</p>
+          <p className="mt-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-text)]">Tanggal</p>
+        </div>
+        <div className="text-center">
+          <p className="text-2xl font-black text-[var(--color-primary)]">{monthShort}</p>
+          <p className="mt-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-text)]">Bulan</p>
+        </div>
+        <div className="text-center">
+          <p className="text-2xl font-black text-[var(--color-primary)]">{year}</p>
+          <p className="mt-1 text-[10px] font-black uppercase tracking-[0.14em] text-[var(--color-text)]">Tahun</p>
+        </div>
+      </div>
+    );
+  }
+
+  // fallback: separator-dot
+  return (
+    <p className="mt-5 text-lg font-black tracking-[0.12em] text-[var(--color-primary)]">
+      {day} <span className="text-[var(--color-accent)]">·</span> {monthLong} <span className="text-[var(--color-accent)]">·</span> {year}
+    </p>
   );
 }
 
@@ -637,12 +806,14 @@ export default function UniversalTemplate({
 }) {
   const musicRef = useRef(null);
   const [isRevealOpen, setIsRevealOpen] = useState(false);
+  const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const invitation = { ...sampleInvitation, ...data };
   const couple = invitation.couple || sampleInvitation.couple;
   const rawEvents = invitation.events?.length ? invitation.events : sampleInvitation.events;
   const events = normalizeEventExamples(rawEvents);
   const story = invitation.story?.length ? invitation.story : sampleInvitation.story;
   const designConfig = getDesignConfig(invitation.templateId, invitation.designConfig);
+  const globalStyleConfig = getSectionStyleConfig(designConfig, "global");
   const coverConfig = getCoverSectionConfig(designConfig);
   const openingRevealConfig = getOpeningRevealConfig(designConfig);
   const coupleConfig = getCoupleSectionConfig(designConfig);
@@ -650,6 +821,7 @@ export default function UniversalTemplate({
   const eventConfig = getEventWidgetConfig(designConfig);
   const galleryConfig = getGalleryWidgetConfig(designConfig);
   const storyConfig = getStoryWidgetConfig(designConfig);
+  const musicConfig = getMusicWidgetConfig(designConfig);
   const activeCountdownClasses = countdownClasses(countdownConfig.variant);
   const activeGalleryClasses = dummyGalleryClasses(galleryConfig.variant);
   const coverBackgroundColor = coverConfig.backgroundColor || "#fbf7ef";
@@ -681,6 +853,30 @@ export default function UniversalTemplate({
     }
   };
 
+  // Auto-play music on first scroll when Opening Reveal is not active
+  useEffect(() => {
+    if (openingRevealConfig.enabled) return;
+    if (!musicConfig.enabled && !invitation.features?.music) return;
+
+    let hasPlayed = false;
+
+    const handleInteraction = () => {
+      if (hasPlayed) return;
+      hasPlayed = true;
+      startMusic();
+      window.removeEventListener("scroll", handleInteraction);
+      window.removeEventListener("touchstart", handleInteraction);
+    };
+
+    window.addEventListener("scroll", handleInteraction, { once: true, passive: true });
+    window.addEventListener("touchstart", handleInteraction, { once: true, passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleInteraction);
+      window.removeEventListener("touchstart", handleInteraction);
+    };
+  }, [openingRevealConfig.enabled, musicConfig.enabled, invitation.features?.music]);
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const rawSection = params.get("focusSection");
@@ -689,11 +885,7 @@ export default function UniversalTemplate({
       return;
     }
 
-    const normalizedSection = rawSection === "acara"
-      ? "events"
-      : rawSection === "countdown"
-        ? "home"
-        : rawSection;
+    const normalizedSection = rawSection;
     const targetElement = document.querySelector(
       `[data-preview-section="${normalizedSection}"]`,
     );
@@ -710,6 +902,7 @@ export default function UniversalTemplate({
   return (
     <main
       className="min-h-screen bg-[var(--color-bg)] text-[var(--color-primary)]"
+      style={cssVars(globalStyleConfig)}
     >
       <AnimatePresence>
         {!isRevealOpen ? (
@@ -736,7 +929,9 @@ export default function UniversalTemplate({
           />
         ) : null}
         <div className="absolute inset-0 -z-10 bg-[var(--color-bg)]/78" />
-        <OrnamentLayer ornaments={getSectionOrnaments(designConfig, "home")} />
+        <OrnamentLayer
+          ornaments={getSectionOrnaments(designConfig, "home")}
+        />
         <motion.div
           {...coverMotion(coverConfig.openingAnimation)}
           transition={{ duration: 0.72, ease: "easeOut" }}
@@ -755,42 +950,24 @@ export default function UniversalTemplate({
             <p className="text-sm font-black uppercase tracking-[0.24em] text-[var(--color-accent)]">
               The Wedding Of
             </p>
-            <h1 className="mt-5 font-serif text-5xl font-black leading-none text-[var(--color-heading)] sm:text-7xl">
+            <h1 className="mt-5 font-serif text-5xl font-black leading-none text-[var(--color-heading)] sm:text-7xl" style={{ fontFamily: "var(--font-heading)" }}>
               {couple.groomNickname} & {couple.brideNickname}
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg font-semibold leading-8 text-[var(--color-text)]">
+            {events[0]?.date ? (
+              <CoverDateDisplay date={events[0].date} variant={coverConfig.dateVariant || "separator-dot"} />
+            ) : null}
+            <p className="mx-auto mt-5 max-w-2xl text-lg font-semibold leading-8 text-[var(--color-text)]">
               {couple.quote}
             </p>
-            {guestName && coverConfig.guestBlockStyle !== "hidden" ? (
+            {coverConfig.guestBlockStyle !== "hidden" && !openingRevealConfig.enabled ? (
               <div className={guestBlockClass(coverConfig.guestBlockStyle)}>
                 <p className="text-sm font-black uppercase tracking-[0.16em] text-[var(--color-accent)]">
                   Kepada Yth.
                 </p>
                 <p className="mt-2 text-2xl font-black text-[var(--color-primary)]">
-                  {guestName}
+                  {guestName || "Tamu Undangan"}
                 </p>
               </div>
-            ) : null}
-            {countdownConfig.enabled ? (
-              <div className="mx-auto mt-9 max-w-xl">
-                <CountdownTimer
-                  event={getCountdownTargetEvent(events, countdownConfig)}
-                  completeText={countdownConfig.completeText}
-                  containerClassName={activeCountdownClasses.container}
-                  itemClassName={activeCountdownClasses.item}
-                  valueClassName={activeCountdownClasses.value}
-                  labelClassName={activeCountdownClasses.label}
-                />
-              </div>
-            ) : null}
-            {invitation.features?.music && invitation.musicUrl ? (
-              <button
-                type="button"
-                onClick={startMusic}
-                className="mt-8 rounded-2xl bg-[var(--color-primary)] px-7 py-4 text-base font-black text-white"
-              >
-                Putar Musik
-              </button>
             ) : null}
           </div>
         </motion.div>
@@ -832,12 +1009,30 @@ export default function UniversalTemplate({
         </div>
       </SectionFrame>
 
-      <SectionFrame section="events" designConfig={designConfig} baseClassName="bg-[var(--color-bg)]">
+      <SectionFrame section="acara" designConfig={designConfig} baseClassName="bg-[var(--color-bg)]">
         <div className="relative z-10 mx-auto max-w-6xl">
           <SectionTitle eyebrow="Acara" title="Detail hari bahagia" />
           <EventWidget events={events} config={eventConfig} classes={eventClasses(eventConfig.variant)} />
         </div>
       </SectionFrame>
+
+      {countdownConfig.enabled ? (
+        <SectionFrame section="countdown" designConfig={designConfig} baseClassName="bg-[var(--color-surface)]">
+          <div className="relative z-10 mx-auto max-w-3xl text-center">
+            <SectionTitle eyebrow="Hitung Mundur" title="Menuju hari bahagia" />
+            <div className="mx-auto mt-10 max-w-xl">
+              <CountdownTimer
+                event={getCountdownTargetEvent(events, countdownConfig)}
+                completeText={countdownConfig.completeText}
+                containerClassName={activeCountdownClasses.container}
+                itemClassName={activeCountdownClasses.item}
+                valueClassName={activeCountdownClasses.value}
+                labelClassName={activeCountdownClasses.label}
+              />
+            </div>
+          </div>
+        </SectionFrame>
+      ) : null}
 
       <SectionFrame section="story" designConfig={designConfig} baseClassName="bg-[var(--color-section-soft)]">
         <div className="relative z-10 mx-auto max-w-6xl">
@@ -849,16 +1044,12 @@ export default function UniversalTemplate({
       <SectionFrame section="gallery" designConfig={designConfig} baseClassName="bg-[var(--color-bg)]">
         <div className="relative z-10 mx-auto max-w-6xl">
           <SectionTitle eyebrow="Gallery" title="Momen bahagia" />
-          <div className={activeGalleryClasses.container}>
-            {dummyGalleryCards.map((label, index) => (
-              <div
-                key={label}
-                className={`${activeGalleryClasses.item} ${dummyGallerySizeClass(galleryConfig.variant, index)}`}
-              >
-                <p className="text-lg font-black text-[var(--color-primary)]">{label}</p>
-              </div>
-            ))}
-          </div>
+          <GalleryWidget
+            images={invitation.gallery || []}
+            coverImage={invitation.coverImage}
+            config={galleryConfig}
+            classes={galleryClasses(galleryConfig.variant)}
+          />
         </div>
       </SectionFrame>
 
@@ -889,10 +1080,44 @@ export default function UniversalTemplate({
         </SectionFrame>
       ) : null}
 
-      {invitation.features?.music && invitation.musicUrl ? (
-        <audio ref={musicRef} className="hidden">
-          <source src={invitation.musicUrl} />
-        </audio>
+      <SectionFrame section="doa-ucapan" designConfig={designConfig} baseClassName="bg-[var(--color-section-soft)]">
+        <div className="relative z-10 mx-auto max-w-4xl text-center">
+          <SectionTitle eyebrow="Doa & Ucapan" title="Kirimkan doa terbaik" />
+          <div className="mt-10 grid gap-5 md:grid-cols-2">
+            {[
+              { name: "Bapak Andi", message: "Selamat menempuh hidup baru, semoga menjadi keluarga yang sakinah mawaddah warahmah. Aamiin." },
+              { name: "Ibu Sari", message: "Barakallahu lakuma wa baraka 'alaikuma wa jama'a bainakuma fi khair." },
+              { name: "Rizky & Hana", message: "Semoga pernikahan ini menjadi awal kebahagiaan yang abadi. Selamat ya!" },
+              { name: "Keluarga Besar", message: "Doa kami selalu menyertai langkah kalian berdua. Semoga diberkahi selalu." },
+            ].map((wish, index) => (
+              <motion.div
+                key={`wish-${index}`}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, amount: 0.25 }}
+                variants={fadeUp}
+                className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)] p-6 text-left shadow-lg shadow-[var(--color-primary)]/8"
+              >
+                <p className="text-base font-semibold leading-7 text-[var(--color-text)]">
+                  &ldquo;{wish.message}&rdquo;
+                </p>
+                <p className="mt-4 text-sm font-black text-[var(--color-primary)]">
+                  — {wish.name}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </SectionFrame>
+
+      {invitation.features?.music || musicConfig.enabled ? (
+        <MusicPlayer
+          musicUrl={invitation.musicUrl || ""}
+          musicTitle={invitation.musicTitle || "Wedding Music"}
+          audioRef={musicRef}
+          config={musicConfig}
+          onPlayStateChange={setIsMusicPlaying}
+        />
       ) : null}
     </main>
   );

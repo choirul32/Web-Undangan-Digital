@@ -48,9 +48,12 @@ export const sampleInvitation = {
     },
   ],
   gallery: [
-    "/assets/nusantara-jawa.svg",
-    "/assets/nusantara-songket.svg",
-    "/assets/nusantara-botanical.svg",
+    "/assets/CoverPasangan.png",
+    "/assets/catin_wanita.jpg",
+    "/assets/catin_pria.jpg",
+    "/assets/backgrounds/soft-watercolor-cream.jpg",
+    "/assets/backgrounds/paper-fan-blush.jpg",
+    "/assets/backgrounds/tropical-frame-soft.jpg",
   ],
   bankAccounts: [
     {
@@ -70,6 +73,8 @@ export const sampleInvitation = {
     music: true,
     guestName: true,
   },
+  musicUrl: "/assets/musics/Muara reff.mp3",
+  musicTitle: "Muara - Adera",
   guests: [
     {
       name: "Bapak Andi",

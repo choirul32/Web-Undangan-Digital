@@ -97,6 +97,7 @@ export const defaultCoverSectionConfig = {
   backgroundColor: "",
   openingAnimation: "fade-up",
   guestBlockStyle: "card",
+  dateVariant: "separator-dot",
 };
 
 export const defaultOpeningRevealConfig = {
@@ -207,3 +208,4 @@ export function getSectionStyleConfig(designConfig = {}, sectionName = "") {
     ...localStyle,
   };
 }
+

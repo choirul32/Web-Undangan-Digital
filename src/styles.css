@@ -136,3 +136,56 @@ body {
     transparent 14px
   );
 }
+
+
+/* ===== Music Pulse Sync ===== */
+/* When music is playing and pulseSync is enabled, ornaments with .ornament-pulse-sync get a subtle pulse */
+@keyframes music-pulse-subtle {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.02); opacity: 0.92; }
+}
+
+@keyframes music-pulse-medium {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.04); opacity: 0.88; }
+}
+
+@keyframes music-pulse-strong {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.06); opacity: 0.82; }
+}
+
+html.music-pulse-active .ornament-pulse-sync {
+  animation: music-pulse-subtle 1.8s ease-in-out infinite;
+}
+
+html.music-pulse-active .ornament-pulse-sync[data-pulse="medium"] {
+  animation: music-pulse-medium 1.5s ease-in-out infinite;
+}
+
+html.music-pulse-active .ornament-pulse-sync[data-pulse="strong"] {
+  animation: music-pulse-strong 1.2s ease-in-out infinite;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html.music-pulse-active .ornament-pulse-sync {
+    animation: none;
+  }
+}
+
+
+/* ===== Custom Font Variables ===== */
+/* Applied selectively via inline styles in components */
+
+
+/* ===== Card Style (border-radius via custom property) ===== */
+:root {
+  --card-radius: 8px;
+}
+
+/* Override Tailwind rounded-[8px] to use the custom property */
+[style*="--card-radius"] .rounded-\[8px\],
+[style*="--card-radius"] [class*="rounded-[8px]"] {
+  border-radius: var(--card-radius) !important;
+}
