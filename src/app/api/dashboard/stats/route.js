@@ -50,6 +50,11 @@ export async function GET() {
         published,
         revision,
         guests: sampleInvitation.guests.length,
+        activationRate: 100,
+        publishConversion: published ? 100 : 0,
+        rsvpConversion: sampleInvitation.guests.length
+          ? Math.round((sampleInvitation.rsvps.length / sampleInvitation.guests.length) * 100)
+          : 0,
       },
     });
   }
@@ -114,6 +119,9 @@ export async function GET() {
         waitingPayment,
         inProgress,
         review,
+        activationRate: invitations ? Math.round((activeThisMonth / invitations) * 100) : 0,
+        publishConversion: invitations ? Math.round((published / invitations) * 100) : 0,
+        rsvpConversion: guests ? Math.round((rsvps / guests) * 100) : 0,
       },
     });
   } catch (error) {

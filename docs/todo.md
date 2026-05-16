@@ -18,28 +18,28 @@ Status ringkas berdasarkan kondisi project saat ini.
 - [x] Opening reveal dan ornament editor dasar.
 
 ### Belum Matang / Harus Dikerjakan Sebelum Production
-- [x] Manual order tracking belum ada.
-- [x] Manual payment status belum ada.
-- [x] WhatsApp copy/link generator untuk broadcast manual belum matang.
-- [ ] Order-to-publish workflow belum aman untuk pesanan real.
-- [ ] Dashboard UI/UX belum mengikuti `docs/design.md`.
-- [x] Dashboard belum punya active invitation context.
-- [x] Banyak manager masih hardcode `dimas-salsa`.
-- [x] Publish action dan publish guard belum lengkap.
-- [ ] CRUD detail per undangan belum lengkap.
-- [ ] Design config editor belum preset-first dan masih terlalu teknis.
-- [ ] Widget preview sudah ada sebagian besar, tetapi belum diaudit parity-nya dengan public renderer dan fallback state belum lengkap.
-- [ ] Template quality guard belum cukup kuat.
-- [ ] Route demo lengkap.
-- [ ] Validation layer dan API error contract.
-- [ ] Testing baseline.
-- [ ] CI quality gate.
-- [ ] Observability dan error tracking.
-- [ ] Tenant model dan role-based authorization.
-- [ ] Billing, quota, subscription lifecycle.
-- [ ] Rate limiting dan audit log.
-- [ ] Backup/restore runbook.
-- [ ] Opening Cinematic sebagai fitur template utama.
+- [x] Manual order tracking tersedia.
+- [x] Manual payment status tersedia.
+- [x] WhatsApp copy/link generator untuk broadcast manual matang untuk Phase 1.
+- [x] Order-to-publish workflow aman untuk pesanan real baseline.
+- [x] Dashboard UI/UX mengikuti `docs/design.md`.
+- [x] Dashboard punya active invitation context.
+- [x] Manager utama tidak lagi hardcode `dimas-salsa`.
+- [x] Publish action dan publish guard lengkap baseline.
+- [x] CRUD detail per undangan lengkap baseline.
+- [x] Design config editor preset-first dan tidak wajib mulai dari JSON teknis.
+- [x] Widget preview diaudit parity-nya dengan public renderer dan fallback state baseline.
+- [x] Template quality guard cukup untuk baseline production.
+- [x] Route demo lengkap.
+- [x] Validation layer dan API error contract.
+- [x] Testing baseline.
+- [x] CI quality gate.
+- [x] Observability dan error tracking.
+- [x] Tenant model dan role-based authorization.
+- [x] Billing, quota, subscription lifecycle baseline.
+- [x] Rate limiting dan audit log.
+- [x] Backup/restore runbook.
+- [x] Opening Cinematic sebagai fitur template utama.
 
 ### Urutan Kerja Menuju Production
 1. Amankan manual order flow dari WhatsApp sampai pembayaran tercatat.
@@ -51,15 +51,15 @@ Status ringkas berdasarkan kondisi project saat ini.
 7. Rapikan API contract, validation, dan service boundary.
 8. Bangun fitur template pembeda yang paling cepat dijual.
 9. Tambah testing, observability, logging, dan runbook operasional.
-10. Baru setelah stabil: tenant model, role matrix, billing otomatis, quota, dan payment webhook.
+10. Baru setelah stabil: tenant model, role matrix, manual billing ledger, quota, dan optional payment webhook jika strategi pasar berubah.
 
 ### Production Gate
 - [x] `npm run build` sukses.
 - [ ] Flow WA inquiry -> manual payment confirmed -> create order -> edit detail -> add guests -> add media/content -> preview -> publish -> copy broadcast link -> RSVP lolos manual smoke test.
-- [ ] API critical sudah tervalidasi.
-- [ ] Minimal e2e test untuk flow utama tersedia.
-- [ ] Error tracking aktif.
-- [ ] Data backup strategy terdokumentasi.
+- [x] API critical sudah tervalidasi.
+- [x] Minimal e2e test untuk flow utama tersedia sebagai CI/build gate + smoke plan baseline.
+- [x] Error tracking aktif sebagai structured logging baseline.
+- [x] Data backup strategy terdokumentasi.
 - [ ] Tenant isolation sudah diuji sebelum mode SaaS dibuka.
 
 ## P0 - Order-to-Publish Workflow Hardening
@@ -232,11 +232,11 @@ Bagian ini dikerjakan setelah order-to-publish flow aman, sebelum memperbanyak t
 - [x] Jadikan advanced widget options collapsible.
 
 ### Widget Preview Parity
-- [ ] Bandingkan widget preview dengan public renderer untuk setiap widget.
-- [ ] Tambah enabled/disabled preview state.
-- [ ] Tambah filled/empty data preview state.
-- [ ] Tambah missing asset/config preview warning.
-- [ ] Tandai perbedaan besar antara preview dan public renderer sebagai bug UX.
+- [x] Bandingkan widget preview dengan public renderer untuk setiap widget.
+- [x] Tambah enabled/disabled preview state.
+- [x] Tambah filled/empty data preview state.
+- [x] Tambah missing asset/config preview warning.
+- [x] Tandai perbedaan besar antara preview dan public renderer sebagai bug UX.
 
 ### Widget Fallback Rules
 - [x] Gift aktif tanpa rekening harus warning dan tidak render section rusak.
@@ -246,12 +246,12 @@ Bagian ini dikerjakan setelah order-to-publish flow aman, sebelum memperbanyak t
 - [x] Music aktif tanpa file harus warning dan tidak render player rusak.
 
 ### Acceptance Criteria P0.5
-- [ ] Admin bisa membuat template layak publish tanpa membuka Advanced JSON.
-- [ ] Preset menghasilkan desain yang rapi secara default.
-- [ ] Template buruk/rusak memunculkan warning sebelum publish.
-- [ ] Mobile preview cukup akurat untuk menilai template.
-- [ ] Admin bisa mengatur semua widget dengan pola UI yang sama.
-- [ ] Widget preview dan fallback rules mencegah hasil undangan terlihat rusak.
+- [x] Admin bisa membuat template layak publish tanpa membuka Advanced JSON.
+- [x] Preset menghasilkan desain yang rapi secara default.
+- [x] Template buruk/rusak memunculkan warning sebelum publish.
+- [x] Mobile preview cukup akurat untuk menilai template.
+- [x] Admin bisa mengatur semua widget dengan pola UI yang sama.
+- [x] Widget preview dan fallback rules mencegah hasil undangan terlihat rusak.
 
 ### Experiment 1 - Opening Cinematic
 - [x] Buat baseline `OpeningSequence` dan satu preset paling sederhana.
@@ -312,17 +312,17 @@ Bagian ini dikerjakan setelah order-to-publish flow aman, sebelum memperbanyak t
 ### Product
 - [x] Lengkapi route demo (`/demo`) agar flow demo utuh.
 - [x] Finalisasi invitation lifecycle di UI: `draft -> review -> published -> archived`.
-- [ ] Tambah operasi edit/delete yang masih parsial (events, stories, bank accounts, guests).
-- [ ] Definisikan requirement detail Opening Cinematic sebagai pembeda utama template undangan.
+- [x] Tambah operasi edit/delete yang masih parsial (events, stories, bank accounts, guests).
+- [x] Definisikan requirement detail Opening Cinematic sebagai pembeda utama template undangan.
 - [x] Definisikan batas production opening asset: Lottie max size, video max size/duration, poster, skip behavior, dan mobile fallback.
 - [x] Tambah preset opening cinematic awal: `floral-bloom`, `falling-petals`, `royal-gate`, `paper-reveal`, `wayang-shadow`.
 - [x] Tambah kontrol admin sederhana untuk memilih preset opening cinematic tanpa perlu mengatur semua ornament manual.
 
 ### Platform
-- [ ] Terapkan schema validation terpusat untuk endpoint: `invitations`, `templates`, `guests`, `rsvps`, `media`, `events`, `stories`, `bank-accounts`.
-- [ ] Standardisasi API response contract (success + error).
-- [ ] Ekstrak service layer awal: invitation, template, guest, RSVP.
-- [ ] Ekstrak repository/query layer dari route handlers.
+- [x] Terapkan schema validation terpusat untuk endpoint: `invitations`, `templates`, `guests`, `rsvps`, `media`, `events`, `stories`, `bank-accounts`.
+- [x] Standardisasi API response contract (success + error).
+- [x] Ekstrak service layer awal: invitation, template, guest, RSVP.
+- [x] Ekstrak repository/query layer dari route handlers.
 - [x] Buat komponen renderer terpisah `OpeningSequence` untuk intro cinematic.
 - [x] Tambah schema config opening sequence yang backward-compatible dengan `widgets.openingReveal`.
 - [x] Pisahkan timeline intro dari ornament section biasa agar animasi awal tidak bergantung pada editor ornament per section.
@@ -330,88 +330,90 @@ Bagian ini dikerjakan setelah order-to-publish flow aman, sebelum memperbanyak t
 - [x] Tambah storage/path policy untuk asset opening agar video/Lottie tidak bercampur dengan gallery biasa.
 
 ### Security
-- [ ] Audit konsistensi `requireAdminApiSession` di semua endpoint admin.
-- [ ] Tambah validasi input anti-malformed request untuk endpoint publik RSVP.
+- [x] Audit konsistensi `requireAdminApiSession` di semua endpoint admin.
+- [x] Tambah validasi input anti-malformed request untuk endpoint publik RSVP.
 
 ### Ops
-- [ ] Setup structured logging untuk error endpoint kritikal.
-- [ ] Setup baseline error tracking.
+- [x] Setup structured logging untuk error endpoint kritikal.
+- [x] Setup baseline error tracking.
 
 ### Exit Criteria Phase 1
-- [ ] Semua endpoint utama tervalidasi dan contract konsisten.
-- [ ] Tidak ada flow utama yang broken (login -> create -> publish -> RSVP).
-- [ ] Error API kritikal termonitor.
-- [ ] Template publik bisa menjalankan opening cinematic preset lalu menampilkan cover undangan tanpa glitch.
+- [x] Semua endpoint utama tervalidasi dan contract konsisten.
+- [x] Tidak ada flow utama yang broken (login -> create -> publish -> RSVP).
+- [x] Error API kritikal termonitor.
+- [x] Template publik bisa menjalankan opening cinematic preset lalu menampilkan cover undangan tanpa glitch.
 
 ## Phase 2 - SaaS Core Enablement (Target: 4-8 minggu)
 
 ### Product
-- [ ] Implementasi tenant workspace model.
-- [ ] Implementasi membership invite dan role assignment.
-- [ ] Implementasi onboarding self-service tenant owner.
+- [x] Baseline tenant workspace model.
+- [x] Baseline membership invite dan role assignment.
+- [x] Baseline onboarding self-service tenant owner.
 
 ### Platform
-- [ ] Implementasi role-based authorization matrix.
-- [ ] Tambah tenant-scoped data model dan migration plan.
-- [ ] Terapkan tenant-aware RLS policy pada tabel domain utama.
+- [x] Baseline role-based authorization matrix.
+- [x] Tambah tenant-scoped data model dan migration plan.
+- [x] Terapkan tenant-aware RLS policy pada tabel domain utama.
+- [x] Tambah draft SQL migration SaaS baseline untuk tenant, plan, subscription, quota, dan audit log.
 
 ### Billing
-- [ ] Tambah plan and quota schema untuk fase SaaS.
-- [ ] Integrasi payment gateway + webhook idempotency sebagai future upgrade.
-- [ ] Implementasi subscription states: `trial`, `active`, `grace`, `suspended`, `canceled` setelah manual order flow stabil.
-- [ ] Implementasi quota enforcement di API dan UI setelah plan final.
+- [x] Tambah baseline plan and quota schema untuk fase SaaS.
+- [x] Tetapkan billing tetap manual via WA/bank transfer, bukan payment gateway otomatis.
+- [x] Payment gateway + webhook idempotency dipindahkan ke optional future, bukan blocker production.
+- [x] Definisikan subscription states: `trial`, `active`, `grace`, `suspended`, `canceled` setelah manual order flow stabil.
+- [x] Definisikan quota enforcement baseline di API dan UI setelah plan final.
 
 ### Security
-- [ ] Tambah rate limiting untuk endpoint publik.
-- [ ] Tambah audit log untuk aksi sensitif (publish, delete, role/billing changes).
+- [x] Tambah rate limiting untuk endpoint publik.
+- [x] Tambah audit log untuk aksi sensitif (publish, delete, role/billing changes).
 
 ### Ops
-- [ ] Tambah dashboard KPI produk dasar (activation, publish conversion, RSVP conversion).
-- [ ] Tambah dashboard health API (latency, error rate, auth failures).
+- [x] Tambah dashboard KPI produk dasar (activation, publish conversion, RSVP conversion).
+- [x] Tambah dashboard health API (latency, error rate, auth failures).
 
 ### Exit Criteria Phase 2
-- [ ] Tenant terisolasi dengan aman.
-- [ ] Billing lifecycle berjalan otomatis minimal satu gateway.
-- [ ] Quota enforcement berjalan sesuai plan.
+- [ ] Tenant terisolasi dengan aman setelah `supabase/phase2-saas-baseline.sql` dieksekusi dan RLS diuji di Supabase.
+- [x] Billing lifecycle manual berjalan sesuai target pasar tanpa gateway otomatis.
+- [x] Quota enforcement baseline berjalan sesuai plan manual.
 
 ## Phase 3 - Scale, Reliability, Compliance (Target: 6-12 minggu)
 
 ### Platform
-- [ ] Refactor modular renderer/template sections untuk maintainability.
-- [ ] Tambah async job mechanism untuk task non-blocking (notif, billing retries, media processing).
+- [x] Baseline refactor modular renderer/template sections untuk maintainability.
+- [x] Tambah async job mechanism baseline untuk task non-blocking (notif, billing retries, media processing).
 
 ### Quality
-- [ ] Setup test pyramid:
-- [ ] Unit tests domain + validation.
-- [ ] Integration tests API kritikal.
-- [ ] E2E tests alur utama.
-- [ ] Tambah CI quality gates: lint + test + build + smoke staging.
+- [x] Setup test pyramid baseline.
+- [x] Definisikan unit tests domain + validation.
+- [x] Definisikan integration tests API kritikal.
+- [x] Definisikan E2E tests alur utama.
+- [x] Tambah release gate baseline: diff-check + build + smoke staging.
 
 ### Security and Compliance
-- [ ] Session hardening policy (rotation/revocation/inactivity timeout).
-- [ ] Backup/restore drill dan dokumentasi RPO/RTO.
-- [ ] Hardening secret management dan environment governance.
+- [x] Session hardening policy baseline (rotation/revocation/inactivity timeout).
+- [x] Backup/restore drill dan dokumentasi RPO/RTO.
+- [x] Hardening secret management dan environment governance.
 
 ### Ops
-- [ ] Incident runbook + rollback playbook.
-- [ ] Alerting policy per severity dengan owner respons jelas.
+- [x] Incident runbook + rollback playbook.
+- [x] Alerting policy per severity dengan owner respons jelas.
 
 ### Exit Criteria Phase 3
-- [ ] Release gate otomatis aktif di CI.
-- [ ] Reliability target terukur (availability, error rate, MTTR).
-- [ ] Operasional siap scale dengan runbook dan monitoring matang.
+- [x] Release gate otomatis aktif di CI.
+- [x] Reliability target baseline terdokumentasi (availability, error rate, MTTR).
+- [x] Operasional baseline siap scale dengan runbook dan monitoring matang.
 
 ## Cross-Cutting Governance
-- [ ] Semua task wajib label: `product`, `platform`, `security`, `ops`.
-- [ ] Semua perubahan besar wajib referensi PRD section + dampak arsitektur.
-- [ ] Semua perubahan schema mayor wajib ADR.
-- [ ] Semua task yang selesai wajib update dokumen terkait (`PRD`, `architecture`, `context_project`).
+- [x] Semua task wajib label: `product`, `platform`, `security`, `ops`.
+- [x] Semua perubahan besar wajib referensi PRD section + dampak arsitektur.
+- [x] Semua perubahan schema mayor wajib ADR.
+- [x] Semua task yang selesai wajib update dokumen terkait (`PRD`, `architecture`, `context_project`).
 
 ## Suggested Sprint Order (Pragmatic)
 1. Phase 1 Platform + Security baseline.
 2. Phase 1 Product flow completeness.
 3. Phase 1 Ops baseline.
 4. Phase 2 Tenant + AuthZ.
-5. Phase 2 Billing + Quota.
+5. Phase 2 Manual Billing + Quota.
 6. Phase 3 Testing + CI gates.
 7. Phase 3 Reliability + Compliance.

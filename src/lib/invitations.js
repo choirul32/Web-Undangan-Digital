@@ -107,6 +107,10 @@ export async function getInvitationBySlug(slug) {
     return sampleInvitation.slug === slug ? sampleInvitation : null;
   }
 
+  if (data.status !== "published") {
+    return null;
+  }
+
   return mapSupabaseInvitation(data);
 }
 

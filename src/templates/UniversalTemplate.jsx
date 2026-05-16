@@ -26,6 +26,7 @@ import OpeningSequence, {
 import RSVPForm from "./components/RSVPForm";
 import StoryWidget, { getStoryWidgetConfig } from "./components/StoryWidget";
 import MusicPlayer, { getMusicWidgetConfig } from "./components/MusicPlayer";
+import { getPreviewSectionIds } from "./templateSectionRegistry";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -918,7 +919,8 @@ export default function UniversalTemplate({
       return;
     }
 
-    const normalizedSection = rawSection;
+    const allowedSections = new Set(getPreviewSectionIds());
+    const normalizedSection = allowedSections.has(rawSection) ? rawSection : "home";
     const targetElement = document.querySelector(
       `[data-preview-section="${normalizedSection}"]`,
     );

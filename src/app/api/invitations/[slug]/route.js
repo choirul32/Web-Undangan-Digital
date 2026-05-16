@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { sampleInvitation } from "../../../../data/sampleInvitation";
 import { requireAdminApiSession } from "../../../../lib/auth";
+import { writeAuditLog } from "../../../../lib/audit-log";
 import { mapSupabaseInvitation } from "../../../../lib/invitations";
 import { createServiceSupabaseClient } from "../../../../lib/supabase/server";
 
@@ -84,9 +85,9 @@ export async function GET(_request, { params }) {
     });
   }
 
-  const admin = await requireAdminApiSession();
-  if (admin.error) {
-    return NextResponse.json(admin.error, { status: 401 });
+  const adminResult = await requireAdminApiSession();
+  if (adminResult.error) {
+    return NextResponse.json(adminResult.error, { status: 401 });
   }
 
   const supabase = createServiceSupabaseClient();
@@ -152,6 +153,15 @@ export async function PATCH(request, { params }) {
       return NextResponse.json({ error: archiveError.message }, { status: 500 });
     }
 
+    await writeAuditLog(supabase, {
+      actorUserId: adminResult.session?.userId,
+      actorEmail: adminResult.session?.email,
+      action: "invitation.archive",
+      entityType: "invitation",
+      entityId: archived.id,
+      metadata: { slug },
+    });
+
     return NextResponse.json({
       source: "supabase",
       data: archived,
@@ -186,6 +196,15 @@ export async function PATCH(request, { params }) {
   if (updateError) {
     return NextResponse.json({ error: updateError.message }, { status: 500 });
   }
+
+  await writeAuditLog(supabase, {
+    actorUserId: adminResult.session?.userId,
+    actorEmail: adminResult.session?.email,
+    action: "invitation.publish",
+    entityType: "invitation",
+    entityId: updated.id,
+    metadata: { slug },
+  });
 
   return NextResponse.json({
     source: "supabase",

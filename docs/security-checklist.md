@@ -13,19 +13,19 @@ Checklist ini mencakup admin dashboard, public invitation, RSVP, media upload, d
 - [ ] Refresh/revocation policy ditentukan.
 
 ## 3. Authorization
-- [ ] Semua endpoint admin memakai `requireAdminApiSession`.
-- [ ] Endpoint publik hanya mengizinkan operasi yang memang publik.
+- [x] Semua endpoint admin memakai `requireAdminApiSession`.
+- [x] Endpoint publik hanya mengizinkan operasi yang memang publik.
 - [ ] Future SaaS: semua write harus tenant-scoped.
 - [ ] Role matrix dibuat untuk owner/admin/editor/viewer.
 - [ ] Publish/archive/delete hanya role tertentu.
 
 ## 4. Input Validation
-- [ ] Semua API punya schema validation.
-- [ ] Slug divalidasi dan dinormalisasi.
+- [ ] Semua API punya schema validation lengkap.
+- [x] Slug divalidasi dan dinormalisasi untuk endpoint publik RSVP.
 - [ ] File upload divalidasi berdasarkan type dan size.
 - [ ] URL maps/media divalidasi.
-- [ ] RSVP public payload divalidasi.
-- [ ] Error tidak membocorkan secret/internal stack.
+- [x] RSVP public payload divalidasi.
+- [x] Error endpoint publik RSVP tidak membocorkan secret/internal stack.
 
 ## 5. Public Abuse Protection
 - [ ] Rate limit RSVP submit.

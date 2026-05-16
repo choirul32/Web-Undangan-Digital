@@ -104,7 +104,21 @@ Package scripts target:
 }
 ```
 
-## 6. Definition of Done
+## 6. Current Release Gate
+Until automated tests are installed, every release must pass:
+- `git diff --check`
+- `node .\node_modules\next\dist\bin\next build`
+- Manual smoke test in this document
+- `/api/dashboard/health` check
+
+## 7. Automation Backlog
+- Add Vitest for `src/lib/api-validation.js`.
+- Add unit tests for `src/lib/plans.js`.
+- Add unit tests for `src/lib/tenant-auth.js`.
+- Add integration test for `/api/rsvps`.
+- Add Playwright flow: login -> create order -> preview -> publish -> RSVP.
+
+## 8. Definition of Done
 - Feature has validation.
 - Feature has at least unit/integration coverage when touching API/domain.
 - User-facing critical flow has smoke or E2E coverage.

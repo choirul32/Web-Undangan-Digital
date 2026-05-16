@@ -35,7 +35,7 @@ Ini cocok untuk MVP, tetapi belum sepenuhnya matang untuk full production SaaS m
 1. Tenant isolation belum eksplisit (masih admin workspace oriented).
 2. Belum ada dedicated service layer per domain (logic tersebar di route/component).
 3. Validasi payload dan error contract belum standar lintas API.
-4. Background jobs/event processing belum ada (notif, billing webhook, retry).
+4. Background jobs/event processing belum ada (notif, optional billing webhook, retry).
 5. Observability belum ada (structured log, metrics, alerting).
 6. Test pyramid belum ada (unit/integration/e2e).
 7. Dashboard data managers belum memiliki active invitation boundary yang konsisten.
@@ -84,7 +84,7 @@ Ini cocok untuk MVP, tetapi belum sepenuhnya matang untuk full production SaaS m
 - Supabase Storage: media/template assets.
 
 ### Planned Extensions
-- Payment gateway webhook processor.
+- Optional payment gateway webhook processor jika strategi pasar berubah.
 - Job queue/worker untuk async tasks (notifikasi, billing retries, thumbnail processing).
 - Observability stack (error tracking + metric dashboard).
 
@@ -110,7 +110,7 @@ Ini cocok untuk MVP, tetapi belum sepenuhnya matang untuk full production SaaS m
 
 ### Phase 2: SaaS Core Enablement
 - Introduce tenant model dan role matrix.
-- Billing lifecycle + webhook idempotency.
+- Manual billing lifecycle + optional webhook idempotency jika payment gateway dipilih nanti.
 - Quota/plan enforcement.
 
 ### Phase 3: Scale and Compliance

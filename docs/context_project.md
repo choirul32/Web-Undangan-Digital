@@ -9,7 +9,7 @@ NusaInvite adalah aplikasi undangan digital dengan workflow utama saat ini:
 - Admin/user broadcast link undangan secara manual via WhatsApp.
 - Tamu mengakses link publik dan submit RSVP.
 
-Model awal ini adalah admin-managed manual order service. Target jangka panjang bisa berkembang menjadi full production SaaS, tetapi payment gateway dan broadcast otomatis bukan prioritas fase awal.
+Model utama ini adalah admin-managed manual order service. Target jangka panjang bisa berkembang menjadi production SaaS, tetapi payment gateway dan broadcast otomatis bukan target utama karena pasar yang dituju lebih cocok dengan pembayaran dan komunikasi manual via WhatsApp.
 
 ## 2. Current Scope in Code
 ### Sudah Ada
@@ -30,7 +30,7 @@ Model awal ini adalah admin-managed manual order service. Target jangka panjang 
 - Publish action dan publish guard belum lengkap.
 - Automated testing end-to-end.
 - Standard API validation and error contracts.
-- Full SaaS billing lifecycle.
+- Billing gateway otomatis.
 - Observability and incident workflow.
 - Tenant-aware authorization model yang formal.
 - Opening cinematic belum dipisahkan sebagai fitur utama. Saat ini opening masih berupa overlay reveal dan ornament section, belum intro sequence dengan preset timeline yang mudah dipakai admin.
@@ -67,7 +67,7 @@ Agar layak full production SaaS, context project harus mengikat 3 jalur paralel:
 2. Engineering maturity: testability, validation, modular services.
 3. Operations maturity: observability, incident response, deployment gate.
 
-Self-service onboarding, payment gateway, billing automation, dan quota enforcement masuk fase SaaS berikutnya setelah manual order flow stabil.
+Self-service onboarding dan quota enforcement bisa masuk fase SaaS berikutnya setelah manual order flow stabil. Payment gateway tetap optional, bukan blocker, karena billing utama ditargetkan manual via WhatsApp/bank transfer.
 
 Untuk diferensiasi produk undangan, template system juga harus memiliki jalur khusus untuk Opening Cinematic: intro awal berbasis preset yang menampilkan animasi ornament/bunga, lalu memunculkan tulisan undangan dan cover utama secara terkontrol.
 

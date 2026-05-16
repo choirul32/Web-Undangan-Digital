@@ -53,7 +53,7 @@ create index if not exists invitation_media_invitation_id_idx on public.invitati
 
 ## 4. Target SaaS Tables
 ### Tenancy
-Future tables:
+Target tables:
 - `tenants`
 - `tenant_members`
 - `tenant_roles` or enum-based roles
@@ -80,7 +80,7 @@ Future tables:
 - `usage_counters`
 
 ### Audit
-Future table:
+Target table:
 - `audit_logs`
 
 Fields:
@@ -109,6 +109,7 @@ Target:
 - Add nullable columns first, backfill, then enforce `not null`.
 - Avoid destructive table changes without backup.
 - Add indexes concurrently where possible in production.
+- Phase 2 baseline migration draft: `supabase/phase2-saas-baseline.sql`.
 
 ## 7. Data Integrity Rules
 - `invitations.slug` unique.
@@ -147,7 +148,7 @@ Minimum production target:
 - Restore drill before production launch.
 
 ## 10. Open Decisions
-- Tenant model timing.
+- Tenant model timing: documented in `docs/saas-core-plan.md`; implement migration after manual order flow is stable in production-like data.
 - RSVP duplicate policy.
 - Soft delete vs hard delete for guests/media/content.
 - Whether templates are global, tenant-owned, or both.

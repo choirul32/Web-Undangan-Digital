@@ -1,143 +1,58 @@
-# API Contract
+# API Contract Baseline
 
-## 1. Purpose
-Dokumen ini mendefinisikan kontrak API untuk flow production NusaInvite, terutama admin order-to-publish dan public RSVP.
+## Response Shape
+Endpoint baru atau endpoint yang disentuh Phase 1 harus memakai response shape berikut:
 
-## 2. Standard Response
 Success:
 ```json
 {
-  "ok": true,
+  "success": true,
   "source": "supabase",
-  "data": {}
+  "data": {},
+  "meta": {}
 }
 ```
 
 Error:
 ```json
 {
-  "ok": false,
-  "error": {
-    "code": "VALIDATION_ERROR",
-    "message": "Slug wajib diisi",
-    "details": {
-      "field": "slug"
-    }
-  }
+  "success": false,
+  "code": "validation_error",
+  "error": "Payload tidak valid.",
+  "details": []
 }
 ```
 
-## 3. Error Codes
-| Code | Meaning |
-|------|---------|
-| `UNAUTHORIZED` | Admin session tidak valid |
-| `FORBIDDEN` | Role tidak punya akses |
-| `VALIDATION_ERROR` | Payload tidak valid |
-| `NOT_FOUND` | Resource tidak ditemukan |
-| `CONFLICT` | Slug/id duplikat |
-| `STORAGE_ERROR` | Upload/delete file gagal |
-| `INTERNAL_ERROR` | Error server tidak terduga |
+## Compatibility Rule
+Selama dashboard lama masih membaca `data`, `source`, dan `error`, field tersebut wajib tetap ada. Field `success`, `code`, dan `details` ditambahkan untuk standardisasi tanpa memutus UI existing.
 
-## 4. Admin APIs
-### Auth
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
+## Validation Baseline
+Validation helper berada di `src/lib/api-validation.js`.
 
-Required:
-- Login harus set HTTP-only cookie.
-- Logout harus clear cookie.
+Phase 1 baseline:
+- RSVP public payload divalidasi dan dinormalisasi.
+- Slug dinormalisasi ke lowercase URL-safe.
+- `attendance` hanya menerima `hadir` atau `tidak_hadir`.
+- `pax` dibatasi 1-20.
+- `message` dibatasi 500 karakter.
 
-### Invitations
-- `GET /api/invitations`
-- `POST /api/invitations`
-- Target: `GET /api/invitations/[slug]`
-- Target: `PATCH /api/invitations/[slug]`
-- Target: `POST /api/invitations/[slug]/publish`
-- Target: `POST /api/invitations/[slug]/archive`
+Endpoint admin existing sudah punya required-field guard. Refactor lanjutan harus memindahkan guard tersebut ke schema helper yang sama.
 
-Publish guard:
-- `slug` valid dan unique.
-- `templateId` ada.
-- `groomName`, `brideName` ada.
-- Minimal satu event.
-- Jika `gift` aktif, minimal satu bank account.
-- Jika `guestName` aktif, minimal satu guest untuk personal links.
+## Logging Baseline
+Structured API logs berada di `src/lib/api-logger.js`.
 
-### Guests
-- `GET /api/guests?invitationSlug={slug}`
-- `POST /api/guests`
-- Target: `PATCH /api/guests/[id]`
-- Target: `DELETE /api/guests/[id]`
-- Target: `POST /api/guests/import`
-- Target: `GET /api/guests/export?invitationSlug={slug}`
+Format:
+```json
+{
+  "level": "error",
+  "scope": "rsvps.post.persist",
+  "message": "Database error",
+  "context": {},
+  "timestamp": "2026-05-16T00:00:00.000Z"
+}
+```
 
-Required fields:
-- `invitationSlug`
-- `name`
-- `slug`
-
-Optional fields:
-- `group`
-- `phone`
-- `pax`
-
-### RSVP
-- `GET /api/rsvps?invitationSlug={slug}`
-- `POST /api/rsvps`
-- Target: `GET /api/rsvps/summary?invitationSlug={slug}`
-
-Public POST required fields:
-- `invitationSlug`
-- `guestName`
-- `attendance`
-
-Rules:
-- RSVP must resolve invitation by slug.
-- If `guestSlug` exists, update matching guest only for that invitation.
-- Duplicate RSVP policy must be explicit: allow latest update or block duplicate.
-
-### Media
-- `GET /api/media?invitationSlug={slug}`
-- `POST /api/media`
-- Target: `PATCH /api/media/[id]`
-- Target: `DELETE /api/media/[id]`
-
-Rules:
-- Upload must be tied to active invitation.
-- Validate media type.
-- Storage path should include invitation slug/id.
-
-### Content
-- `GET /api/events?invitationSlug={slug}`
-- `POST /api/events`
-- Target: `PATCH /api/events/[id]`
-- Target: `DELETE /api/events/[id]`
-- Same pattern applies to `stories` and `bank-accounts`.
-
-### Templates
-- `GET /api/templates`
-- `POST /api/templates`
-- `DELETE /api/templates`
-- `POST /api/templates/thumbnail`
-- `POST /api/templates/ornaments/upload`
-
-Rules:
-- Template changes must be backward-compatible with existing invitation design configs.
-- Opening cinematic config must live under `widgets.openingSequence`.
-
-## 5. Public APIs
-### Public Invitation
-- `/u/[slug]` reads only published invitation.
-- `/u/[slug]/to/[guestSlug]` reads only guest from the same invitation.
-
-### Public RSVP
-- `POST /api/rsvps` must not require admin session.
-- Must validate published invitation.
-- Must rate limit.
-
-## 6. Required Refactors
-- Add validation schema per endpoint.
-- Standardize response shape.
-- Resolve invitation context in one shared helper.
-- Remove hardcoded `dimas-salsa`.
-- Add tests for success/error contracts.
+Production upgrade:
+- Hubungkan `logApiError` ke Sentry/Logtail/OpenTelemetry.
+- Tambah request id.
+- Tambah actor id untuk endpoint admin.

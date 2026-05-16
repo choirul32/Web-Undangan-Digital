@@ -19,7 +19,7 @@ Mentransformasi NusaInvite menjadi SaaS undangan digital yang self-service, reli
 - Tenant dapat onboarding mandiri.
 - Invitation lifecycle stabil sampai publish.
 - Untuk fase awal, order dan pembayaran manual via WhatsApp berjalan rapi dan tercatat.
-- Billing dan quota otomatis menjadi target fase SaaS berikutnya, bukan kebutuhan P0.
+- Billing tetap manual via WhatsApp/bank transfer sebagai strategi produk utama; quota bisa dikelola manual/baseline terlebih dulu.
 - Operasional memenuhi standard production readiness.
 
 ## 2. Current State vs Target State
@@ -34,12 +34,12 @@ Mentransformasi NusaInvite menjadi SaaS undangan digital yang self-service, reli
 - Phase 1 target: admin-managed production workflow untuk pesanan manual via WhatsApp.
 - Later target: multi-tenant self-service SaaS.
 - Role/permission matrix formal.
-- Subscription billing lifecycle lengkap untuk fase SaaS, bukan fase manual order awal.
+- Subscription billing lifecycle otomatis bukan target utama selama pasar masih lebih cocok dengan pembayaran manual.
 - Observability, testing, dan release governance matang.
 
 ### 2.3 Gap Summary
 - Tenant isolation model belum formal.
-- Billing automation belum ada.
+- Billing automation tidak menjadi blocker karena pembayaran manual adalah target.
 - Test/monitoring/reliability gates belum lengkap.
 
 ## 3. Product Scope
@@ -104,7 +104,7 @@ Acceptance Criteria:
 - Admin bisa melacak order manual tanpa payment gateway.
 - Admin bisa menandai pembayaran manual.
 - Broadcast tidak otomatis mengirim pesan; sistem hanya membantu generate link dan teks WhatsApp.
-- Flow manual tetap bisa ditingkatkan ke billing otomatis di fase SaaS tanpa merusak data existing.
+- Flow manual tetap bisa ditingkatkan ke billing otomatis hanya jika strategi pasar berubah, tanpa merusak data existing.
 
 ### 5.1 Tenant Management
 - Workspace creation, membership invite, role assignment.
@@ -558,9 +558,9 @@ Phase 1:
 - Tidak ada payment gateway otomatis.
 
 Future SaaS:
-- Plan, quota, renewal.
+- Plan, quota, renewal manual/admin-managed.
 - Failed payment lifecycle (retry/grace/suspend).
-- Webhook idempotency requirement.
+- Webhook idempotency requirement hanya jika payment gateway otomatis dipilih nanti.
 
 ## 6. Non-Functional Requirements
 ### 6.1 Performance

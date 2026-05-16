@@ -15,7 +15,7 @@ export function MetricCard({ label, value, detail }) {
   return (
     <motion.div
       variants={fadeUp}
-      className="rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-5 shadow-[var(--dash-shadow)]"
+      className="rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-4 shadow-[var(--dash-shadow)]"
     >
       <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
         {label}
@@ -215,75 +215,66 @@ export function InvitationTable() {
   );
 }
 
-export function QuickCreateCard() {
-  const [selectedTemplate, setSelectedTemplate] = useState("standard");
-
-  return (
-    <motion.section
-      variants={fadeUp}
-      className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-primary)] p-6 text-white shadow-xl shadow-[var(--color-primary)]/12"
-    >
-      <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
-        Quick Create
-      </p>
-      <h2 className="mt-3 text-2xl font-black">Draft undangan baru</h2>
-      <div className="mt-5 space-y-4">
-        <label className="block">
-          <span className="text-sm font-black text-white/72">Nama pasangan</span>
-          <input
-            className="mt-2 w-full rounded-2xl border border-white/12 bg-white/10 px-4 py-3 text-base font-bold text-white outline-none placeholder:text-white/36 focus:border-[var(--color-accent)]"
-            placeholder="Contoh: Dimas & Salsa"
-          />
-        </label>
-        <label className="block">
-          <span className="text-sm font-black text-white/72">Template</span>
-          <select
-            value={selectedTemplate}
-            onChange={(event) => setSelectedTemplate(event.target.value)}
-            className="mt-2 w-full rounded-2xl border border-white/12 bg-white/10 px-4 py-3 text-base font-bold text-white outline-none focus:border-[var(--color-accent)]"
-          >
-            {templates.map((template) => (
-              <option
-                key={template.id}
-                value={template.id}
-                className="text-[var(--color-primary)]"
-              >
-                {template.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button className="w-full rounded-2xl bg-[var(--color-accent)] px-5 py-4 text-base font-black text-[var(--color-primary)] transition-colors hover:bg-[var(--color-accent-soft)]">
-          Buat Draft
-        </button>
-      </div>
-    </motion.section>
-  );
-}
-
 export function TemplateHighlights() {
+  const recommendedTemplates = templates.slice(0, 4);
+
   return (
     <motion.section
       variants={fadeUp}
-      className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)] p-6 shadow-lg shadow-[var(--color-primary)]/8"
+      className="rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-4 shadow-[var(--dash-shadow)]"
     >
-      <h2 className="text-2xl font-black text-[var(--color-primary)]">Template Terlaris</h2>
-      <div className="mt-5 space-y-4">
-        {templates.map((template) => (
-          <div key={template.name} className="flex items-center gap-4">
+      <div className="border-b border-[var(--dash-border)] pb-3">
+        <div className="flex items-center justify-between gap-3">
+          <h2 className="text-base font-semibold text-[var(--dash-ink)]">
+            Template Rekomendasi
+          </h2>
+          <a
+            href="/dashboard/templates"
+            className="text-xs font-semibold text-[var(--dash-muted)] hover:text-[var(--dash-ink)]"
+          >
+            Kelola
+          </a>
+        </div>
+        <p className="mt-1 text-xs font-medium leading-5 text-[var(--dash-muted)]">
+          Pilihan awal, bukan ranking penjualan.
+        </p>
+      </div>
+
+      <div className="mt-3 divide-y divide-[var(--dash-border)]">
+        {recommendedTemplates.map((template) => (
+          <a
+            key={template.id}
+            href={`/preview?templateId=${encodeURIComponent(template.id)}`}
+            target="_blank"
+            rel="noreferrer"
+            className="group flex items-center gap-3 py-3"
+          >
             <img
               src={template.image}
               alt={`Preview ${template.name}`}
-              className="h-16 w-14 rounded-[8px] border border-[var(--color-accent-pale)] object-cover"
+              className="h-12 w-10 rounded-[8px] border border-[var(--dash-border)] object-cover"
             />
             <div className="min-w-0 flex-1">
-              <p className="font-black text-[var(--color-primary)]">{template.name}</p>
-              <p className="text-sm font-semibold text-[var(--color-text)]">{template.category}</p>
+              <p className="truncate text-sm font-semibold text-[var(--dash-ink)]">
+                {template.name}
+              </p>
+              <p className="mt-1 text-xs font-medium text-[var(--dash-muted)]">
+                {template.category} · {template.price || "Template"}
+              </p>
             </div>
-            <p className="text-lg font-black text-[var(--color-accent)]">{template.orders}</p>
-          </div>
+            <span className="text-xs font-semibold text-[var(--dash-muted)] group-hover:text-[var(--dash-ink)]">
+              Lihat
+            </span>
+          </a>
         ))}
       </div>
+
+      <a
+        href="/dashboard/invitations"
+        className="mt-3 flex items-center justify-center rounded-md bg-[var(--dash-fog)] px-4 py-2.5 text-sm font-semibold text-[var(--dash-ink)] hover:bg-[var(--dash-border)]"
+      >
+        Buka menu Undangan
+      </a>
     </motion.section>
   );
 }

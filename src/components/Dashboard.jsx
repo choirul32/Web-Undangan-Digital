@@ -6,7 +6,7 @@ import { sampleInvitation } from "../data/sampleInvitation";
 import { fadeUp } from "./dashboard/config";
 
 // Page components
-import { MetricCard, InvitationTable, QuickCreateCard, TemplateHighlights, ActivityFeed } from "./dashboard/Overview";
+import { MetricCard, InvitationTable, TemplateHighlights, ActivityFeed } from "./dashboard/Overview";
 import GuestManager from "./dashboard/GuestManager";
 import RSVPManager from "./dashboard/RSVPManager";
 import MediaManager from "./dashboard/MediaManager";
@@ -320,7 +320,6 @@ function DashboardAside({ activePage }) {
   if (activePage === "invitations") {
     return (
       <>
-        <QuickCreateCard />
         <TemplateHighlights />
       </>
     );
@@ -338,7 +337,6 @@ function DashboardAside({ activePage }) {
   if (activePage === "overview") {
     return (
       <>
-        <QuickCreateCard />
         <TemplateHighlights />
       </>
     );
