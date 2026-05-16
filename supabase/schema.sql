@@ -6,6 +6,15 @@ create table if not exists public.invitations (
   template_id text not null default 'rana-kirana',
   package text not null default 'Premium',
   status text not null default 'draft',
+  order_status text not null default 'inquiry',
+  payment_status text not null default 'unpaid',
+  customer_name text,
+  customer_whatsapp text,
+  order_amount numeric(12,2),
+  order_deadline date,
+  concept_notes text,
+  payment_notes text,
+  paid_at timestamptz,
   groom_name text,
   groom_nickname text,
   bride_name text,
@@ -18,6 +27,17 @@ create table if not exists public.invitations (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.invitations
+  add column if not exists order_status text not null default 'inquiry',
+  add column if not exists payment_status text not null default 'unpaid',
+  add column if not exists customer_name text,
+  add column if not exists customer_whatsapp text,
+  add column if not exists order_amount numeric(12,2),
+  add column if not exists order_deadline date,
+  add column if not exists concept_notes text,
+  add column if not exists payment_notes text,
+  add column if not exists paid_at timestamptz;
 
 create table if not exists public.invitation_events (
   id uuid primary key default gen_random_uuid(),

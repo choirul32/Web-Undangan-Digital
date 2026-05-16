@@ -24,6 +24,14 @@ export function getMusicWidgetConfig(designConfig = {}) {
 // CSS class for ornament pulse sync (applied to body when music is playing)
 const PULSE_SYNC_CLASS = "music-pulse-active";
 
+function prefersReducedMotion() {
+  if (typeof window === "undefined" || !window.matchMedia) {
+    return false;
+  }
+
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 function formatTime(seconds) {
   if (!seconds || !Number.isFinite(seconds)) return "0:00";
   const mins = Math.floor(seconds / 60);
@@ -119,7 +127,7 @@ export default function MusicPlayer({
     const handlePlay = () => {
       setIsPlaying(true);
       onPlayStateChange?.(true);
-      if (musicConfig.pulseSync) {
+      if (musicConfig.pulseSync && !prefersReducedMotion()) {
         document.documentElement.classList.add(PULSE_SYNC_CLASS);
       }
     };

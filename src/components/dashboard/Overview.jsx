@@ -15,19 +15,20 @@ export function MetricCard({ label, value, detail }) {
   return (
     <motion.div
       variants={fadeUp}
-      className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)] p-6 shadow-lg shadow-[var(--color-primary)]/8"
+      className="rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-5 shadow-[var(--dash-shadow)]"
     >
-      <p className="text-sm font-black uppercase tracking-[0.12em] text-[var(--color-accent)]">
+      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
         {label}
       </p>
-      <p className="mt-3 text-4xl font-black text-[var(--color-primary)]">{value}</p>
-      <p className="mt-2 text-base font-semibold text-[var(--color-text)]">{detail}</p>
+      <p className="mt-2 text-3xl font-semibold text-[var(--dash-ink)]">{value}</p>
+      <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">{detail}</p>
     </motion.div>
   );
 }
 
 export function InvitationTable() {
   const [items, setItems] = useState(invitations);
+  const [actionMessage, setActionMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
@@ -50,6 +51,48 @@ export function InvitationTable() {
     };
   }, []);
 
+  const updateInvitationStatus = async (item, action) => {
+    setActionMessage(`${action === "publish" ? "Publish" : "Archive"} ${item.slug}...`);
+
+    try {
+      const response = await fetch(`/api/invitations/${encodeURIComponent(item.slug)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        const details = Array.isArray(result.details)
+          ? ` ${result.details.join(" ")}`
+          : "";
+        throw new Error(`${result.error || "Action gagal."}${details}`);
+      }
+
+      const nextStatus = action === "publish" ? "published" : "archived";
+      const nextOrderStatus = action === "publish" ? "published" : item.orderStatus;
+
+      setItems((current) =>
+        current.map((currentItem) =>
+          currentItem.slug === item.slug
+            ? {
+                ...currentItem,
+                status: nextStatus,
+                orderStatus: nextOrderStatus,
+              }
+            : currentItem,
+        ),
+      );
+      setActionMessage(
+        result.source === "supabase"
+          ? `${item.slug} berhasil ${nextStatus}.`
+          : `Mode sample: ${item.slug} dianggap ${nextStatus}.`,
+      );
+    } catch (error) {
+      setActionMessage(error.message || "Action gagal.");
+    }
+  };
+
   return (
     <motion.section
       variants={fadeUp}
@@ -62,20 +105,31 @@ export function InvitationTable() {
             Kelola draft, revisi, preview, dan undangan yang sudah publish.
           </p>
         </div>
-        <button className="rounded-2xl bg-[var(--color-accent)] px-5 py-3 text-base font-black text-[var(--color-primary)] transition-colors hover:bg-[var(--color-accent-soft)]">
+        <a
+          href="/dashboard/invitations"
+          className="rounded-2xl bg-[var(--color-accent)] px-5 py-3 text-base font-black text-[var(--color-primary)] transition-colors hover:bg-[var(--color-accent-soft)]"
+        >
           Buat Undangan
-        </button>
+        </a>
       </div>
 
+      {actionMessage ? (
+        <p className="border-b border-[var(--color-accent-pale)] px-6 py-3 text-sm font-bold text-[var(--color-text)]">
+          {actionMessage}
+        </p>
+      ) : null}
+
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[820px] text-left">
+        <table className="w-full min-w-[1040px] text-left">
           <thead className="bg-[var(--color-muted)] text-sm uppercase tracking-[0.12em] text-[var(--color-text)]">
             <tr>
               <th className="px-6 py-4">Pasangan</th>
+              <th className="px-6 py-4">Pemesan</th>
               <th className="px-6 py-4">Template</th>
               <th className="px-6 py-4">Tanggal</th>
               <th className="px-6 py-4">RSVP</th>
-              <th className="px-6 py-4">Status</th>
+              <th className="px-6 py-4">Order</th>
+              <th className="px-6 py-4">Payment</th>
               <th className="px-6 py-4">Aksi</th>
             </tr>
           </thead>
@@ -87,24 +141,69 @@ export function InvitationTable() {
                   <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">/u/{item.slug}</p>
                 </td>
                 <td className="px-6 py-5">
+                  <p className="font-black text-[var(--color-primary)]">
+                    {item.customerName || "-"}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">
+                    {item.customerWhatsapp || "-"}
+                  </p>
+                </td>
+                <td className="px-6 py-5">
                   <p className="font-black text-[var(--color-primary)]">{item.template}</p>
                   <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">{item.category} | {item.package}</p>
                 </td>
                 <td className="px-6 py-5 font-bold text-[var(--color-text)]">{item.date}</td>
                 <td className="px-6 py-5 font-black text-[var(--color-primary)]">{item.rsvp}</td>
                 <td className="px-6 py-5">
-                  <span className={`rounded-full px-3 py-1.5 text-sm font-black ${statusStyles[item.status]}`}>
-                    {item.status}
+                  <span className={`rounded-full px-3 py-1.5 text-sm font-black ${statusStyles[item.orderStatus] || statusStyles[item.status] || statusStyles.draft}`}>
+                    {item.orderStatus || item.status}
+                  </span>
+                  <p className="mt-2 text-xs font-bold text-[var(--color-text)]">
+                    invitation: {item.status}
+                  </p>
+                </td>
+                <td className="px-6 py-5">
+                  <span className={`rounded-full px-3 py-1.5 text-sm font-black ${statusStyles[item.paymentStatus] || statusStyles.draft}`}>
+                    {item.paymentStatus || "unpaid"}
                   </span>
                 </td>
                 <td className="px-6 py-5">
-                  <div className="flex gap-2">
-                    <button className="rounded-xl border border-[var(--color-accent-pale)] px-3 py-2 text-sm font-black text-[var(--color-text)] hover:bg-white">
+                  <div className="flex flex-wrap gap-2">
+                    <a
+                      href={`/dashboard/invitations/${item.slug}`}
+                      className="rounded-xl border border-[var(--color-accent-pale)] px-3 py-2 text-sm font-black text-[var(--color-text)] hover:bg-white"
+                    >
                       Edit
-                    </button>
-                    <button className="rounded-xl bg-[var(--color-primary)] px-3 py-2 text-sm font-black text-white hover:bg-[var(--color-primary-hover)]">
+                    </a>
+                    <a
+                      href={`/preview?slug=${encodeURIComponent(item.slug)}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-xl bg-[var(--color-primary)] px-3 py-2 text-sm font-black text-white hover:bg-[var(--color-primary-hover)]"
+                    >
                       Preview
-                    </button>
+                    </a>
+                    {String(item.status).toLowerCase() === "published" ? (
+                      <button
+                        type="button"
+                        onClick={() => updateInvitationStatus(item, "archive")}
+                        className="rounded-xl border border-[var(--color-accent-pale)] px-3 py-2 text-sm font-black text-[var(--color-text)] hover:bg-white"
+                      >
+                        Archive
+                      </button>
+                    ) : String(item.status).toLowerCase() === "archived" ? (
+                      <span className="rounded-xl border border-[var(--color-accent-pale)] px-3 py-2 text-sm font-black text-[var(--color-text)]">
+                        Archived
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => updateInvitationStatus(item, "publish")}
+                        className="rounded-xl bg-[var(--color-accent)] px-3 py-2 text-sm font-black text-[var(--color-primary)] hover:bg-[var(--color-accent-soft)]"
+                      >
+                        Publish
+                      </button>
+                    )}
                   </div>
                 </td>
               </tr>

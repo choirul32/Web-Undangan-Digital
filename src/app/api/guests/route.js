@@ -9,6 +9,28 @@ function hasServiceEnv() {
   );
 }
 
+async function getInvitation(supabase, slug) {
+  const { data, error } = await supabase
+    .from("invitations")
+    .select("id")
+    .eq("slug", slug)
+    .single();
+
+  return { data, error };
+}
+
+function mapGuest(guest) {
+  return {
+    id: guest.id,
+    name: guest.name,
+    slug: guest.slug,
+    group: guest.guest_group,
+    phone: guest.phone,
+    rsvpStatus: guest.rsvp_status,
+    pax: guest.pax,
+  };
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const invitationSlug = searchParams.get("invitationSlug") || "dimas-salsa";
@@ -26,11 +48,10 @@ export async function GET(request) {
   }
 
   const supabase = createServiceSupabaseClient();
-  const { data: invitation, error: invitationError } = await supabase
-    .from("invitations")
-    .select("id")
-    .eq("slug", invitationSlug)
-    .single();
+  const { data: invitation, error: invitationError } = await getInvitation(
+    supabase,
+    invitationSlug,
+  );
 
   if (invitationError) {
     return NextResponse.json({ error: invitationError.message }, { status: 404 });
@@ -48,15 +69,7 @@ export async function GET(request) {
 
   return NextResponse.json({
     source: "supabase",
-    data: data.map((guest) => ({
-      id: guest.id,
-      name: guest.name,
-      slug: guest.slug,
-      group: guest.guest_group,
-      phone: guest.phone,
-      rsvpStatus: guest.rsvp_status,
-      pax: guest.pax,
-    })),
+    data: data.map(mapGuest),
   });
 }
 
@@ -77,6 +90,7 @@ export async function POST(request) {
         name: payload.name,
         slug: payload.slug,
         group: payload.group,
+        phone: payload.phone,
         rsvpStatus: "Belum RSVP",
         pax: 0,
       },
@@ -89,11 +103,10 @@ export async function POST(request) {
   }
 
   const supabase = createServiceSupabaseClient();
-  const { data: invitation, error: invitationError } = await supabase
-    .from("invitations")
-    .select("id")
-    .eq("slug", payload.invitationSlug)
-    .single();
+  const { data: invitation, error: invitationError } = await getInvitation(
+    supabase,
+    payload.invitationSlug,
+  );
 
   if (invitationError) {
     return NextResponse.json({ error: invitationError.message }, { status: 404 });
@@ -106,6 +119,7 @@ export async function POST(request) {
       name: payload.name,
       slug: payload.slug,
       guest_group: payload.group,
+      phone: payload.phone || null,
       rsvp_status: "Belum RSVP",
       pax: 0,
     })
@@ -118,6 +132,116 @@ export async function POST(request) {
 
   return NextResponse.json({
     source: "supabase",
-    data,
+    data: mapGuest(data),
+  });
+}
+
+export async function PUT(request) {
+  const payload = await request.json();
+
+  if (!payload.invitationSlug || !payload.originalSlug || !payload.name || !payload.slug) {
+    return NextResponse.json(
+      { error: "invitationSlug, originalSlug, name, and slug are required" },
+      { status: 400 },
+    );
+  }
+
+  if (!hasServiceEnv()) {
+    return NextResponse.json({
+      source: "sample",
+      data: {
+        name: payload.name,
+        slug: payload.slug,
+        group: payload.group,
+        phone: payload.phone,
+        rsvpStatus: payload.rsvpStatus || "Belum RSVP",
+        pax: payload.pax || 0,
+      },
+    });
+  }
+
+  const admin = await requireAdminApiSession();
+  if (admin.error) {
+    return NextResponse.json(admin.error, { status: 401 });
+  }
+
+  const supabase = createServiceSupabaseClient();
+  const { data: invitation, error: invitationError } = await getInvitation(
+    supabase,
+    payload.invitationSlug,
+  );
+
+  if (invitationError) {
+    return NextResponse.json({ error: invitationError.message }, { status: 404 });
+  }
+
+  const { data, error } = await supabase
+    .from("guests")
+    .update({
+      name: payload.name,
+      slug: payload.slug,
+      guest_group: payload.group,
+      phone: payload.phone || null,
+    })
+    .eq("invitation_id", invitation.id)
+    .eq("slug", payload.originalSlug)
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    source: "supabase",
+    data: mapGuest(data),
+  });
+}
+
+export async function DELETE(request) {
+  const payload = await request.json();
+
+  if (!payload.invitationSlug || !payload.slug) {
+    return NextResponse.json(
+      { error: "invitationSlug and slug are required" },
+      { status: 400 },
+    );
+  }
+
+  if (!hasServiceEnv()) {
+    return NextResponse.json({
+      source: "sample",
+      data: { slug: payload.slug },
+    });
+  }
+
+  const admin = await requireAdminApiSession();
+  if (admin.error) {
+    return NextResponse.json(admin.error, { status: 401 });
+  }
+
+  const supabase = createServiceSupabaseClient();
+  const { data: invitation, error: invitationError } = await getInvitation(
+    supabase,
+    payload.invitationSlug,
+  );
+
+  if (invitationError) {
+    return NextResponse.json({ error: invitationError.message }, { status: 404 });
+  }
+
+  const { error } = await supabase
+    .from("guests")
+    .delete()
+    .eq("invitation_id", invitation.id)
+    .eq("slug", payload.slug);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({
+    source: "supabase",
+    data: { slug: payload.slug },
   });
 }

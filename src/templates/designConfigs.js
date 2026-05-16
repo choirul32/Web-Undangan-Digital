@@ -109,7 +109,24 @@ export const defaultOpeningRevealConfig = {
   backgroundImage: "",
   backgroundColor: "",
   animation: "fade",
+  sequencePreset: "auto",
   autoPlayMusic: true,
+};
+
+export const defaultOpeningSequenceConfig = {
+  enabled: true,
+  preset: "auto",
+  asset: {
+    type: "motion",
+    src: "",
+    poster: "",
+    duration: 4,
+    delay: 0,
+    loop: false,
+    skippable: true,
+    fallbackPreset: "auto",
+    entranceTiming: "with-content",
+  },
 };
 
 export const defaultCoupleSectionConfig = {
@@ -159,6 +176,7 @@ export function getOpeningRevealConfig(designConfig = {}) {
   const normalizedConfig = normalizeDesignConfig(designConfig);
   const legacyHomeConfig = normalizedConfig.sections?.home || {};
   const widgetConfig = normalizedConfig.widgets?.openingReveal || {};
+  const sequenceConfig = normalizedConfig.widgets?.openingSequence || {};
   const animation =
     widgetConfig.animation ||
     widgetConfig.variant ||
@@ -177,7 +195,32 @@ export function getOpeningRevealConfig(designConfig = {}) {
     backgroundImage: legacyHomeConfig.revealBackgroundImage || defaultOpeningRevealConfig.backgroundImage,
     backgroundColor: legacyHomeConfig.revealBackgroundColor || defaultOpeningRevealConfig.backgroundColor,
     ...widgetConfig,
+    sequencePreset:
+      sequenceConfig.preset ||
+      sequenceConfig.sequencePreset ||
+      widgetConfig.sequencePreset ||
+      defaultOpeningRevealConfig.sequencePreset,
     animation: normalizeOpeningRevealAnimation(animation),
+  };
+}
+
+export function getOpeningSequenceConfig(designConfig = {}) {
+  const normalizedConfig = normalizeDesignConfig(designConfig);
+  const revealConfig = normalizedConfig.widgets?.openingReveal || {};
+  const sequenceConfig = normalizedConfig.widgets?.openingSequence || {};
+
+  return {
+    ...defaultOpeningSequenceConfig,
+    enabled: revealConfig.enabled ?? defaultOpeningSequenceConfig.enabled,
+    preset:
+      sequenceConfig.preset ||
+      sequenceConfig.sequencePreset ||
+      revealConfig.sequencePreset ||
+      defaultOpeningSequenceConfig.preset,
+    asset: {
+      ...defaultOpeningSequenceConfig.asset,
+      ...(sequenceConfig.asset || {}),
+    },
   };
 }
 
@@ -208,4 +251,3 @@ export function getSectionStyleConfig(designConfig = {}, sectionName = "") {
     ...localStyle,
   };
 }
-

@@ -40,6 +40,10 @@ export async function GET() {
       source: "sample",
       data: {
         invitations: 1,
+        inquiry: 0,
+        waitingPayment: 0,
+        inProgress: 0,
+        review: 0,
         activeThisMonth: published,
         rsvps: sampleInvitation.rsvps.length,
         rsvpPax: totalPax,
@@ -68,6 +72,10 @@ export async function GET() {
       published,
       revision,
       guests,
+      inquiry,
+      waitingPayment,
+      inProgress,
+      review,
       paxResult,
     ] = await Promise.all([
       countRows(supabase, "invitations"),
@@ -78,6 +86,10 @@ export async function GET() {
       countRows(supabase, "invitations", [["status", "published"]]),
       countRows(supabase, "invitations", [["status", "revision"]]),
       countRows(supabase, "guests"),
+      countRows(supabase, "invitations", [["order_status", "inquiry"]]),
+      countRows(supabase, "invitations", [["order_status", "waiting_payment"]]),
+      countRows(supabase, "invitations", [["order_status", "in_progress"]]),
+      countRows(supabase, "invitations", [["order_status", "review"]]),
       supabase.from("rsvps").select("pax").gte("created_at", startOfMonth.toISOString()),
     ]);
 
@@ -98,6 +110,10 @@ export async function GET() {
         published,
         revision,
         guests,
+        inquiry,
+        waitingPayment,
+        inProgress,
+        review,
       },
     });
   } catch (error) {

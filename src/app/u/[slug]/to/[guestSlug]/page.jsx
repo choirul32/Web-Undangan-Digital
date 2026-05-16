@@ -1,6 +1,30 @@
 import InvitationRenderer from "../../../../../templates/InvitationRenderer";
 import { getInvitationAndGuest } from "../../../../../lib/invitations";
 
+export async function generateMetadata({ params }) {
+  const { invitation, guest } = await getInvitationAndGuest(
+    params.slug,
+    params.guestSlug,
+  );
+
+  if (!invitation) {
+    return {
+      title: "Undangan tidak ditemukan",
+    };
+  }
+
+  const coupleName = `${invitation.couple?.groomNickname || "Mempelai"} & ${
+    invitation.couple?.brideNickname || "Mempelai"
+  }`;
+
+  return {
+    title: guest?.name ? `${coupleName} untuk ${guest.name}` : coupleName,
+    description: guest?.name
+      ? `Undangan digital personal untuk ${guest.name}.`
+      : "Undangan digital personal.",
+  };
+}
+
 export default async function PublicGuestInvitationPage({ params }) {
   const { invitation, guest } = await getInvitationAndGuest(
     params.slug,
@@ -22,7 +46,7 @@ export default async function PublicGuestInvitationPage({ params }) {
     <InvitationRenderer
       data={invitation}
       guestName={guest?.name}
-      guestSlug={params.guestSlug}
+      guestSlug={guest?.slug}
     />
   );
 }

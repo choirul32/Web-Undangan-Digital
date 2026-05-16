@@ -8,6 +8,7 @@ import {
   getCoverSectionConfig,
   getDesignConfig,
   getOpeningRevealConfig,
+  getOpeningSequenceConfig,
   getSectionOrnaments,
   getSectionStyleConfig,
 } from "./designConfigs";
@@ -18,6 +19,10 @@ import CountdownTimer, {
 import EventWidget, { getEventWidgetConfig } from "./components/EventWidget";
 import GalleryWidget, { getGalleryWidgetConfig } from "./components/GalleryWidget";
 import OrnamentLayer from "./components/OrnamentLayer";
+import OpeningSequence, {
+  OpeningSequenceAsset,
+  OpeningSequenceAtmosphere,
+} from "./components/OpeningSequence";
 import RSVPForm from "./components/RSVPForm";
 import StoryWidget, { getStoryWidgetConfig } from "./components/StoryWidget";
 import MusicPlayer, { getMusicWidgetConfig } from "./components/MusicPlayer";
@@ -191,26 +196,6 @@ function coverMotion(animation = "fade-up") {
   }
 
   return { initial: { opacity: 0, y: 24 }, animate: { opacity: 1, y: 0 } };
-}
-
-function revealMotion(animation = "fade") {
-  if (animation === "zoom" || animation === "zoom-in") {
-    return { initial: { opacity: 0, scale: 1.04 }, animate: { opacity: 1, scale: 1 } };
-  }
-
-  if (animation === "slide-up") {
-    return { initial: { opacity: 0, y: 34 }, animate: { opacity: 1, y: 0 } };
-  }
-
-  if (animation === "paper" || animation === "pop-up") {
-    return { initial: { opacity: 0, scale: 0.92 }, animate: { opacity: 1, scale: 1 } };
-  }
-
-  if (animation === "none") {
-    return { initial: false, animate: false };
-  }
-
-  return { initial: { opacity: 0 }, animate: { opacity: 1 } };
 }
 
 function revealExitMotion(animation = "fade") {
@@ -595,18 +580,11 @@ function OpeningRevealOverlay({
         />
       ) : null}
       <div className="absolute inset-0 z-[1] bg-[var(--color-bg)]/70" />
-      <motion.div
-        {...revealMotion(animation)}
-        animate={
-          isOpening
-            ? animation === "zoom"
-              ? { opacity: 0, scale: 1.08 }
-              : animation === "slide-up" || animation === "paper"
-                ? { opacity: 0, y: -34 }
-                : { opacity: 0 }
-            : revealMotion(animation).animate
-        }
-        transition={{ duration: 0.68, ease: "easeOut" }}
+      <OpeningSequenceAsset asset={config.asset} isOpening={isOpening} onSkip={handleOpen} />
+      <OpeningSequenceAtmosphere config={config} isOpening={isOpening} />
+      <OpeningSequence
+        config={config}
+        isOpening={isOpening}
         className={`relative z-10 mx-auto max-w-3xl ${contentClass}`}
       >
         {config.coverImageEnabled ? (
@@ -641,7 +619,7 @@ function OpeningRevealOverlay({
         >
           {config.buttonText || "Buka Undangan"}
         </button>
-      </motion.div>
+      </OpeningSequence>
     </motion.div>
   );
 }
@@ -805,6 +783,7 @@ export default function UniversalTemplate({
   guestSlug,
 }) {
   const musicRef = useRef(null);
+  const musicFadeRef = useRef(null);
   const [isRevealOpen, setIsRevealOpen] = useState(false);
   const [isMusicPlaying, setIsMusicPlaying] = useState(false);
   const invitation = { ...sampleInvitation, ...data };
@@ -816,6 +795,13 @@ export default function UniversalTemplate({
   const globalStyleConfig = getSectionStyleConfig(designConfig, "global");
   const coverConfig = getCoverSectionConfig(designConfig);
   const openingRevealConfig = getOpeningRevealConfig(designConfig);
+  const openingSequenceConfig = getOpeningSequenceConfig(designConfig);
+  const openingOverlayConfig = {
+    ...openingRevealConfig,
+    sequencePreset: openingSequenceConfig.preset,
+    asset: openingSequenceConfig.asset,
+  };
+  const personalizedGuestName = invitation.features?.guestName === false ? "" : guestName;
   const coupleConfig = getCoupleSectionConfig(designConfig);
   const countdownConfig = getCountdownWidgetConfig(designConfig);
   const eventConfig = getEventWidgetConfig(designConfig);
@@ -834,28 +820,67 @@ export default function UniversalTemplate({
     "/assets/catin_pria.jpg",
   ];
 
-  const startMusic = () => {
-    if (!musicRef.current) {
+  const startMusic = ({ fadeIn = true } = {}) => {
+    const audio = musicRef.current;
+
+    if (!audio) {
       return;
     }
 
-    const result = musicRef.current.play();
-    if (result?.catch) {
-      result.catch(() => {});
+    if (musicFadeRef.current) {
+      window.clearInterval(musicFadeRef.current);
+      musicFadeRef.current = null;
     }
+
+    const targetVolume = 1;
+    if (fadeIn) {
+      audio.volume = 0;
+    }
+
+    const result = audio.play();
+    if (result?.catch) {
+      result.catch(() => {
+        audio.volume = targetVolume;
+      });
+    }
+
+    if (!fadeIn) {
+      audio.volume = targetVolume;
+      return;
+    }
+
+    const step = 0.06;
+    musicFadeRef.current = window.setInterval(() => {
+      if (!musicRef.current || musicRef.current.paused) {
+        if (musicRef.current) {
+          musicRef.current.volume = targetVolume;
+        }
+        window.clearInterval(musicFadeRef.current);
+        musicFadeRef.current = null;
+        return;
+      }
+
+      const nextVolume = Math.min(targetVolume, musicRef.current.volume + step);
+      musicRef.current.volume = nextVolume;
+
+      if (nextVolume >= targetVolume) {
+        window.clearInterval(musicFadeRef.current);
+        musicFadeRef.current = null;
+      }
+    }, 90);
   };
 
   const openInvitation = () => {
     setIsRevealOpen(true);
 
-    if (openingRevealConfig.autoPlayMusic) {
-      startMusic();
+    if (openingOverlayConfig.autoPlayMusic) {
+      startMusic({ fadeIn: true });
     }
   };
 
   // Auto-play music on first scroll when Opening Reveal is not active
   useEffect(() => {
-    if (openingRevealConfig.enabled) return;
+    if (openingOverlayConfig.enabled) return;
     if (!musicConfig.enabled && !invitation.features?.music) return;
 
     let hasPlayed = false;
@@ -863,7 +888,7 @@ export default function UniversalTemplate({
     const handleInteraction = () => {
       if (hasPlayed) return;
       hasPlayed = true;
-      startMusic();
+      startMusic({ fadeIn: true });
       window.removeEventListener("scroll", handleInteraction);
       window.removeEventListener("touchstart", handleInteraction);
     };
@@ -875,7 +900,15 @@ export default function UniversalTemplate({
       window.removeEventListener("scroll", handleInteraction);
       window.removeEventListener("touchstart", handleInteraction);
     };
-  }, [openingRevealConfig.enabled, musicConfig.enabled, invitation.features?.music]);
+  }, [openingOverlayConfig.enabled, musicConfig.enabled, invitation.features?.music]);
+
+  useEffect(() => {
+    return () => {
+      if (musicFadeRef.current) {
+        window.clearInterval(musicFadeRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -907,10 +940,10 @@ export default function UniversalTemplate({
       <AnimatePresence>
         {!isRevealOpen ? (
           <OpeningRevealOverlay
-            config={openingRevealConfig}
+            config={openingOverlayConfig}
             coverConfig={coverConfig}
             couple={couple}
-            guestName={guestName}
+            guestName={personalizedGuestName}
             onOpen={openInvitation}
           />
         ) : null}
@@ -959,13 +992,13 @@ export default function UniversalTemplate({
             <p className="mx-auto mt-5 max-w-2xl text-lg font-semibold leading-8 text-[var(--color-text)]">
               {couple.quote}
             </p>
-            {coverConfig.guestBlockStyle !== "hidden" && !openingRevealConfig.enabled ? (
+            {coverConfig.guestBlockStyle !== "hidden" && !openingOverlayConfig.enabled ? (
               <div className={guestBlockClass(coverConfig.guestBlockStyle)}>
                 <p className="text-sm font-black uppercase tracking-[0.16em] text-[var(--color-accent)]">
                   Kepada Yth.
                 </p>
                 <p className="mt-2 text-2xl font-black text-[var(--color-primary)]">
-                  {guestName || "Tamu Undangan"}
+                  {personalizedGuestName || "Tamu Undangan"}
                 </p>
               </div>
             ) : null}
@@ -1073,8 +1106,8 @@ export default function UniversalTemplate({
             </h2>
             <RSVPForm
               invitationSlug={invitation.slug}
-              guestSlug={guestSlug}
-              guestName={guestName}
+              guestSlug={personalizedGuestName ? guestSlug : undefined}
+              guestName={personalizedGuestName}
             />
           </div>
         </SectionFrame>

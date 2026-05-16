@@ -25,6 +25,16 @@ async function getInvitation(supabase, slug) {
   return data;
 }
 
+function mapMedia(item) {
+  return {
+    id: item.id,
+    mediaType: item.media_type,
+    title: item.title,
+    url: item.url,
+    storagePath: item.storage_path,
+  };
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const invitationSlug = searchParams.get("invitationSlug") || "dimas-salsa";
@@ -65,13 +75,7 @@ export async function GET(request) {
 
   return NextResponse.json({
     source: "supabase",
-    data: data.map((item) => ({
-      id: item.id,
-      mediaType: item.media_type,
-      title: item.title,
-      url: item.url,
-      storagePath: item.storage_path,
-    })),
+    data: data.map(mapMedia),
   });
 }
 
@@ -80,6 +84,7 @@ export async function POST(request) {
   const invitationSlug = formData.get("invitationSlug") || "dimas-salsa";
   const mediaType = formData.get("mediaType") || "image";
   const title = formData.get("title") || "Media";
+  const replaceId = formData.get("replaceId");
   const file = formData.get("file");
 
   if (!file || typeof file === "string") {
@@ -129,31 +134,95 @@ export async function POST(request) {
     .from(BUCKET_NAME)
     .getPublicUrl(storagePath);
 
-  const { data, error } = await supabase
-    .from("invitation_media")
-    .insert({
+  let existingMedia = null;
+
+  if (replaceId) {
+    const { data: existing } = await supabase
+      .from("invitation_media")
+      .select("id, storage_path")
+      .eq("id", replaceId)
+      .eq("invitation_id", invitation.id)
+      .maybeSingle();
+
+    existingMedia = existing;
+  }
+
+  const mediaRow = {
       invitation_id: invitation.id,
       media_type: mediaType,
       title,
       url: publicUrlData.publicUrl,
       storage_path: storagePath,
       sort_order: Date.now(),
-    })
-    .select()
-    .single();
+  };
+
+  const query = existingMedia?.id
+    ? supabase
+        .from("invitation_media")
+        .update(mediaRow)
+        .eq("id", existingMedia.id)
+        .eq("invitation_id", invitation.id)
+    : supabase.from("invitation_media").insert(mediaRow);
+
+  const { data, error } = await query.select().single();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  if (existingMedia?.storage_path) {
+    await supabase.storage.from(BUCKET_NAME).remove([existingMedia.storage_path]);
+  }
+
   return NextResponse.json({
     source: "supabase",
-    data: {
-      id: data.id,
-      mediaType: data.media_type,
-      title: data.title,
-      url: data.url,
-      storagePath: data.storage_path,
-    },
+    data: mapMedia(data),
   });
+}
+
+export async function DELETE(request) {
+  const payload = await request.json();
+
+  if (!payload.invitationSlug || !payload.id) {
+    return NextResponse.json({ error: "invitationSlug and id are required" }, { status: 400 });
+  }
+
+  if (!hasServiceEnv()) {
+    return NextResponse.json({ source: "sample", data: { id: payload.id } });
+  }
+
+  const admin = await requireAdminApiSession();
+  if (admin.error) {
+    return NextResponse.json(admin.error, { status: 401 });
+  }
+
+  const supabase = createServiceSupabaseClient();
+  const invitation = await getInvitation(supabase, payload.invitationSlug);
+
+  if (!invitation) {
+    return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
+  }
+
+  const { data: existing } = await supabase
+    .from("invitation_media")
+    .select("id, storage_path")
+    .eq("id", payload.id)
+    .eq("invitation_id", invitation.id)
+    .maybeSingle();
+
+  const { error } = await supabase
+    .from("invitation_media")
+    .delete()
+    .eq("id", payload.id)
+    .eq("invitation_id", invitation.id);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (existing?.storage_path) {
+    await supabase.storage.from(BUCKET_NAME).remove([existing.storage_path]);
+  }
+
+  return NextResponse.json({ source: "supabase", data: { id: payload.id } });
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import { OpeningSequenceAsset } from "../../templates/components/OpeningSequence";
 
 // ============================================================================
 // Widget Preview Components
@@ -274,6 +275,71 @@ export function StoryWidgetPreview({ variant = "card", animation = "fade-up", en
     );
   }
 
+  if (variant === "chapter-scroll") {
+    return (
+      <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
+        <div key={animationKey} className="space-y-3">
+          {items.map((item, index) => (
+            <motion.div
+              key={item.year}
+              {...getAnimationProps(animation, index)}
+              transition={{ duration: 0.45, ease: "easeOut" }}
+              className="relative overflow-hidden rounded-[14px] border border-[var(--color-accent-pale)] bg-white p-3 shadow-sm"
+            >
+              <div className="absolute -right-5 -top-5 h-12 w-12 rounded-full bg-[var(--color-accent)]/12" />
+              <div className="relative flex items-start gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-pale)] text-xs font-black text-[var(--color-primary)]">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-accent)]">
+                    Chapter {item.year}
+                  </p>
+                  <p className="mt-1 text-sm font-black text-[var(--color-primary)]">
+                    {item.title}
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+      </WidgetPreviewShell>
+    );
+  }
+
+  if (variant === "chat-style") {
+    return (
+      <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
+        <div key={animationKey} className="space-y-2">
+          {items.map((item, index) => {
+            const isRight = index % 2 === 1;
+            return (
+              <motion.div
+                key={item.year}
+                {...getAnimationProps(animation, index)}
+                transition={{ duration: 0.45, ease: "easeOut" }}
+                className={`flex ${isRight ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[78%] rounded-2xl px-3 py-2 text-xs font-bold shadow-sm ${
+                    isRight
+                      ? "rounded-br-sm bg-[var(--color-primary)] text-white"
+                      : "rounded-bl-sm bg-white text-[var(--color-primary)]"
+                  }`}
+                >
+                  <p className={isRight ? "text-white/70" : "text-[var(--color-accent)]"}>
+                    {item.year}
+                  </p>
+                  <p className="mt-1">{item.title}</p>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </WidgetPreviewShell>
+    );
+  }
+
   return (
     <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
       <div key={animationKey} className="grid grid-cols-3 gap-2">
@@ -311,6 +377,36 @@ export function GalleryWidgetPreview({ variant = "grid", enabled = true }) {
             >
               {item}
             </div>
+          ))}
+        </div>
+      </WidgetPreviewShell>
+    );
+  }
+
+  if (variant === "cinematic-slideshow") {
+    return (
+      <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
+        <div className="overflow-hidden rounded-[18px] bg-[var(--color-primary)] shadow-sm">
+          <div className="relative flex aspect-[16/10] items-end overflow-hidden bg-[var(--color-accent-pale)] p-4">
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+            <div className="relative text-white">
+              <p className="text-[9px] font-black uppercase tracking-[0.18em] text-white/70">
+                Gallery Moment
+              </p>
+              <p className="mt-1 font-serif text-2xl font-black leading-none">
+                01 / 06
+              </p>
+            </div>
+          </div>
+        </div>
+        <div className="mt-3 flex gap-2 overflow-hidden">
+          {items.slice(0, 5).map((item, index) => (
+            <div
+              key={item}
+              className={`h-10 w-10 shrink-0 rounded-xl border-2 bg-white ${
+                index === 0 ? "border-[var(--color-accent)]" : "border-transparent opacity-50"
+              }`}
+            />
           ))}
         </div>
       </WidgetPreviewShell>
@@ -425,6 +521,12 @@ export function OpeningRevealPreview({ config = {} }) {
   const backgroundColor = config.backgroundColor || "#fbf7ef";
   const useImageBackground = config.backgroundMode === "image";
   const coverImageEnabled = config.coverImageEnabled !== false;
+  const openingAsset = config.asset || {};
+  const hasOpeningAsset = Boolean(
+    openingAsset.type &&
+      openingAsset.type !== "motion" &&
+      (openingAsset.src || openingAsset.poster || openingAsset.frames?.length),
+  );
   const isSplit = animation === "curtain" || animation === "gate";
   const panelStyle = useImageBackground
     ? {
@@ -459,6 +561,14 @@ export function OpeningRevealPreview({ config = {} }) {
           </>
         ) : null}
         <div className="absolute inset-0 bg-white/55" />
+        {hasOpeningAsset ? (
+          <>
+            <OpeningSequenceAsset asset={openingAsset} isOpening={false} />
+            <span className="absolute left-3 top-3 z-20 rounded-full bg-black/45 px-3 py-1 text-[9px] font-black uppercase tracking-[0.12em] text-white backdrop-blur">
+              Asset {openingAsset.type}
+            </span>
+          </>
+        ) : null}
         <div className={`relative z-10 mx-auto max-w-[220px] ${animation === "paper" ? "rounded-[8px] border border-[var(--color-accent-pale)] bg-white/80 p-3 shadow-sm" : ""}`}>
           {coverImageEnabled ? (
             <img
@@ -1007,5 +1117,64 @@ export function MusicPlayerPreview({ variant = "floating", position = "bottom-ri
         <p className="mt-3 text-center text-[10px] font-black text-[var(--color-wa)]">♫ Ornament pulse sync aktif</p>
       ) : null}
     </div>
+  );
+}
+
+export function GiftWidgetPreview({ variant = "cards", enabled = true, hasAccounts = true }) {
+  return (
+    <WidgetPreviewShell title="Gift Preview" label={hasAccounts ? variant : "missing account"} enabled={enabled}>
+      <div className="space-y-2">
+        {hasAccounts ? (
+          ["BCA", "Mandiri"].map((bank) => (
+            <div key={bank} className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3">
+              <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[var(--color-accent)]">
+                {bank}
+              </p>
+              <p className="mt-1 text-sm font-black text-[var(--color-primary)]">
+                1234567890
+              </p>
+              <p className="mt-1 text-[10px] font-semibold text-[var(--color-text)]">
+                a.n. Dimas Pratama
+              </p>
+            </div>
+          ))
+        ) : (
+          <div className="rounded-[8px] border border-dashed border-[var(--color-accent)] bg-white p-4 text-center">
+            <p className="text-xs font-black text-[var(--color-primary)]">
+              Gift aktif, rekening belum tersedia.
+            </p>
+          </div>
+        )}
+      </div>
+    </WidgetPreviewShell>
+  );
+}
+
+export function RSVPWidgetPreview({ variant = "form", enabled = true, hasInvitationSlug = true }) {
+  return (
+    <WidgetPreviewShell title="RSVP Preview" label={hasInvitationSlug ? variant : "missing invitation"} enabled={enabled}>
+      <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3">
+        {hasInvitationSlug ? (
+          <>
+            <div className="grid grid-cols-2 gap-2">
+              <span className="rounded-lg bg-[var(--color-primary)] px-3 py-2 text-center text-[10px] font-black text-white">
+                Hadir
+              </span>
+              <span className="rounded-lg border border-[var(--color-accent-pale)] px-3 py-2 text-center text-[10px] font-black text-[var(--color-primary)]">
+                Tidak
+              </span>
+            </div>
+            <div className="mt-2 h-8 rounded-lg border border-[var(--color-accent-pale)] bg-[var(--color-bg)]" />
+            <span className="mt-2 block rounded-lg bg-[var(--color-accent)] px-3 py-2 text-center text-[10px] font-black text-[var(--color-primary)]">
+              Kirim RSVP
+            </span>
+          </>
+        ) : (
+          <p className="text-center text-xs font-black text-[var(--color-primary)]">
+            RSVP butuh invitation slug aktif.
+          </p>
+        )}
+      </div>
+    </WidgetPreviewShell>
   );
 }

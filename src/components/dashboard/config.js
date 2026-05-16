@@ -124,15 +124,25 @@ export const ornamentMaxRasterFileSize = 1024 * 1024;
 // ===== WIDGET VARIANT OPTIONS =====
 export const countdownVariantOptions = ["cards", "minimal", "circle", "flip-clock", "ring", "neon-glow"];
 export const eventVariantOptions = ["cards", "list", "elegant", "minimal", "corner-bracket"];
-export const storyVariantOptions = ["card", "timeline", "stacked", "photo-album"];
+export const storyVariantOptions = ["card", "timeline", "stacked", "photo-album", "chapter-scroll", "chat-style"];
 export const storyAnimationOptions = ["fade-up", "zoom-in", "slide-left", "stagger", "heartbeat", "blur-to-clear", "scale-bounce", "flip"];
-export const galleryVariantOptions = ["grid", "carousel", "masonry"];
+export const galleryVariantOptions = ["grid", "carousel", "masonry", "cinematic-slideshow"];
 
 // ===== COVER & OPENING OPTIONS =====
 export const coverLayoutOptions = ["centered", "split", "minimal"];
 export const coverDateVariantOptions = ["plain", "separator-dot", "separator-line", "stacked", "badge", "columns", "full-day", "block"];
 export const coverOpeningAnimationOptions = ["none", "fade-up", "zoom-in", "slide-left", "pop-up"];
 export const openingRevealAnimationOptions = ["fade", "zoom", "slide-up", "curtain", "gate", "paper"];
+export const openingSequencePresetOptions = [
+  "auto",
+  "simple",
+  "cinematic-soft",
+  "floral-bloom",
+  "falling-petals",
+  "royal-gate",
+  "paper-reveal",
+  "wayang-shadow",
+];
 export const openingRevealBackgroundModeOptions = ["color", "image"];
 export const coverBackgroundModeOptions = ["color", "image"];
 export const couplePhotoStyleOptions = ["circle", "arch", "square"];
@@ -262,6 +272,197 @@ export const sectionAnimationPresets = [
 // ===== TEMPLATE STYLE PRESETS =====
 export const templateStylePresets = [
   {
+    id: "classic",
+    label: "Classic",
+    description: "Klasik serif, cream-gold, opening lembut, dan ornament formal.",
+    sectionStyle: {
+      fontPreset: "serif",
+      spacingPreset: "roomy",
+      entranceAnimation: "fade-up",
+      backgroundColor: "#fbf7ef",
+      textColor: "#4a3a2a",
+      accentColor: "#d8a44d",
+    },
+    animation: {
+      enabled: true,
+      preset: "fade-sequence",
+      entrancePreset: "fade-in",
+      loopPreset: "none",
+      staggerStep: 0.14,
+    },
+    widgets: {
+      openingReveal: { enabled: true, animation: "curtain", backgroundMode: "color", backgroundColor: "#fbf7ef" },
+      openingSequence: { preset: "cinematic-soft" },
+      countdown: { variant: "minimal" },
+      events: { variant: "elegant", showIcon: true, showMaps: true },
+      story: { variant: "timeline", animation: "fade-up" },
+      gallery: { variant: "grid", includeCover: true },
+    },
+    cover: {
+      openingAnimation: "fade-up",
+      dateVariant: "separator-dot",
+    },
+    ornaments: {
+      home: [
+        { id: "classic-top", src: "/assets/blue-watercolor-frame.svg", slot: "top-left", width: 150, x: -10, y: -8, opacity: 0.42, animation: "none", entrance: "fade-in", zIndex: 1 },
+        { id: "classic-bottom", src: "/assets/blue-watercolor-frame.svg", slot: "bottom-right", width: 150, x: 10, y: 8, rotate: 180, opacity: 0.38, animation: "none", entrance: "fade-in", zIndex: 1 },
+      ],
+    },
+  },
+  {
+    id: "royal",
+    label: "Royal",
+    description: "Navy-gold, opening gate, typography tegas, dan ornament simetris.",
+    sectionStyle: {
+      fontPreset: "serif",
+      spacingPreset: "roomy",
+      entranceAnimation: "pop-up",
+      backgroundImage: "/assets/backgrounds/black-rose-frame.jpg",
+      backgroundColor: "#101a2f",
+      textColor: "#f8fafc",
+      accentColor: "#f5d06f",
+    },
+    animation: {
+      enabled: true,
+      preset: "pop-sequence",
+      entrancePreset: "pop-up",
+      loopPreset: "pulse",
+      staggerStep: 0.12,
+    },
+    widgets: {
+      openingReveal: { enabled: true, animation: "gate", backgroundMode: "color", backgroundColor: "#101a2f" },
+      openingSequence: { preset: "royal-gate" },
+      countdown: { variant: "circle" },
+      events: { variant: "elegant", showIcon: true, showMaps: true },
+      story: { variant: "card", animation: "zoom-in" },
+      gallery: { variant: "carousel", includeCover: true },
+    },
+    cover: {
+      openingAnimation: "pop-up",
+      dateVariant: "badge",
+    },
+    ornaments: {
+      home: [
+        { id: "royal-left", src: "/assets/blue-watercolor-frame.svg", slot: "middle-left", width: 130, x: -18, y: 0, opacity: 0.32, animation: "pulse", entrance: "pop-up", zIndex: 1 },
+        { id: "royal-right", src: "/assets/blue-watercolor-frame.svg", slot: "middle-right", width: 130, x: 18, y: 0, rotate: 180, opacity: 0.32, animation: "pulse", entrance: "pop-up", zIndex: 1 },
+      ],
+    },
+  },
+  {
+    id: "floral",
+    label: "Floral",
+    description: "Soft blush, bloom opening, ornament floating, dan gallery masonry.",
+    sectionStyle: {
+      fontPreset: "serif",
+      spacingPreset: "normal",
+      entranceAnimation: "zoom-in",
+      backgroundImage: "/assets/backgrounds/paper-fan-blush.jpg",
+      backgroundColor: "#fff5f1",
+      textColor: "#5c3d38",
+      accentColor: "#d9897f",
+    },
+    animation: {
+      enabled: true,
+      preset: "float-sequence",
+      entrancePreset: "fade-up",
+      loopPreset: "float",
+      staggerStep: 0.18,
+    },
+    widgets: {
+      openingReveal: { enabled: true, animation: "paper", backgroundMode: "color", backgroundColor: "#fff5f1" },
+      openingSequence: { preset: "floral-bloom" },
+      countdown: { variant: "cards" },
+      events: { variant: "cards", showIcon: true, showMaps: true },
+      story: { variant: "card", animation: "stagger" },
+      gallery: { variant: "masonry", includeCover: true },
+    },
+    cover: {
+      openingAnimation: "zoom-in",
+      dateVariant: "separator-line",
+    },
+    ornaments: {
+      home: [
+        { id: "floral-top", src: "/assets/blue-watercolor-frame.svg", slot: "top-right", width: 170, x: 10, y: -12, opacity: 0.48, animation: "float", entrance: "fade-up", zIndex: 1 },
+        { id: "floral-bottom", src: "/assets/blue-watercolor-frame.svg", slot: "bottom-left", width: 160, x: -10, y: 12, rotate: 180, opacity: 0.44, animation: "float", delay: 0.3, entrance: "fade-up", zIndex: 1 },
+      ],
+    },
+  },
+  {
+    id: "minimal",
+    label: "Minimal",
+    description: "Bersih, ringan, compact, opening optional, dan fokus typography.",
+    sectionStyle: {
+      fontPreset: "sans",
+      spacingPreset: "compact",
+      entranceAnimation: "fade-up",
+      backgroundColor: "#ffffff",
+      textColor: "#26211b",
+      accentColor: "#8a6f4d",
+    },
+    animation: {
+      enabled: false,
+      preset: "fade-sequence",
+      entrancePreset: "fade-in",
+      loopPreset: "none",
+      staggerStep: 0.12,
+    },
+    widgets: {
+      openingReveal: { enabled: false, animation: "fade", backgroundMode: "color", backgroundColor: "#ffffff" },
+      openingSequence: { preset: "simple" },
+      countdown: { variant: "minimal" },
+      events: { variant: "list", showIcon: false, showMaps: true },
+      story: { variant: "stacked", animation: "fade-up" },
+      gallery: { variant: "grid", includeCover: false },
+    },
+    cover: {
+      openingAnimation: "fade-up",
+      guestBlockStyle: "hidden",
+      dateVariant: "plain",
+    },
+    ornaments: {
+      home: [],
+    },
+  },
+  {
+    id: "cinematic",
+    label: "Cinematic",
+    description: "Roomy, dramatic entrance, falling petals, carousel, dan story stagger.",
+    sectionStyle: {
+      fontPreset: "sans",
+      spacingPreset: "roomy",
+      entranceAnimation: "pop-up",
+      backgroundImage: "/assets/backgrounds/green-watercolor-leaf.jpg",
+      backgroundColor: "#eef5ef",
+      textColor: "#223429",
+      accentColor: "#6f8f7a",
+    },
+    animation: {
+      enabled: true,
+      preset: "pop-sequence",
+      entrancePreset: "pop-up",
+      loopPreset: "float",
+      staggerStep: 0.16,
+    },
+    widgets: {
+      openingReveal: { enabled: true, animation: "curtain", backgroundMode: "color", backgroundColor: "#eef5ef" },
+      openingSequence: { preset: "falling-petals" },
+      countdown: { variant: "minimal" },
+      events: { variant: "list", showIcon: true, showMaps: true },
+      story: { variant: "stacked", animation: "stagger" },
+      gallery: { variant: "carousel", includeCover: true },
+    },
+    cover: {
+      openingAnimation: "zoom-in",
+      dateVariant: "full-day",
+    },
+    ornaments: {
+      home: [
+        { id: "cinematic-top", src: "/assets/blue-watercolor-frame.svg", slot: "top-left", width: 190, x: -18, y: -18, opacity: 0.28, animation: "float", entrance: "fade-in", zIndex: 1 },
+        { id: "cinematic-bottom", src: "/assets/blue-watercolor-frame.svg", slot: "bottom-right", width: 190, x: 18, y: 18, rotate: 180, opacity: 0.26, animation: "float", delay: 0.4, entrance: "fade-in", zIndex: 1 },
+      ],
+    },
+  },
+  {
     id: "elegant-fade",
     label: "Elegant Fade",
     description: "Serif, spacing lega, transisi halus, dan widget minimal.",
@@ -281,6 +482,7 @@ export const templateStylePresets = [
     },
     widgets: {
       openingReveal: { enabled: true, animation: "curtain" },
+      openingSequence: { preset: "cinematic-soft" },
       countdown: { variant: "minimal" },
       events: { variant: "elegant", showIcon: true, showMaps: true },
       story: { variant: "timeline", animation: "fade-up" },
@@ -310,6 +512,7 @@ export const templateStylePresets = [
     },
     widgets: {
       openingReveal: { enabled: true, animation: "paper" },
+      openingSequence: { preset: "floral-bloom" },
       countdown: { variant: "cards" },
       events: { variant: "cards", showIcon: true, showMaps: true },
       story: { variant: "card", animation: "stagger" },
@@ -339,6 +542,7 @@ export const templateStylePresets = [
     },
     widgets: {
       openingReveal: { enabled: true, animation: "paper" },
+      openingSequence: { preset: "floral-bloom" },
       countdown: { variant: "circle" },
       events: { variant: "elegant", showIcon: false, showMaps: true },
       story: { variant: "stacked", animation: "fade-up" },
@@ -368,6 +572,7 @@ export const templateStylePresets = [
     },
     widgets: {
       openingReveal: { enabled: true, animation: "curtain" },
+      openingSequence: { preset: "wayang-shadow" },
       countdown: { variant: "cards" },
       events: { variant: "elegant", showIcon: true, showMaps: true },
       story: { variant: "timeline", animation: "slide-left" },
@@ -398,6 +603,7 @@ export const templateStylePresets = [
     },
     widgets: {
       openingReveal: { enabled: true, animation: "gate" },
+      openingSequence: { preset: "royal-gate" },
       countdown: { variant: "circle" },
       events: { variant: "elegant", showIcon: true, showMaps: true },
       story: { variant: "card", animation: "zoom-in" },
@@ -427,6 +633,7 @@ export const templateStylePresets = [
     },
     widgets: {
       openingReveal: { enabled: true, animation: "curtain" },
+      openingSequence: { preset: "falling-petals" },
       countdown: { variant: "minimal" },
       events: { variant: "list", showIcon: true, showMaps: true },
       story: { variant: "stacked", animation: "stagger" },
@@ -434,6 +641,38 @@ export const templateStylePresets = [
     },
     cover: {
       openingAnimation: "zoom-in",
+    },
+  },
+  {
+    id: "islamic-serene",
+    label: "Islamic Serene",
+    description: "Nuansa hijau-gold, typography formal, opening lembut, dan layout bersih.",
+    sectionStyle: {
+      fontPreset: "serif",
+      spacingPreset: "roomy",
+      entranceAnimation: "fade-up",
+      backgroundColor: "#f7f4ea",
+      textColor: "#17362b",
+      accentColor: "#b7984f",
+    },
+    animation: {
+      enabled: true,
+      preset: "fade-sequence",
+      entrancePreset: "fade-in",
+      loopPreset: "none",
+      staggerStep: 0.16,
+    },
+    widgets: {
+      openingReveal: { enabled: true, animation: "curtain", backgroundMode: "color" },
+      openingSequence: { preset: "cinematic-soft" },
+      countdown: { variant: "minimal" },
+      events: { variant: "elegant", showIcon: false, showMaps: true },
+      story: { variant: "timeline", animation: "fade-up" },
+      gallery: { variant: "grid", includeCover: true },
+    },
+    cover: {
+      openingAnimation: "fade-up",
+      dateVariant: "separator-line",
     },
   },
   {
@@ -456,6 +695,7 @@ export const templateStylePresets = [
     },
     widgets: {
       openingReveal: { enabled: false, animation: "fade" },
+      openingSequence: { preset: "simple" },
       countdown: { variant: "minimal" },
       events: { variant: "list", showIcon: false, showMaps: true },
       story: { variant: "stacked", animation: "fade-up" },
@@ -465,6 +705,33 @@ export const templateStylePresets = [
       openingAnimation: "fade-up",
       guestBlockStyle: "hidden",
     },
+  },
+];
+
+export const smartThemeConcepts = [
+  {
+    id: "adat-jawa",
+    label: "Adat Jawa",
+    description: "Nuansa adat, side reveal, serif formal, dan ornament wayang.",
+    presetId: "wayang-reveal",
+  },
+  {
+    id: "modern-luxury",
+    label: "Modern Luxury",
+    description: "Gelap elegan, gold accent, opening gate, dan gallery carousel.",
+    presetId: "royal",
+  },
+  {
+    id: "floral-soft",
+    label: "Floral Soft",
+    description: "Blush floral, paper reveal, ornament floating, dan masonry gallery.",
+    presetId: "floral",
+  },
+  {
+    id: "islamic-elegant",
+    label: "Islamic Elegant",
+    description: "Hijau-gold, typography formal, opening lembut, dan layout bersih.",
+    presetId: "islamic-serene",
   },
 ];
 
@@ -537,9 +804,24 @@ export const activities = [
 // ===== STATUS STYLES =====
 export const statusStyles = {
   Published: "bg-[var(--color-wa)] text-white",
+  published: "bg-[var(--color-wa)] text-white",
+  archived: "bg-[var(--color-primary)] text-white",
   Review: "bg-[var(--color-accent)] text-[var(--color-primary)]",
+  review: "bg-[var(--color-accent)] text-[var(--color-primary)]",
   Revision: "bg-[var(--color-muted-strong)] text-[var(--color-primary)]",
+  revision: "bg-[var(--color-muted-strong)] text-[var(--color-primary)]",
   Draft: "bg-[var(--color-section-soft)] text-[var(--color-text)]",
+  draft: "bg-[var(--color-section-soft)] text-[var(--color-text)]",
+  inquiry: "bg-[var(--color-section-soft)] text-[var(--color-text)]",
+  waiting_payment: "bg-[var(--color-accent)] text-[var(--color-primary)]",
+  unpaid: "bg-[var(--color-section-soft)] text-[var(--color-text)]",
+  waiting_confirmation: "bg-[var(--color-accent)] text-[var(--color-primary)]",
+  paid: "bg-[var(--color-wa)] text-white",
+  in_progress: "bg-[var(--color-muted-strong)] text-[var(--color-primary)]",
+  approved: "bg-[var(--color-wa)] text-white",
+  completed: "bg-[var(--color-wa)] text-white",
+  cancelled: "bg-[var(--color-primary)] text-white",
+  refunded: "bg-[var(--color-primary)] text-white",
 };
 
 // ===== ANIMATION VARIANTS =====
@@ -549,24 +831,41 @@ export const fadeUp = {
 };
 
 // ===== FORM STEPS =====
-export const formSteps = ["Template", "Mempelai", "Acara", "Fitur", "Review"];
+export const formSteps = [
+  "Order",
+  "Template",
+  "Couple",
+  "Events",
+  "Features",
+  "Media",
+  "Guests",
+  "Review",
+];
 
 // ===== INITIAL INVITATION FORM =====
 export const initialInvitationForm = {
+  customerName: "",
+  customerWhatsapp: "",
+  orderStatus: "inquiry",
+  paymentStatus: "unpaid",
+  orderAmount: "",
+  orderDeadline: "",
+  conceptNotes: "",
+  paymentNotes: "Pembayaran manual via transfer bank.",
   template: "Standard",
   templateId: "standard",
   package: "Premium",
-  slug: "dimas-salsa",
-  groomName: "Dimas Pratama",
-  groomNickname: "Dimas",
-  brideName: "Salsa Kirana",
-  brideNickname: "Salsa",
-  quote: "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu pasangan hidup.",
-  eventTitle: "Akad Nikah",
-  eventDate: "2026-06-12",
-  eventTime: "09:00",
-  venue: "Gedung Serbaguna Nusantara",
-  mapsUrl: "https://maps.google.com",
+  slug: "",
+  groomName: "",
+  groomNickname: "",
+  brideName: "",
+  brideNickname: "",
+  quote: "",
+  eventTitle: "",
+  eventDate: "",
+  eventTime: "",
+  venue: "",
+  mapsUrl: "",
   rsvp: true,
   gift: true,
   music: true,

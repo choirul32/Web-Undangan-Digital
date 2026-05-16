@@ -13,14 +13,30 @@ import InvitationRenderer from "../../templates/InvitationRenderer";
 export default function PreviewPageClient() {
   const searchParams = useSearchParams();
   const [data, setData] = useState(sampleInvitation);
+  const slug = searchParams.get("slug");
   const templateId = searchParams.get("templateId");
   const editorPreview = searchParams.get("editorPreview") === "1";
+  const previewGuest = searchParams.get("previewGuest") || "";
+  const previewDataMode = searchParams.get("previewDataMode") || "filled";
 
   useEffect(() => {
     let isMounted = true;
 
     const loadPreviewData = async () => {
-      const draft = getStoredInvitationDraft() || sampleInvitation;
+      let draft = getStoredInvitationDraft() || sampleInvitation;
+
+      if (slug) {
+        try {
+          const response = await fetch(`/api/invitations/${encodeURIComponent(slug)}`);
+          const result = await response.json();
+          if (response.ok && result.data) {
+            draft = result.data;
+          }
+        } catch {
+          // Keep local draft/sample if slug preview API is unavailable.
+        }
+      }
+
       const previewData = templateId
         ? {
             ...sampleInvitation,
@@ -74,6 +90,27 @@ export default function PreviewPageClient() {
         }
       }
 
+      if (previewDataMode === "empty") {
+        nextData = {
+          ...nextData,
+          couple: {
+            ...nextData.couple,
+            groomName: "",
+            groomNickname: "",
+            brideName: "",
+            brideNickname: "",
+          },
+          events: [],
+          story: [],
+          gallery: [],
+          bankAccounts: [],
+          guests: [],
+          rsvps: [],
+          coverImage: "",
+          musicUrl: "",
+        };
+      }
+
       if (isMounted) {
         setData(nextData);
       }
@@ -84,7 +121,13 @@ export default function PreviewPageClient() {
     return () => {
       isMounted = false;
     };
-  }, [editorPreview, templateId]);
+  }, [editorPreview, slug, templateId]);
 
-  return <InvitationRenderer data={data} />;
+  return (
+    <InvitationRenderer
+      data={data}
+      guestName={previewGuest || undefined}
+      guestSlug={previewGuest ? "preview-guest" : undefined}
+    />
+  );
 }

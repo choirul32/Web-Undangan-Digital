@@ -82,6 +82,86 @@ export default function StoryWidget({ stories = [], config = defaultStoryWidgetC
     return null;
   }
 
+  if (config.variant === "chapter-scroll") {
+    return (
+      <div className={classes.container || "mt-8 space-y-5"}>
+        {stories.map((item, index) => {
+          const animation = animationProps(config.animation, index);
+
+          return (
+            <motion.article
+              key={`${item.year}-${item.title}-${index}`}
+              {...animation}
+              viewport={{ once: true, amount: 0.3 }}
+              transition={animation.transition || { duration: 0.55, ease: "easeOut" }}
+              className="group relative overflow-hidden rounded-[26px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)]/88 p-6 text-left shadow-xl shadow-[var(--color-primary)]/8 backdrop-blur sm:p-8"
+            >
+              <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[var(--color-accent)]/12 transition-transform duration-500 group-hover:scale-125" />
+              <div className="relative flex items-start gap-5">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[var(--color-accent)]/35 bg-[var(--color-bg)] text-lg font-black text-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/8">
+                  {String(index + 1).padStart(2, "0")}
+                </div>
+                <div>
+                  {item.year ? (
+                    <p className="text-xs font-black uppercase tracking-[0.22em] text-[var(--color-accent)]">
+                      Chapter {item.year}
+                    </p>
+                  ) : null}
+                  <h3 className="mt-2 font-serif text-2xl font-black leading-tight text-[var(--color-heading)]" style={{ fontFamily: "var(--font-heading)" }}>
+                    {item.title}
+                  </h3>
+                  <p className="mt-3 text-base font-semibold leading-8 text-[var(--color-text)]">
+                    {item.desc || item.description}
+                  </p>
+                </div>
+              </div>
+            </motion.article>
+          );
+        })}
+      </div>
+    );
+  }
+
+  if (config.variant === "chat-style") {
+    return (
+      <div className={classes.container || "mt-8 space-y-4"}>
+        {stories.map((item, index) => {
+          const animation = animationProps(config.animation, index);
+          const isRight = index % 2 === 1;
+
+          return (
+            <motion.article
+              key={`${item.year}-${item.title}-${index}`}
+              {...animation}
+              viewport={{ once: true, amount: 0.25 }}
+              transition={animation.transition || { duration: 0.45, ease: "easeOut" }}
+              className={`flex ${isRight ? "justify-end" : "justify-start"}`}
+            >
+              <div className={`max-w-[82%] rounded-[24px] border border-[var(--color-accent-pale)] px-5 py-4 text-left shadow-lg shadow-[var(--color-primary)]/8 ${
+                isRight
+                  ? "rounded-br-md bg-[var(--color-primary)] text-white"
+                  : "rounded-bl-md bg-[var(--color-surface)]/90 text-[var(--color-text)]"
+              }`}
+              >
+                {item.year ? (
+                  <p className={`text-xs font-black uppercase tracking-[0.14em] ${isRight ? "text-white/70" : "text-[var(--color-accent)]"}`}>
+                    {item.year}
+                  </p>
+                ) : null}
+                <h3 className={`mt-1 text-lg font-black ${isRight ? "text-white" : "text-[var(--color-heading)]"}`}>
+                  {item.title}
+                </h3>
+                <p className={`mt-2 text-sm font-semibold leading-6 ${isRight ? "text-white/82" : "text-[var(--color-text)]"}`}>
+                  {item.desc || item.description}
+                </p>
+              </div>
+            </motion.article>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div className={classes.container || "mt-8 space-y-4"}>
       {stories.map((item, index) => {

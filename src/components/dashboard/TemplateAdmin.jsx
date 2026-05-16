@@ -16,6 +16,7 @@ import {
   getCoupleSectionConfig,
   getCoverSectionConfig,
   getOpeningRevealConfig,
+  getOpeningSequenceConfig,
   getSectionOrnaments,
   getSectionStyleConfig,
   normalizeDesignConfig,
@@ -24,6 +25,7 @@ import {
   templates,
   fadeUp,
   templateStylePresets,
+  smartThemeConcepts,
   templatePreviewViewports,
   templateCategoryOptions,
   templateBadgeOptions,
@@ -47,6 +49,7 @@ import {
   coverDateVariantOptions,
   coverOpeningAnimationOptions,
   openingRevealAnimationOptions,
+  openingSequencePresetOptions,
   openingRevealBackgroundModeOptions,
   coverBackgroundModeOptions,
   couplePhotoStyleOptions,
@@ -84,6 +87,8 @@ import {
   parseOrnamentSize,
   slugifyTemplateId,
   MusicPlayerPreview,
+  GiftWidgetPreview,
+  RSVPWidgetPreview,
 } from "./WidgetPreviews";
 
 function TemplateStatusPill({ status }) {
@@ -124,16 +129,76 @@ function MiniInput({ label, value, onChange, type = "text", step, disabled }) {
   );
 }
 
+function parseHexColor(color = "") {
+  const normalized = color.replace("#", "").trim();
+
+  if (!/^[0-9a-f]{6}$/i.test(normalized)) {
+    return null;
+  }
+
+  return {
+    r: parseInt(normalized.slice(0, 2), 16),
+    g: parseInt(normalized.slice(2, 4), 16),
+    b: parseInt(normalized.slice(4, 6), 16),
+  };
+}
+
+function colorLuminance(color) {
+  const rgb = parseHexColor(color);
+
+  if (!rgb) {
+    return null;
+  }
+
+  const channels = [rgb.r, rgb.g, rgb.b].map((value) => {
+    const normalized = value / 255;
+    return normalized <= 0.03928
+      ? normalized / 12.92
+      : ((normalized + 0.055) / 1.055) ** 2.4;
+  });
+
+  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+}
+
+function contrastRatio(foreground, background) {
+  const foregroundLuminance = colorLuminance(foreground);
+  const backgroundLuminance = colorLuminance(background);
+
+  if (foregroundLuminance === null || backgroundLuminance === null) {
+    return null;
+  }
+
+  const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+  const darker = Math.min(foregroundLuminance, backgroundLuminance);
+
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+function isMissingAssetPath(src = "") {
+  if (!src) {
+    return true;
+  }
+
+  if (src.startsWith("data:") || src.startsWith("http://") || src.startsWith("https://")) {
+    return false;
+  }
+
+  return !src.startsWith("/");
+}
+
+const openingAssetTypeOptions = ["motion", "lottie", "video", "image-sequence"];
+
 export default
 function TemplateAdminPage() {
   const editorSteps = [
-    { id: 1, label: "Basic" },
-    { id: 2, label: "Style" },
-    { id: 3, label: "Opening" },
-    { id: 4, label: "Widgets" },
-    { id: 5, label: "Ornaments" },
-    { id: 6, label: "Preview" },
-    { id: 7, label: "Publish" },
+    { id: 1, label: "Metadata" },
+    { id: 2, label: "Preset" },
+    { id: 3, label: "Global Style" },
+    { id: 4, label: "Opening" },
+    { id: 5, label: "Widgets" },
+    { id: 6, label: "Ornaments" },
+    { id: 7, label: "Preview" },
+    { id: 8, label: "Publish" },
   ];
   const [items, setItems] = useState(templates);
   const [query, setQuery] = useState("");
@@ -152,9 +217,12 @@ function TemplateAdminPage() {
   const [dynamicOrnamentAssets, setDynamicOrnamentAssets] = useState([]);
   const [isLoadingOrnamentAssets, setIsLoadingOrnamentAssets] = useState(false);
   const [previewViewport, setPreviewViewport] = useState("mobile");
+  const [previewGuestMode, setPreviewGuestMode] = useState("withGuest");
+  const [previewDataMode, setPreviewDataMode] = useState("filled");
   const [templatePreviewTick, setTemplatePreviewTick] = useState(0);
   const [uploadValidationWarning, setUploadValidationWarning] = useState("");
   const [selectedTemplatePreset, setSelectedTemplatePreset] = useState(templateStylePresets[0].id);
+  const [selectedThemeConcept, setSelectedThemeConcept] = useState(smartThemeConcepts[0].id);
   const [editorStep, setEditorStep] = useState(1);
   const [isAdvancedOpen, setIsAdvancedOpen] = useState(false);
   const [previewEntranceKey, setPreviewEntranceKey] = useState(0);
@@ -338,6 +406,147 @@ function TemplateAdminPage() {
       warnings.push(uploadValidationWarning);
     }
 
+    const globalStyle = parsedDesignConfig.sections?.global || {};
+    const ratio = contrastRatio(
+      globalStyle.textColor || "#262626",
+      globalStyle.backgroundColor || "#ffffff",
+    );
+
+    if (ratio !== null && ratio < 4.5) {
+      warnings.push(
+        `Contrast global rendah (${ratio.toFixed(1)}:1). Gunakan warna text/background yang lebih kontras.`,
+      );
+    }
+
+    Object.entries(parsedDesignConfig.sections || {}).forEach(([section, config]) => {
+      const width = parseOrnamentSize(config.maxWidth || config.contentWidth || "");
+
+      if (width > 430) {
+        warnings.push(
+          `Section "${section}" punya width ${width}px. Cek mobile 430 agar tidak overflow.`,
+        );
+      }
+
+      if (config.backgroundImage && isMissingAssetPath(config.backgroundImage)) {
+        warnings.push(`Section "${section}" memakai background asset yang tidak valid.`);
+      }
+    });
+
+    const openingConfig = {
+      enabled: false,
+      animation: "fade",
+      sequencePreset: parsedDesignConfig.widgets?.openingSequence?.preset,
+      ...(parsedDesignConfig.widgets?.openingReveal || {}),
+    };
+    const openingAssetConfig = {
+      type: "motion",
+      duration: 4,
+      delay: 0,
+      loop: false,
+      skippable: true,
+      ...(parsedDesignConfig.widgets?.openingSequence?.asset || {}),
+    };
+    const galleryConfig = {
+      enabled: true,
+      limit: 6,
+      ...(parsedDesignConfig.widgets?.gallery || {}),
+    };
+    const countdownConfig = {
+      enabled: true,
+      eventIndex: 0,
+      ...(parsedDesignConfig.widgets?.countdown || {}),
+    };
+
+    if (
+      openingConfig.enabled &&
+      openingConfig.backgroundMode === "image" &&
+      isMissingAssetPath(openingConfig.backgroundImage)
+    ) {
+      warnings.push("Opening aktif dengan background image kosong/tidak valid.");
+    }
+
+    if (
+      openingConfig.enabled &&
+      (["gate", "curtain", "paper"].includes(openingConfig.animation) ||
+        ["floral-bloom", "falling-petals", "royal-gate", "wayang-shadow"].includes(openingConfig.sequencePreset)) &&
+      activeOrnaments.length > 8
+    ) {
+      warnings.push("Opening cinematic plus banyak ornament bisa berat di mobile. Kurangi ornament atau pakai animasi lebih ringan.");
+    }
+
+    if (openingConfig.enabled && openingAssetConfig.type === "video") {
+      if (isMissingAssetPath(openingAssetConfig.src)) {
+        warnings.push("Opening video aktif tetapi file video belum diisi.");
+      }
+
+      if (isMissingAssetPath(openingAssetConfig.poster)) {
+        warnings.push("Opening video sebaiknya punya poster fallback untuk mobile/reduced-motion.");
+      }
+
+      if (Number(openingAssetConfig.duration || 0) > 8) {
+        warnings.push("Durasi opening video terlalu panjang. Target production maksimal 8 detik.");
+      }
+
+      if (String(openingAssetConfig.src || "").length > 8_000_000) {
+        warnings.push("Opening video data URL terlalu besar untuk template config. Pakai storage URL production.");
+      }
+    }
+
+    if (openingConfig.enabled && openingAssetConfig.type === "lottie") {
+      if (isMissingAssetPath(openingAssetConfig.src)) {
+        warnings.push("Opening Lottie aktif tetapi file JSON belum diisi.");
+      }
+
+      if (isMissingAssetPath(openingAssetConfig.poster)) {
+        warnings.push("Opening Lottie butuh poster fallback sebelum renderer Lottie production aktif.");
+      }
+    }
+
+    if (
+      openingConfig.enabled &&
+      openingAssetConfig.type === "image-sequence" &&
+      isMissingAssetPath(openingAssetConfig.src) &&
+      !Array.isArray(openingAssetConfig.frames)
+    ) {
+      warnings.push("Opening image-sequence aktif tetapi frame/poster belum diisi.");
+    }
+
+    if (galleryConfig.enabled && Number(galleryConfig.limit || 0) <= 0) {
+      warnings.push("Gallery aktif tetapi limit <= 0. Public renderer bisa terlihat kosong.");
+    }
+
+    if (countdownConfig.enabled && Number(countdownConfig.eventIndex || 0) < 0) {
+      warnings.push("Countdown aktif tetapi event index tidak valid.");
+    }
+
+    const giftConfig = {
+      enabled: true,
+      hasFallbackAccounts: true,
+      ...(parsedDesignConfig.widgets?.gift || {}),
+    };
+    const rsvpConfig = {
+      enabled: true,
+      hasInvitationSlug: true,
+      ...(parsedDesignConfig.widgets?.rsvp || {}),
+    };
+    const musicConfig = {
+      enabled: true,
+      hasAudio: true,
+      ...(parsedDesignConfig.widgets?.music || {}),
+    };
+
+    if (giftConfig.enabled && giftConfig.hasFallbackAccounts === false) {
+      warnings.push("Gift aktif tanpa fallback rekening. Public section harus hide atau tampil warning admin-only.");
+    }
+
+    if (rsvpConfig.enabled && rsvpConfig.hasInvitationSlug === false) {
+      warnings.push("RSVP aktif tanpa invitation slug. Submit bisa gagal.");
+    }
+
+    if (musicConfig.enabled && musicConfig.hasAudio === false) {
+      warnings.push("Music aktif tanpa file audio. Player harus hide agar public page tidak rusak.");
+    }
+
     return warnings;
   }, [
     activeDesignSection,
@@ -346,6 +555,33 @@ function TemplateAdminPage() {
     templateDraft,
     uploadValidationWarning,
   ]);
+  const templateQualityWarnings = useMemo(() => {
+    if (!templateDraft) {
+      return [];
+    }
+
+    const warnings = [];
+    if (!templateDraft.image) {
+      warnings.push("Thumbnail template belum tersedia.");
+    }
+    if (!templateDraft.previewUrl) {
+      warnings.push("Preview URL belum diisi, sistem akan memakai preview default.");
+    }
+    if (!parsedDesignConfig) {
+      warnings.push("Design config belum valid.");
+    }
+    if (parsedDesignConfig && !parsedDesignConfig.preset) {
+      warnings.push("Preset belum dipilih/applied. Gunakan step Preset agar desain konsisten.");
+    }
+    if ((templateDraft.supportedFeatures || []).length === 0) {
+      warnings.push("Supported features kosong. Admin sulit tahu widget apa yang aman dipakai.");
+    }
+    if (validationWarnings.length > 0) {
+      warnings.push(...validationWarnings);
+    }
+
+    return warnings;
+  }, [parsedDesignConfig, templateDraft, validationWarnings]);
   const countdownWidgetConfig = {
     enabled: true,
     eventIndex: 0,
@@ -384,8 +620,26 @@ function TemplateAdminPage() {
     autoLoop: true,
     ...(parsedDesignConfig?.widgets?.music || {}),
   };
+  const giftWidgetConfig = {
+    enabled: true,
+    variant: "cards",
+    copyButton: true,
+    showQr: false,
+    hasFallbackAccounts: true,
+    ...(parsedDesignConfig?.widgets?.gift || {}),
+  };
+  const rsvpWidgetConfig = {
+    enabled: true,
+    variant: "form",
+    showPax: true,
+    showMessage: true,
+    requireGuestName: false,
+    hasInvitationSlug: true,
+    ...(parsedDesignConfig?.widgets?.rsvp || {}),
+  };
   const coverSectionConfig = getCoverSectionConfig(parsedDesignConfig || {});
   const openingRevealWidgetConfig = getOpeningRevealConfig(parsedDesignConfig || {});
+  const openingSequenceWidgetConfig = getOpeningSequenceConfig(parsedDesignConfig || {});
   const coupleSectionConfig = getCoupleSectionConfig(parsedDesignConfig || {});
   const globalSectionStyleConfig = getSectionStyleConfig(parsedDesignConfig || {}, "global");
   const activeSectionStyleConfig = getSectionStyleConfig(
@@ -414,8 +668,20 @@ function TemplateAdminPage() {
   );
   const templatePreviewSrc = useMemo(() => {
     const previewTemplateId = templateDraft?.id || sampleInvitation.templateId;
-    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&focusSection=${encodeURIComponent(previewFocusSection)}&previewTick=${templatePreviewTick}`;
-  }, [previewFocusSection, templateDraft?.id, templatePreviewTick]);
+    const guestQuery =
+      previewGuestMode === "withGuest"
+        ? `&previewGuest=${encodeURIComponent("Bapak/Ibu Preview")}`
+        : "";
+
+    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&focusSection=${encodeURIComponent(previewFocusSection)}&previewTick=${templatePreviewTick}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
+  }, [
+    previewDataMode,
+    previewFocusSection,
+    previewGuestMode,
+    templateDraft?.id,
+    templatePreviewTick,
+  ]);
+  const fullTemplatePreviewSrc = `${templatePreviewSrc}&viewport=${encodeURIComponent(previewViewport)}`;
 
   useEffect(() => {
     if (!templateDraft) {
@@ -616,6 +882,40 @@ function TemplateAdminPage() {
     });
   };
 
+  const updateGiftWidget = (field, value) => {
+    if (!parsedDesignConfig) {
+      return;
+    }
+
+    writeDesignConfig({
+      ...parsedDesignConfig,
+      widgets: {
+        ...(parsedDesignConfig.widgets || {}),
+        gift: {
+          ...giftWidgetConfig,
+          [field]: value,
+        },
+      },
+    });
+  };
+
+  const updateRsvpWidget = (field, value) => {
+    if (!parsedDesignConfig) {
+      return;
+    }
+
+    writeDesignConfig({
+      ...parsedDesignConfig,
+      widgets: {
+        ...(parsedDesignConfig.widgets || {}),
+        rsvp: {
+          ...rsvpWidgetConfig,
+          [field]: value,
+        },
+      },
+    });
+  };
+
   const updateOpeningRevealWidget = (field, value) => {
     if (!parsedDesignConfig) {
       return;
@@ -631,6 +931,86 @@ function TemplateAdminPage() {
         },
       },
     });
+  };
+
+  const updateOpeningSequenceWidget = (field, value) => {
+    if (!parsedDesignConfig) {
+      return;
+    }
+
+    writeDesignConfig({
+      ...parsedDesignConfig,
+      widgets: {
+        ...(parsedDesignConfig.widgets || {}),
+        openingSequence: {
+          ...openingSequenceWidgetConfig,
+          [field]: value,
+        },
+      },
+    });
+  };
+
+  const updateOpeningSequenceAsset = (field, value) => {
+    if (!parsedDesignConfig) {
+      return;
+    }
+
+    updateOpeningSequenceAssetFields({ [field]: value });
+  };
+
+  const updateOpeningSequenceAssetFields = (fields) => {
+    if (!parsedDesignConfig) {
+      return;
+    }
+
+    writeDesignConfig({
+      ...parsedDesignConfig,
+      widgets: {
+        ...(parsedDesignConfig.widgets || {}),
+        openingSequence: {
+          ...openingSequenceWidgetConfig,
+          asset: {
+            ...(openingSequenceWidgetConfig.asset || {}),
+            ...fields,
+          },
+        },
+      },
+    });
+  };
+
+  const updateOpeningSequenceAssetFile = async (field, file) => {
+    if (!file || !parsedDesignConfig) {
+      return;
+    }
+
+    const assetType = field === "poster" ? "poster" : openingSequenceWidgetConfig.asset?.type || "motion";
+    const formData = new FormData();
+    formData.append("templateId", templateDraft?.id || "template");
+    formData.append("assetType", assetType);
+    formData.append("assetRole", field);
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("/api/templates/opening-assets/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json();
+
+      if (response.ok && result.data?.url) {
+        updateOpeningSequenceAssetFields({
+          [field]: result.data.url,
+          [field === "poster" ? "posterStoragePath" : "storagePath"]:
+            result.data.storagePath || "",
+        });
+        return;
+      }
+    } catch {
+      // Fall back to local data URL preview if storage upload is not available.
+    }
+
+    const previewUrl = await readFileAsDataUrl(file);
+    updateOpeningSequenceAsset(field, previewUrl);
   };
 
   const updateOpeningRevealImage = async (field, file) => {
@@ -735,8 +1115,10 @@ function TemplateAdminPage() {
     });
   };
 
-  const applyTemplateStylePreset = (scope = "template") => {
-    if (!parsedDesignConfig || !activeTemplatePreset) {
+  const applyTemplateStylePreset = (scope = "template", presetOverride = null) => {
+    const presetToApply = presetOverride || activeTemplatePreset;
+
+    if (!parsedDesignConfig || !presetToApply) {
       return;
     }
 
@@ -749,61 +1131,102 @@ function TemplateAdminPage() {
         ...(parsedDesignConfig.animations?.sections || {}),
       },
     };
+    const nextOrnaments = { ...(parsedDesignConfig.ornaments || {}) };
 
     if (scope === "template") {
       nextSections.global = {
         ...(nextSections.global || {}),
-        ...activeTemplatePreset.sectionStyle,
+        ...presetToApply.sectionStyle,
       };
+
+      if (presetToApply.ornaments) {
+        Object.entries(presetToApply.ornaments).forEach(([section, ornaments]) => {
+          nextOrnaments[section] = ornaments.map((ornament, index) => ({
+            objectFit: "contain",
+            height: "",
+            rotate: 0,
+            opacity: 1,
+            zIndex: 1,
+            mirror: false,
+            duration: 6,
+            delay: 0,
+            timelineTrack: 0,
+            timelinePosition: index * 0.2,
+            ...ornament,
+          }));
+        });
+      }
     }
 
     targetSections.forEach((section) => {
       nextSections[section] = {
         ...(nextSections[section] || {}),
-        ...activeTemplatePreset.sectionStyle,
+        ...presetToApply.sectionStyle,
         useGlobal: false,
-        ...(section === "home" ? activeTemplatePreset.cover : {}),
+        ...(section === "home" ? presetToApply.cover : {}),
       };
       nextAnimations.sections[section] = {
         ...(nextAnimations.sections[section] || {}),
-        ...activeTemplatePreset.animation,
+        ...presetToApply.animation,
       };
     });
 
     writeDesignConfig({
       ...parsedDesignConfig,
-      preset: activeTemplatePreset.id,
+      preset: presetToApply.id,
       sections: nextSections,
       widgets: {
         ...(parsedDesignConfig.widgets || {}),
         openingReveal: {
           ...openingRevealWidgetConfig,
-          ...(activeTemplatePreset.widgets.openingReveal || {}),
+          ...(presetToApply.widgets.openingReveal || {}),
+        },
+        openingSequence: {
+          ...openingSequenceWidgetConfig,
+          ...(presetToApply.widgets.openingSequence || {}),
         },
         countdown: {
           ...countdownWidgetConfig,
-          ...(activeTemplatePreset.widgets.countdown || {}),
+          ...(presetToApply.widgets.countdown || {}),
         },
         events: {
           ...eventWidgetConfig,
-          ...(activeTemplatePreset.widgets.events || {}),
+          ...(presetToApply.widgets.events || {}),
         },
         story: {
           ...storyWidgetConfig,
-          ...(activeTemplatePreset.widgets.story || {}),
+          ...(presetToApply.widgets.story || {}),
         },
         gallery: {
           ...galleryWidgetConfig,
-          ...(activeTemplatePreset.widgets.gallery || {}),
+          ...(presetToApply.widgets.gallery || {}),
         },
       },
       animations: nextAnimations,
+      ornaments: nextOrnaments,
     });
     setManagerMessage(
       scope === "section"
-        ? `${activeTemplatePreset.label} diterapkan ke section ${activeDesignSection}.`
-        : `${activeTemplatePreset.label} diterapkan ke template.`,
+        ? `${presetToApply.label} diterapkan ke section ${activeDesignSection}.`
+        : `${presetToApply.label} diterapkan ke template.`,
     );
+  };
+
+  const applySmartThemeConcept = () => {
+    const concept =
+      smartThemeConcepts.find((item) => item.id === selectedThemeConcept) ||
+      smartThemeConcepts[0];
+    const preset =
+      templateStylePresets.find((item) => item.id === concept?.presetId) ||
+      templateStylePresets[0];
+
+    if (!concept || !preset) {
+      return;
+    }
+
+    setSelectedTemplatePreset(preset.id);
+    applyTemplateStylePreset("template", preset);
+    setManagerMessage(`${concept.label} composer menghasilkan preset ${preset.label}. Hasil tetap bisa diedit manual.`);
   };
 
   const addOrnament = () => {
@@ -1311,6 +1734,14 @@ function TemplateAdminPage() {
       return;
     }
 
+    if (templateDraft.status === "active" && templateQualityWarnings.length > 0) {
+      setManagerMessage(
+        `Quality guard: ${templateQualityWarnings[0]} Ubah status ke Hidden jika masih draft.`,
+      );
+      setEditorStep(editorSteps.length);
+      return;
+    }
+
     const draftToSave = {
       ...templateDraft,
       previewUrl:
@@ -1679,6 +2110,102 @@ function TemplateAdminPage() {
             <div className="mt-5 grid gap-5 md:grid-cols-2">
               <div className={`scroll-mt-24 md:col-span-2 ${editorStep === 2 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                        Preset-First Workflow
+                      </p>
+                      <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
+                        Mulai dari preset agar template tidak dibangun dari JSON kosong.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => applyTemplateStylePreset("template")}
+                      className="rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-black text-white"
+                    >
+                      Apply Preset
+                    </button>
+                  </div>
+                  <div className="mt-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-4">
+                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                      <div>
+                        <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-accent)]">
+                          Smart Theme Composer
+                        </p>
+                        <p className="mt-1 text-sm font-semibold leading-6 text-[var(--color-text)]">
+                          Pilih konsep, lalu composer mengisi design config default yang tetap bisa diedit lanjut.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={applySmartThemeConcept}
+                        className="rounded-xl border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 py-2 text-sm font-black text-white"
+                      >
+                        Generate From Concept
+                      </button>
+                    </div>
+                    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                      {smartThemeConcepts.map((concept) => (
+                        <button
+                          key={concept.id}
+                          type="button"
+                          onClick={() => setSelectedThemeConcept(concept.id)}
+                          className={`rounded-[8px] border p-4 text-left transition-colors ${
+                            selectedThemeConcept === concept.id
+                              ? "border-[var(--color-primary)] bg-[var(--color-bg)]"
+                              : "border-[var(--color-accent-pale)] bg-white hover:bg-[var(--color-bg)]"
+                          }`}
+                        >
+                          <p className="text-sm font-black text-[var(--color-primary)]">
+                            {concept.label}
+                          </p>
+                          <p className="mt-1 text-xs font-semibold leading-5 text-[var(--color-text)]">
+                            {concept.description}
+                          </p>
+                          <p className="mt-3 text-[10px] font-black uppercase tracking-[0.1em] text-[var(--color-accent)]">
+                            preset: {concept.presetId}
+                          </p>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                    {templateStylePresets.map((preset) => (
+                      <button
+                        key={preset.id}
+                        type="button"
+                        onClick={() => setSelectedTemplatePreset(preset.id)}
+                        className={`rounded-[8px] border p-4 text-left transition-colors ${
+                          selectedTemplatePreset === preset.id
+                            ? "border-[var(--color-primary)] bg-white"
+                            : "border-[var(--color-accent-pale)] bg-white/70 hover:bg-white"
+                        }`}
+                      >
+                        <p className="text-base font-black text-[var(--color-primary)]">
+                          {preset.label}
+                        </p>
+                        <p className="mt-1 text-sm font-semibold leading-6 text-[var(--color-text)]">
+                          {preset.description || "Mengatur warna, typography, spacing, opening, widget, dan animasi dasar."}
+                        </p>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          <span className="rounded-full bg-[var(--color-accent-pale)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[var(--color-primary)]">
+                            {preset.sectionStyle?.fontPreset || "font"}
+                          </span>
+                          <span className="rounded-full bg-[var(--color-accent-pale)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[var(--color-primary)]">
+                            {preset.widgets?.openingSequence?.preset || "opening"}
+                          </span>
+                          <span className="rounded-full bg-[var(--color-accent-pale)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[var(--color-primary)]">
+                            {preset.widgets?.gallery?.variant || "gallery"}
+                          </span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className={`scroll-mt-24 md:col-span-2 ${editorStep === 3 ? "" : "hidden"}`}>
+                <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
                     Color Palette
                   </p>
@@ -1719,7 +2246,7 @@ function TemplateAdminPage() {
                   </div>
                 </div>
               </div>
-              <div className={`scroll-mt-24 md:col-span-2 ${editorStep === 2 ? "" : "hidden"}`}>
+              <div className={`scroll-mt-24 md:col-span-2 ${editorStep === 3 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
                     Typography
@@ -1775,7 +2302,7 @@ function TemplateAdminPage() {
                   </div>
                 </div>
               </div>
-              <div className={`scroll-mt-24 md:col-span-2 ${editorStep === 2 ? "" : "hidden"}`}>
+              <div className={`scroll-mt-24 md:col-span-2 ${editorStep === 3 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
                     Layout & Animation
@@ -1838,7 +2365,7 @@ function TemplateAdminPage() {
                   </div>
                 </div>
               </div>
-              <div className={`scroll-mt-24 md:col-span-2 ${editorStep === 2 ? "" : "hidden"}`}>
+              <div className={`scroll-mt-24 md:col-span-2 ${editorStep === 3 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <div className="flex items-center justify-between">
                     <div>
@@ -1874,7 +2401,7 @@ function TemplateAdminPage() {
                   </div>
                 </div>
               </div>
-              <div id="template-cover" className={`scroll-mt-24 md:col-span-2 ${editorStep === 2 ? "" : "hidden"}`}>
+              <div id="template-cover" className={`scroll-mt-24 md:col-span-2 ${editorStep === 3 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
                     Cover Section
@@ -2001,7 +2528,7 @@ function TemplateAdminPage() {
                   </div>
                 </div>
               </div>
-              <div id="template-couple" className={`scroll-mt-24 md:col-span-2 ${editorStep === 2 ? "" : "hidden"}`}>
+              <div id="template-couple" className={`scroll-mt-24 md:col-span-2 ${editorStep === 3 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
                     Couple Section
@@ -2104,7 +2631,7 @@ function TemplateAdminPage() {
                   </div>
                 </div>
               </div>
-              <div id="template-opening-reveal" className={`scroll-mt-24 md:col-span-2 ${editorStep === 3 ? "" : "hidden"}`}>
+              <div id="template-opening-reveal" className={`scroll-mt-24 md:col-span-2 ${editorStep === 4 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -2145,6 +2672,25 @@ function TemplateAdminPage() {
                             </option>
                           ))}
                         </select>
+                      </label>
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Sequence Preset
+                        </span>
+                        <select
+                          value={openingSequenceWidgetConfig.preset || "auto"}
+                          onChange={(event) => updateOpeningSequenceWidget("preset", event.target.value)}
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          {openingSequencePresetOptions.map((preset) => (
+                            <option key={preset} value={preset}>
+                              {preset}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="mt-2 text-xs font-semibold leading-5 text-[var(--color-text)]/70">
+                          Preset ini mengatur timing dan feel kartu opening. Animasi tetap mengatur gaya panel seperti curtain/gate.
+                        </p>
                       </label>
                       <MiniInput
                         label="Button Text"
@@ -2222,12 +2768,141 @@ function TemplateAdminPage() {
                           Auto play musik
                         </span>
                       </label>
+                      <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-4 md:col-span-3">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-accent)]">
+                              Opening Asset
+                            </p>
+                            <p className="mt-1 text-sm font-semibold leading-6 text-[var(--color-text)]">
+                              Asset cinematic khusus opening. Default `motion` tetap ringan; video/Lottie wajib punya fallback.
+                            </p>
+                          </div>
+                          <span className="rounded-full bg-[var(--color-accent-pale)] px-3 py-1 text-xs font-black text-[var(--color-primary)]">
+                            {openingSequenceWidgetConfig.asset?.type || "motion"}
+                          </span>
+                        </div>
+                        <div className="mt-4 grid gap-4 md:grid-cols-3">
+                          <label className="block">
+                            <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                              Asset Type
+                            </span>
+                            <select
+                              value={openingSequenceWidgetConfig.asset?.type || "motion"}
+                              onChange={(event) => updateOpeningSequenceAsset("type", event.target.value)}
+                              className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                            >
+                              {openingAssetTypeOptions.map((type) => (
+                                <option key={type} value={type}>
+                                  {type}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <MiniInput
+                            label="Duration"
+                            type="number"
+                            step="0.5"
+                            value={openingSequenceWidgetConfig.asset?.duration ?? 4}
+                            onChange={(value) => updateOpeningSequenceAsset("duration", Number(value))}
+                          />
+                          <MiniInput
+                            label="Delay"
+                            type="number"
+                            step="0.1"
+                            value={openingSequenceWidgetConfig.asset?.delay ?? 0}
+                            onChange={(value) => updateOpeningSequenceAsset("delay", Number(value))}
+                          />
+                          <label className="block">
+                            <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                              Asset File
+                            </span>
+                            <input
+                              type="file"
+                              accept="video/*,image/*,.json,application/json"
+                              onChange={(event) => updateOpeningSequenceAssetFile("src", event.target.files?.[0])}
+                              className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--color-primary)] file:px-3 file:py-2 file:text-sm file:font-black file:text-white focus:border-[var(--color-accent)]"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                              Poster Fallback
+                            </span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(event) => updateOpeningSequenceAssetFile("poster", event.target.files?.[0])}
+                              className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--color-primary)] file:px-3 file:py-2 file:text-sm file:font-black file:text-white focus:border-[var(--color-accent)]"
+                            />
+                          </label>
+                          <label className="block">
+                            <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                              Fallback Preset
+                            </span>
+                            <select
+                              value={openingSequenceWidgetConfig.asset?.fallbackPreset || "auto"}
+                              onChange={(event) => updateOpeningSequenceAsset("fallbackPreset", event.target.value)}
+                              className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                            >
+                              {openingSequencePresetOptions.map((preset) => (
+                                <option key={preset} value={preset}>
+                                  {preset}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                        </div>
+                        <div className="mt-4 grid gap-3 md:grid-cols-3">
+                          <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-3 py-2">
+                            <input
+                              type="checkbox"
+                              checked={Boolean(openingSequenceWidgetConfig.asset?.loop)}
+                              onChange={(event) => updateOpeningSequenceAsset("loop", event.target.checked)}
+                              className="h-4 w-4"
+                            />
+                            <span className="text-sm font-black text-[var(--color-primary)]">
+                              Loop asset
+                            </span>
+                          </label>
+                          <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-3 py-2">
+                            <input
+                              type="checkbox"
+                              checked={openingSequenceWidgetConfig.asset?.skippable !== false}
+                              onChange={(event) => updateOpeningSequenceAsset("skippable", event.target.checked)}
+                              className="h-4 w-4"
+                            />
+                            <span className="text-sm font-black text-[var(--color-primary)]">
+                              Skip button
+                            </span>
+                          </label>
+                          <label className="block">
+                            <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                              Entrance Timing
+                            </span>
+                            <select
+                              value={openingSequenceWidgetConfig.asset?.entranceTiming || "with-content"}
+                              onChange={(event) => updateOpeningSequenceAsset("entranceTiming", event.target.value)}
+                              className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                            >
+                              <option value="with-content">with-content</option>
+                              <option value="before-content">before-content</option>
+                              <option value="background-only">background-only</option>
+                            </select>
+                          </label>
+                        </div>
+                      </div>
                     </div>
-                    <OpeningRevealPreview config={openingRevealWidgetConfig} />
+                    <OpeningRevealPreview
+                      config={{
+                        ...openingRevealWidgetConfig,
+                        sequencePreset: openingSequenceWidgetConfig.preset,
+                        asset: openingSequenceWidgetConfig.asset,
+                      }}
+                    />
                   </div>
                 </div>
               </div>
-              <div id="template-widgets" className={`scroll-mt-24 md:col-span-2 ${editorStep === 4 ? "" : "hidden"}`}>
+              <div id="template-widgets" className={`scroll-mt-24 md:col-span-2 ${editorStep === 5 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -2300,7 +2975,7 @@ function TemplateAdminPage() {
                   </div>
                 </div>
               </div>
-              <div className={`md:col-span-2 ${editorStep === 4 ? "" : "hidden"}`}>
+              <div className={`md:col-span-2 ${editorStep === 5 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -2366,7 +3041,7 @@ function TemplateAdminPage() {
                   </div>
                 </div>
               </div>
-              <div className={`md:col-span-2 ${editorStep === 4 ? "" : "hidden"}`}>
+              <div className={`md:col-span-2 ${editorStep === 5 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -2432,7 +3107,7 @@ function TemplateAdminPage() {
                   </div>
                 </div>
               </div>
-              <div className={`md:col-span-2 ${editorStep === 4 ? "" : "hidden"}`}>
+              <div className={`md:col-span-2 ${editorStep === 5 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -2506,7 +3181,7 @@ function TemplateAdminPage() {
                   </div>
                 </div>
               </div>
-              <div className={`md:col-span-2 ${editorStep === 4 ? "" : "hidden"}`}>
+              <div className={`md:col-span-2 ${editorStep === 5 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -2628,6 +3303,17 @@ function TemplateAdminPage() {
                             Auto Loop
                           </span>
                         </label>
+                        <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
+                          <input
+                            type="checkbox"
+                            checked={musicWidgetConfig.hasAudio !== false}
+                            onChange={(event) => updateMusicWidget("hasAudio", event.target.checked)}
+                            className="h-4 w-4"
+                          />
+                          <span className="text-sm font-black text-[var(--color-primary)]">
+                            Audio fallback aman
+                          </span>
+                        </label>
                       </div>
                     </div>
                     <MusicPlayerPreview
@@ -2641,7 +3327,147 @@ function TemplateAdminPage() {
                   </div>
                 </div>
               </div>
-              <div id="template-ornaments" className={`scroll-mt-24 md:col-span-2 ${editorStep === 5 ? "" : "hidden"}`}>
+              <div className={`md:col-span-2 ${editorStep === 5 ? "" : "hidden"}`}>
+                <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                        Gift Widget
+                      </p>
+                      <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
+                        Urutan panel: enable, variant, style preset, behavior, preview, advanced.
+                      </p>
+                    </div>
+                    <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(giftWidgetConfig.enabled)}
+                        onChange={(event) => updateGiftWidget("enabled", event.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      <span className="text-sm font-black text-[var(--color-primary)]">
+                        Gift aktif
+                      </span>
+                    </label>
+                  </div>
+                  <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Variant
+                        </span>
+                        <select
+                          value={giftWidgetConfig.variant}
+                          onChange={(event) => updateGiftWidget("variant", event.target.value)}
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          <option value="cards">cards</option>
+                          <option value="minimal">minimal</option>
+                          <option value="stacked">stacked</option>
+                        </select>
+                      </label>
+                      <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(giftWidgetConfig.copyButton)}
+                          onChange={(event) => updateGiftWidget("copyButton", event.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm font-black text-[var(--color-primary)]">
+                          Copy Button
+                        </span>
+                      </label>
+                      <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(giftWidgetConfig.hasFallbackAccounts)}
+                          onChange={(event) => updateGiftWidget("hasFallbackAccounts", event.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm font-black text-[var(--color-primary)]">
+                          Fallback rekening aman
+                        </span>
+                      </label>
+                    </div>
+                    <GiftWidgetPreview
+                      variant={giftWidgetConfig.variant}
+                      enabled={Boolean(giftWidgetConfig.enabled)}
+                      hasAccounts={Boolean(giftWidgetConfig.hasFallbackAccounts)}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className={`md:col-span-2 ${editorStep === 5 ? "" : "hidden"}`}>
+                <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
+                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                    <div>
+                      <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                        RSVP Widget
+                      </p>
+                      <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
+                        Submit harus terikat invitation aktif agar data tidak masuk global.
+                      </p>
+                    </div>
+                    <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-4 py-3">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(rsvpWidgetConfig.enabled)}
+                        onChange={(event) => updateRsvpWidget("enabled", event.target.checked)}
+                        className="h-4 w-4"
+                      />
+                      <span className="text-sm font-black text-[var(--color-primary)]">
+                        RSVP aktif
+                      </span>
+                    </label>
+                  </div>
+                  <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start">
+                    <div className="grid gap-4 md:grid-cols-3">
+                      <label className="block">
+                        <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+                          Variant
+                        </span>
+                        <select
+                          value={rsvpWidgetConfig.variant}
+                          onChange={(event) => updateRsvpWidget("variant", event.target.value)}
+                          className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
+                        >
+                          <option value="form">form</option>
+                          <option value="compact">compact</option>
+                          <option value="card">card</option>
+                        </select>
+                      </label>
+                      <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(rsvpWidgetConfig.showPax)}
+                          onChange={(event) => updateRsvpWidget("showPax", event.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm font-black text-[var(--color-primary)]">
+                          Pax Field
+                        </span>
+                      </label>
+                      <label className="mt-6 flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
+                        <input
+                          type="checkbox"
+                          checked={Boolean(rsvpWidgetConfig.hasInvitationSlug)}
+                          onChange={(event) => updateRsvpWidget("hasInvitationSlug", event.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm font-black text-[var(--color-primary)]">
+                          Invitation slug aman
+                        </span>
+                      </label>
+                    </div>
+                    <RSVPWidgetPreview
+                      variant={rsvpWidgetConfig.variant}
+                      enabled={Boolean(rsvpWidgetConfig.enabled)}
+                      hasInvitationSlug={Boolean(rsvpWidgetConfig.hasInvitationSlug)}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div id="template-ornaments" className={`scroll-mt-24 md:col-span-2 ${editorStep === 6 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -2689,7 +3515,7 @@ function TemplateAdminPage() {
                             onClick={triggerReplay}
                             className="rounded-lg bg-[var(--color-primary)] px-3 py-1 text-xs font-black text-white shadow hover:bg-[var(--color-accent)]"
                           >
-                            ▶ Replay
+                            ? Replay
                           </button>
                           <div className="mt-4 space-y-3">
                             {[0, 1, 2, 3].map((track) => {
@@ -2835,7 +3661,7 @@ function TemplateAdminPage() {
                                         title="Duplicate"
                                         className="flex h-6 w-6 items-center justify-center rounded bg-white/20 text-xs hover:bg-white/30"
                                       >
-                                        ⧉
+                                        ?
                                       </button>
                                       <button
                                         type="button"
@@ -2843,7 +3669,7 @@ function TemplateAdminPage() {
                                         title="Hapus"
                                         className="flex h-6 w-6 items-center justify-center rounded bg-white/20 text-xs hover:bg-white/30"
                                       >
-                                        🗑
+                                        ??
                                       </button>
                                     </div>
                                   )}
@@ -2871,7 +3697,7 @@ function TemplateAdminPage() {
                                   onClick={() => setPreviewEntranceKey(k => k + 1)}
                                   className="rounded-lg bg-[var(--color-primary)] px-3 py-1 text-xs font-black text-white shadow hover:bg-[var(--color-accent)]"
                                 >
-                                  ▶ Replay
+                                  ? Replay
                                 </button>
                               </div>
                               <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">
@@ -2941,7 +3767,7 @@ function TemplateAdminPage() {
                             <details className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)]">
                               <summary className="flex cursor-pointer items-center justify-between px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)] hover:bg-[var(--color-accent-pale)]">
                                 Layer Controls
-                                <span className="text-[var(--color-text)]/40">▼</span>
+                                <span className="text-[var(--color-text)]/40">?</span>
                               </summary>
                               <div className="flex flex-wrap gap-2 px-3 pb-3">
                                 <button
@@ -2951,7 +3777,7 @@ function TemplateAdminPage() {
                                   title="Move Down"
                                   className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] bg-white text-xs font-black text-[var(--color-primary)] disabled:opacity-45 hover:bg-[var(--color-accent-pale)]"
                                 >
-                                  ↓
+                                  ?
                                 </button>
                                 <button
                                   type="button"
@@ -2960,7 +3786,7 @@ function TemplateAdminPage() {
                                   title="Move Up"
                                   className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] bg-white text-xs font-black text-[var(--color-primary)] disabled:opacity-45 hover:bg-[var(--color-accent-pale)]"
                                 >
-                                  ↑
+                                  ?
                                 </button>
                                 <button
                                   type="button"
@@ -2969,7 +3795,7 @@ function TemplateAdminPage() {
                                   title="Send Back"
                                   className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] bg-white text-xs font-black text-[var(--color-primary)] disabled:opacity-45 hover:bg-[var(--color-accent-pale)]"
                                 >
-                                  ⎗
+                                  ?
                                 </button>
                                 <button
                                   type="button"
@@ -2978,7 +3804,7 @@ function TemplateAdminPage() {
                                   title="Bring Front"
                                   className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] bg-white text-xs font-black text-[var(--color-primary)] disabled:opacity-45 hover:bg-[var(--color-accent-pale)]"
                                 >
-                                  ⎘
+                                  ?
                                 </button>
                               </div>
                             </details>
@@ -3445,7 +4271,7 @@ function TemplateAdminPage() {
               </div>
               <div
                 id="template-preview"
-                className={`scroll-mt-24 md:col-span-2 ${editorStep === 6 ? "" : "hidden"}`}
+                className={`scroll-mt-24 md:col-span-2 ${editorStep === 7 ? "" : "hidden"}`}
               >
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-primary)] p-4 shadow-xl shadow-[var(--color-primary)]/12">
                   <div className="mb-3 flex flex-col gap-1 text-white sm:flex-row sm:items-center sm:justify-between">
@@ -3453,6 +4279,21 @@ function TemplateAdminPage() {
                       Live Template Preview
                     </p>
                     <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setTemplatePreviewTick((current) => current + 1)}
+                        className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-black text-white/72 transition-colors hover:bg-white/18 hover:text-white"
+                      >
+                        Replay Opening
+                      </button>
+                      <a
+                        href={fullTemplatePreviewSrc}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-black text-white/72 transition-colors hover:bg-white/18 hover:text-white"
+                      >
+                        Open Full Preview
+                      </a>
                       {Object.entries(templatePreviewViewports).map(([key, viewport]) => (
                         <button
                           key={key}
@@ -3469,8 +4310,46 @@ function TemplateAdminPage() {
                       ))}
                     </div>
                   </div>
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {[
+                      { id: "withGuest", label: "With guest name" },
+                      { id: "noGuest", label: "No guest name" },
+                    ].map((mode) => (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => setPreviewGuestMode(mode.id)}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-black transition-colors ${
+                          previewGuestMode === mode.id
+                            ? "bg-[var(--color-accent)] text-[var(--color-primary)]"
+                            : "bg-white/10 text-white/72 hover:bg-white/18 hover:text-white"
+                        }`}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                    {[
+                      { id: "filled", label: "Filled data" },
+                      { id: "empty", label: "Empty fallback" },
+                    ].map((mode) => (
+                      <button
+                        key={mode.id}
+                        type="button"
+                        onClick={() => setPreviewDataMode(mode.id)}
+                        className={`rounded-lg px-3 py-1.5 text-xs font-black transition-colors ${
+                          previewDataMode === mode.id
+                            ? "bg-[var(--color-accent)] text-[var(--color-primary)]"
+                            : "bg-white/10 text-white/72 hover:bg-white/18 hover:text-white"
+                        }`}
+                      >
+                        {mode.label}
+                      </button>
+                    ))}
+                  </div>
                   <p className="mb-3 text-sm font-bold text-white/70">
-                    {activeDesignSection} section draft (focus: {previewFocusSection})
+                    {activeDesignSection} section draft (focus: {previewFocusSection}) - {activePreviewViewport.label}{" "}
+                    {activePreviewViewport.viewportWidth}x{activePreviewViewport.viewportHeight}
+                    {activePreviewViewport.scale !== 1 ? ` scaled ${activePreviewViewport.scale}x` : ""}
                   </p>
                   <div className="overflow-x-auto">
                     <div
@@ -3492,7 +4371,7 @@ function TemplateAdminPage() {
                   </div>
                 </div>
               </div>
-              <div id="template-advanced" className={`scroll-mt-24 md:col-span-2 ${editorStep === 7 ? "" : "hidden"}`}>
+              <div id="template-advanced" className={`scroll-mt-24 md:col-span-2 ${editorStep === 8 ? "" : "hidden"}`}>
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -3510,6 +4389,27 @@ function TemplateAdminPage() {
                     >
                       {isAdvancedOpen ? "Sembunyikan Advanced" : "Tampilkan Advanced"}
                     </button>
+                  </div>
+                  <div className="mt-4 rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-4">
+                    <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                      Quality Guard
+                    </p>
+                    {templateQualityWarnings.length > 0 ? (
+                      <ul className="mt-3 space-y-2">
+                        {templateQualityWarnings.map((warning) => (
+                          <li
+                            key={warning}
+                            className="rounded-xl border border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-3 py-2 text-sm font-bold text-[var(--color-text)]"
+                          >
+                            {warning}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="mt-3 rounded-xl bg-[var(--color-bg)] px-3 py-2 text-sm font-bold text-[var(--color-text)]">
+                        Tidak ada warning utama. Template aman untuk disimpan sebagai active.
+                      </p>
+                    )}
                   </div>
                   {isAdvancedOpen ? (
                     <div className="mt-4">
@@ -3531,7 +4431,7 @@ function TemplateAdminPage() {
               </div>
             </div>
 
-            <div className={`mt-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-4 py-3 text-sm font-black text-[var(--color-primary)] ${editorStep === 7 ? "" : "hidden"}`}>
+            <div className={`mt-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-4 py-3 text-sm font-black text-[var(--color-primary)] ${editorStep === 8 ? "" : "hidden"}`}>
               Gunakan tombol Simpan di header editor untuk menyimpan perubahan.
             </div>
           </div>
@@ -3637,5 +4537,3 @@ function TemplateAdminPage() {
       </motion.section>
   );
 }
-
-

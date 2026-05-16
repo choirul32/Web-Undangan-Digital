@@ -16,6 +16,17 @@ export function mapSupabaseInvitation(row) {
     templateId: row.template_id,
     status: row.status,
     package: row.package,
+    order: {
+      status: row.order_status || "inquiry",
+      paymentStatus: row.payment_status || "unpaid",
+      customerName: row.customer_name,
+      customerWhatsapp: row.customer_whatsapp,
+      amount: row.order_amount,
+      deadline: row.order_deadline,
+      conceptNotes: row.concept_notes,
+      paymentNotes: row.payment_notes,
+      paidAt: row.paid_at,
+    },
     couple: {
       groomName: row.groom_name,
       groomNickname: row.groom_nickname,
@@ -23,7 +34,7 @@ export function mapSupabaseInvitation(row) {
       brideNickname: row.bride_nickname,
       quote: row.quote,
     },
-    events: sortByOrder(row.invitation_events).map((event) => ({
+    events: sortByOrder(row.invitation_events || []).map((event) => ({
       title: event.title,
       date: event.event_date,
       time: event.event_time,
@@ -31,21 +42,21 @@ export function mapSupabaseInvitation(row) {
       address: event.address,
       mapsUrl: event.maps_url,
     })),
-    story: sortByOrder(row.invitation_stories).map((story) => ({
+    story: sortByOrder(row.invitation_stories || []).map((story) => ({
       year: story.year,
       title: story.title,
       desc: story.description,
     })),
-    gallery: sortByOrder(row.invitation_media)
+    gallery: sortByOrder(row.invitation_media || [])
       .filter((media) => media.media_type === "image")
       .map((media) => media.url),
     coverImage:
-      sortByOrder(row.invitation_media).find((media) => media.media_type === "cover")
+      sortByOrder(row.invitation_media || []).find((media) => media.media_type === "cover")
         ?.url || null,
     musicUrl:
-      sortByOrder(row.invitation_media).find((media) => media.media_type === "music")
+      sortByOrder(row.invitation_media || []).find((media) => media.media_type === "music")
         ?.url || null,
-    bankAccounts: sortByOrder(row.bank_accounts).map((account) => ({
+    bankAccounts: sortByOrder(row.bank_accounts || []).map((account) => ({
       bank: account.bank,
       name: account.account_name,
       number: account.account_number,
@@ -55,6 +66,7 @@ export function mapSupabaseInvitation(row) {
       name: guest.name,
       slug: guest.slug,
       group: guest.guest_group,
+      phone: guest.phone,
       rsvpStatus: guest.rsvp_status,
       pax: guest.pax,
     })),
@@ -120,6 +132,10 @@ export function mapInvitationListItem(row) {
     template: row.template_id,
     category: row.template_id,
     status: row.status,
+    orderStatus: row.order_status || "inquiry",
+    paymentStatus: row.payment_status || "unpaid",
+    customerName: row.customer_name,
+    customerWhatsapp: row.customer_whatsapp,
     date: row.created_at ? new Date(row.created_at).toLocaleDateString("id-ID") : "-",
     rsvp: 0,
     package: row.package,
@@ -132,6 +148,18 @@ export function formPayloadToInvitationRow(payload) {
     template_id: payload.templateId || "standard",
     package: payload.package || "Premium",
     status: payload.status || "draft",
+    order_status: payload.orderStatus || "inquiry",
+    payment_status: payload.paymentStatus || "unpaid",
+    customer_name: payload.customerName || null,
+    customer_whatsapp: payload.customerWhatsapp || null,
+    order_amount: payload.orderAmount ? Number(payload.orderAmount) : null,
+    order_deadline: payload.orderDeadline || null,
+    concept_notes: payload.conceptNotes || null,
+    payment_notes: payload.paymentNotes || null,
+    paid_at:
+      payload.paymentStatus === "paid"
+        ? payload.paidAt || new Date().toISOString()
+        : null,
     groom_name: payload.groomName,
     groom_nickname: payload.groomNickname,
     bride_name: payload.brideName,

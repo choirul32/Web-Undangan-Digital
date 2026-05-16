@@ -8,6 +8,7 @@ export const defaultGalleryWidgetConfig = {
   variant: "grid",
   limit: 6,
   includeCover: false,
+  slideshowInterval: 4200,
 };
 
 export function getGalleryWidgetConfig(designConfig = {}) {
@@ -259,6 +260,125 @@ function CarouselGallery({ images, classes, onImageClick }) {
   );
 }
 
+function CinematicSlideshow({ images, config, onImageClick }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
+  const total = images.length;
+  const activeImage = images[activeIndex];
+  const intervalMs = Math.max(2500, Number(config.slideshowInterval || 4200));
+
+  const goTo = useCallback(
+    (index) => {
+      if (!total) return;
+      setActiveIndex((index + total) % total);
+    },
+    [total]
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => setReduceMotion(mediaQuery.matches);
+    updatePreference();
+    mediaQuery.addEventListener?.("change", updatePreference);
+    return () => mediaQuery.removeEventListener?.("change", updatePreference);
+  }, []);
+
+  useEffect(() => {
+    if (total <= 1 || isPaused || reduceMotion) return undefined;
+    const timer = window.setInterval(() => {
+      setActiveIndex((current) => (current + 1) % total);
+    }, intervalMs);
+    return () => window.clearInterval(timer);
+  }, [intervalMs, isPaused, reduceMotion, total]);
+
+  return (
+    <div
+      className="mt-10"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+    >
+      <div className="relative overflow-hidden rounded-[28px] bg-[var(--color-primary)] shadow-2xl shadow-[var(--color-primary)]/18">
+        <AnimatePresence mode="wait">
+          <motion.button
+            key={`${activeImage}-${activeIndex}`}
+            type="button"
+            initial={reduceMotion ? false : { opacity: 0, scale: 1.05 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={reduceMotion ? undefined : { opacity: 0, scale: 0.98 }}
+            transition={{ duration: 0.65, ease: "easeOut" }}
+            onClick={() => onImageClick(activeIndex)}
+            className="group relative block aspect-[4/5] w-full overflow-hidden text-left sm:aspect-[16/10]"
+            aria-label={`Buka foto ${activeIndex + 1}`}
+          >
+            <img
+              src={activeImage}
+              alt={`Gallery ${activeIndex + 1}`}
+              className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+              draggable={false}
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+            <div className="absolute bottom-5 left-5 right-5 text-white">
+              <p className="text-[11px] font-black uppercase tracking-[0.24em] text-white/70">
+                Gallery Moment
+              </p>
+              <p className="mt-1 font-serif text-3xl font-black leading-none">
+                {String(activeIndex + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
+              </p>
+            </div>
+          </motion.button>
+        </AnimatePresence>
+
+        {total > 1 ? (
+          <>
+            <button
+              type="button"
+              onClick={() => goTo(activeIndex - 1)}
+              className="absolute left-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md transition hover:bg-white/25"
+              aria-label="Foto sebelumnya"
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M15 18l-6-6 6-6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => goTo(activeIndex + 1)}
+              className="absolute right-4 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-md transition hover:bg-white/25"
+              aria-label="Foto selanjutnya"
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M9 18l6-6-6-6" />
+              </svg>
+            </button>
+          </>
+        ) : null}
+      </div>
+
+      {total > 1 ? (
+        <div className="mt-4 flex gap-2 overflow-x-auto pb-2">
+          {images.map((image, index) => (
+            <button
+              key={`${image}-nav-${index}`}
+              type="button"
+              onClick={() => goTo(index)}
+              className={`h-14 w-14 shrink-0 overflow-hidden rounded-2xl border-2 transition ${
+                index === activeIndex
+                  ? "border-[var(--color-accent)] opacity-100"
+                  : "border-transparent opacity-55 hover:opacity-85"
+              }`}
+              aria-label={`Pilih foto ${index + 1}`}
+            >
+              <img src={image} alt="" className="h-full w-full object-cover" draggable={false} />
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 // ===== Main Gallery Widget =====
 export default function GalleryWidget({
   images = [],
@@ -282,11 +402,18 @@ export default function GalleryWidget({
   }
 
   const isCarousel = config.variant === "carousel";
+  const isSlideshow = config.variant === "cinematic-slideshow";
   const isViewerOpen = viewerIndex !== null;
 
   return (
     <>
-      {isCarousel ? (
+      {isSlideshow ? (
+        <CinematicSlideshow
+          images={galleryImages}
+          config={config}
+          onImageClick={(index) => setViewerIndex(index)}
+        />
+      ) : isCarousel ? (
         <CarouselGallery
           images={galleryImages}
           classes={classes}

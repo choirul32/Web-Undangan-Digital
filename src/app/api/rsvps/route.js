@@ -9,6 +9,18 @@ function hasServiceEnv() {
   );
 }
 
+function mapRsvp(item) {
+  return {
+    id: item.id,
+    guestId: item.guest_id,
+    guestName: item.guest_name,
+    attendance: item.attendance,
+    pax: item.pax,
+    message: item.message,
+    createdAt: item.created_at,
+  };
+}
+
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   const invitationSlug = searchParams.get("invitationSlug") || "dimas-salsa";
@@ -48,13 +60,7 @@ export async function GET(request) {
 
   return NextResponse.json({
     source: "supabase",
-    data: data.map((item) => ({
-      guestName: item.guest_name,
-      attendance: item.attendance,
-      pax: item.pax,
-      message: item.message,
-      createdAt: item.created_at,
-    })),
+    data: data.map(mapRsvp),
   });
 }
 
@@ -104,18 +110,34 @@ export async function POST(request) {
     guestId = guest?.id || null;
   }
 
-  const { data, error } = await supabase
-    .from("rsvps")
-    .insert({
+  const rsvpRow = {
       invitation_id: invitation.id,
       guest_id: guestId,
       guest_name: payload.guestName,
       attendance: payload.attendance,
       pax: payload.pax || 1,
       message: payload.message || "",
-    })
-    .select()
-    .single();
+  };
+
+  let query = supabase.from("rsvps").insert(rsvpRow);
+
+  if (guestId) {
+    const { data: existingRsvp } = await supabase
+      .from("rsvps")
+      .select("id")
+      .eq("invitation_id", invitation.id)
+      .eq("guest_id", guestId)
+      .maybeSingle();
+
+    if (existingRsvp?.id) {
+      query = supabase
+        .from("rsvps")
+        .update(rsvpRow)
+        .eq("id", existingRsvp.id);
+    }
+  }
+
+  const { data, error } = await query.select().single();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -133,6 +155,6 @@ export async function POST(request) {
 
   return NextResponse.json({
     source: "supabase",
-    data,
+    data: mapRsvp(data),
   });
 }

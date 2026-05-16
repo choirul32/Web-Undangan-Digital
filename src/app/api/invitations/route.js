@@ -25,6 +25,10 @@ export async function GET() {
           template: sampleInvitation.templateId,
           category: "Sample",
           status: "published",
+          orderStatus: "published",
+          paymentStatus: "paid",
+          customerName: "Andi Saputra",
+          customerWhatsapp: "6281234567890",
           date: "12 Jun 2026",
           rsvp: sampleInvitation.guests?.length || 0,
           package: sampleInvitation.package,
@@ -77,7 +81,10 @@ export async function POST(request) {
   }
 
   const supabase = createServiceSupabaseClient();
-  const invitationRow = formPayloadToInvitationRow(payload);
+  const invitationRow = {
+    ...formPayloadToInvitationRow(payload),
+    updated_at: new Date().toISOString(),
+  };
 
   const { data: invitation, error } = await supabase
     .from("invitations")
@@ -90,7 +97,7 @@ export async function POST(request) {
   }
 
   if (payload.eventTitle) {
-    await supabase.from("invitation_events").insert({
+    const eventRow = {
       invitation_id: invitation.id,
       title: payload.eventTitle,
       event_date: payload.eventDate || null,
@@ -99,7 +106,33 @@ export async function POST(request) {
       address: payload.venue,
       maps_url: payload.mapsUrl,
       sort_order: 1,
-    });
+    };
+
+    const { data: existingEvent } = await supabase
+      .from("invitation_events")
+      .select("id")
+      .eq("invitation_id", invitation.id)
+      .eq("sort_order", 1)
+      .maybeSingle();
+
+    if (existingEvent?.id) {
+      const { error: eventError } = await supabase
+        .from("invitation_events")
+        .update(eventRow)
+        .eq("id", existingEvent.id);
+
+      if (eventError) {
+        return NextResponse.json({ error: eventError.message }, { status: 500 });
+      }
+    } else {
+      const { error: eventError } = await supabase
+        .from("invitation_events")
+        .insert(eventRow);
+
+      if (eventError) {
+        return NextResponse.json({ error: eventError.message }, { status: 500 });
+      }
+    }
   }
 
   return NextResponse.json({
