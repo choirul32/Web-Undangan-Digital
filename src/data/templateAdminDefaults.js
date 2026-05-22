@@ -235,55 +235,31 @@ export const defaultTemplateMetadata = [
 export const templateOverridesStorageKey = "nusa-invite:template-overrides";
 export const deletedTemplateIdsStorageKey = "nusa-invite:deleted-template-ids";
 
-export function getStoredTemplateOverrides() {
+export function clearLegacyTemplateLocalCache() {
   if (typeof window === "undefined") {
-    return [];
-  }
-
-  try {
-    const rawOverrides = window.localStorage.getItem(templateOverridesStorageKey);
-    return rawOverrides ? JSON.parse(rawOverrides) : [];
-  } catch {
-    return [];
-  }
-}
-
-export function mergeTemplateOverrides(items = []) {
-  const overrides = getStoredTemplateOverrides();
-  const deletedIds = getStoredDeletedTemplateIds();
-  const visibleItems = items.filter((item) => !deletedIds.includes(item.id));
-
-  if (!overrides.length) {
-    return visibleItems;
-  }
-
-  const mergedItems = visibleItems.map((item) => {
-    const override = overrides.find((storedItem) => storedItem.id === item.id);
-    return override ? { ...item, ...override } : item;
-  });
-  const customOverrides = overrides.filter(
-    (override) =>
-      !deletedIds.includes(override.id) &&
-      !mergedItems.some((item) => item.id === override.id),
-  );
-
-  return [...customOverrides, ...mergedItems];
-}
-
-export function upsertStoredTemplateOverride(template) {
-  if (typeof window === "undefined" || !template?.id) {
     return;
   }
 
-  const currentOverrides = getStoredTemplateOverrides();
-  const nextDeletedIds = getStoredDeletedTemplateIds().filter((id) => id !== template.id);
-  const nextOverrides = [
-    template,
-    ...currentOverrides.filter((item) => item.id !== template.id),
-  ];
+  try {
+    window.localStorage.removeItem(templateOverridesStorageKey);
+    window.localStorage.removeItem(deletedTemplateIdsStorageKey);
+  } catch {
+    // ignore localStorage access issues
+  }
+}
 
-  window.localStorage.setItem(deletedTemplateIdsStorageKey, JSON.stringify(nextDeletedIds));
-  window.localStorage.setItem(templateOverridesStorageKey, JSON.stringify(nextOverrides));
+export function getStoredTemplateOverrides() {
+  clearLegacyTemplateLocalCache();
+  return [];
+}
+
+export function mergeTemplateOverrides(items = []) {
+  clearLegacyTemplateLocalCache();
+  return items;
+}
+
+export function upsertStoredTemplateOverride(template) {
+  clearLegacyTemplateLocalCache();
 }
 
 export function getStoredTemplateOverride(templateId) {
@@ -291,41 +267,15 @@ export function getStoredTemplateOverride(templateId) {
 }
 
 export function getStoredDeletedTemplateIds() {
-  if (typeof window === "undefined") {
-    return [];
-  }
-
-  try {
-    const rawIds = window.localStorage.getItem(deletedTemplateIdsStorageKey);
-    return rawIds ? JSON.parse(rawIds) : [];
-  } catch {
-    return [];
-  }
+  clearLegacyTemplateLocalCache();
+  return [];
 }
 
 export function addStoredDeletedTemplateId(templateId) {
-  if (typeof window === "undefined" || !templateId) {
-    return;
-  }
-
-  const deletedIds = getStoredDeletedTemplateIds();
-  const nextIds = Array.from(new Set([templateId, ...deletedIds]));
-  const nextOverrides = getStoredTemplateOverrides().filter((item) => item.id !== templateId);
-
-  window.localStorage.setItem(deletedTemplateIdsStorageKey, JSON.stringify(nextIds));
-  window.localStorage.setItem(templateOverridesStorageKey, JSON.stringify(nextOverrides));
+  clearLegacyTemplateLocalCache();
 }
 
 export function applyStoredTemplateOverrideToInvitation(invitation) {
-  const override = getStoredTemplateOverride(invitation?.templateId);
-
-  if (!override) {
-    return invitation;
-  }
-
-  return {
-    ...invitation,
-    templateId: override.id || invitation.templateId,
-    designConfig: override.designConfig || invitation.designConfig,
-  };
+  clearLegacyTemplateLocalCache();
+  return invitation;
 }

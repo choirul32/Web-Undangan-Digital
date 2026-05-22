@@ -200,7 +200,8 @@ function TemplateAdminPage() {
     { id: 7, label: "Preview" },
     { id: 8, label: "Publish" },
   ];
-  const [items, setItems] = useState(templates);
+  const [items, setItems] = useState([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
   const [query, setQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState("Semua");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -229,11 +230,16 @@ function TemplateAdminPage() {
 
   useEffect(() => {
     let isMounted = true;
+    setIsLoadingTemplates(true);
 
     fetch("/api/templates?scope=admin")
       .then((response) => response.json())
       .then((result) => {
-        if (isMounted && Array.isArray(result.data) && result.data.length > 0) {
+        if (!isMounted) {
+          return;
+        }
+
+        if (Array.isArray(result.data)) {
           setItems((currentItems) =>
             mergeTemplateOverrides(result.data.map((template) => {
               const registryTemplate =
@@ -252,14 +258,20 @@ function TemplateAdminPage() {
             })),
           );
           setTemplateSource(result.source || "api");
-        } else if (isMounted) {
-          setItems(mergeTemplateOverrides(templates));
+          return;
         }
+
+        setItems([]);
       })
       .catch(() => {
         if (isMounted) {
-          setItems(mergeTemplateOverrides(templates));
-          setTemplateSource("registry");
+          setItems([]);
+          setTemplateSource("api_error");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingTemplates(false);
         }
       });
 
@@ -4521,7 +4533,13 @@ function TemplateAdminPage() {
               </article>
             ))}
 
-            {filteredTemplates.length === 0 ? (
+            {isLoadingTemplates ? (
+              <div className="px-5 py-12 text-center">
+                <p className="text-xl font-black text-[var(--color-primary)]">
+                  Memuat template...
+                </p>
+              </div>
+            ) : filteredTemplates.length === 0 ? (
               <div className="px-5 py-12 text-center">
                 <p className="text-xl font-black text-[var(--color-primary)]">
                   Template tidak ditemukan

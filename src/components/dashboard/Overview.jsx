@@ -27,22 +27,36 @@ export function MetricCard({ label, value, detail }) {
 }
 
 export function InvitationTable() {
-  const [items, setItems] = useState(invitations);
+  const [items, setItems] = useState([]);
+  const [isLoadingInvitations, setIsLoadingInvitations] = useState(true);
   const [actionMessage, setActionMessage] = useState("");
 
   useEffect(() => {
     let isMounted = true;
+    setIsLoadingInvitations(true);
 
     fetch("/api/invitations")
       .then((response) => response.json())
       .then((result) => {
-        if (isMounted && Array.isArray(result.data) && result.data.length > 0) {
-          setItems(result.data);
+        if (!isMounted) {
+          return;
         }
+
+        if (Array.isArray(result.data)) {
+          setItems(result.data);
+          return;
+        }
+
+        setItems([]);
       })
       .catch(() => {
         if (isMounted) {
-          setItems(invitations);
+          setItems([]);
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingInvitations(false);
         }
       });
 
@@ -98,19 +112,13 @@ export function InvitationTable() {
       variants={fadeUp}
       className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)] shadow-xl shadow-[var(--color-primary)]/8"
     >
-      <div className="flex flex-col gap-4 border-b border-[var(--color-accent-pale)] px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="border-b border-[var(--color-accent-pale)] px-6 py-5">
         <div>
           <h2 className="text-2xl font-black text-[var(--color-primary)]">Undangan Terbaru</h2>
           <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
             Kelola draft, revisi, preview, dan undangan yang sudah publish.
           </p>
         </div>
-        <a
-          href="/dashboard/invitations"
-          className="rounded-2xl bg-[var(--color-accent)] px-5 py-3 text-base font-black text-[var(--color-primary)] transition-colors hover:bg-[var(--color-accent-soft)]"
-        >
-          Buat Undangan
-        </a>
       </div>
 
       {actionMessage ? (
@@ -134,7 +142,25 @@ export function InvitationTable() {
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-accent-pale)]/65">
-            {items.map((item) => (
+            {isLoadingInvitations ? (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="px-6 py-8 text-center text-base font-semibold text-[var(--color-text)]"
+                >
+                  Memuat undangan...
+                </td>
+              </tr>
+            ) : items.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="px-6 py-8 text-center text-base font-semibold text-[var(--color-text)]"
+                >
+                  Belum ada data undangan.
+                </td>
+              </tr>
+            ) : items.map((item) => (
               <tr key={item.id} className="transition-colors hover:bg-[var(--color-bg)]">
                 <td className="px-6 py-5">
                   <p className="text-lg font-black text-[var(--color-primary)]">{item.couple}</p>
@@ -292,6 +318,63 @@ export function ActivityFeed() {
             <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--color-accent)]" />
             <p className="text-base font-semibold leading-7 text-[var(--color-text)]">{activity}</p>
           </div>
+        ))}
+      </div>
+    </motion.section>
+  );
+}
+
+export function NextActionsCard() {
+  const actions = [
+    {
+      label: "Cek waiting payment",
+      detail: "Pastikan pembayaran manual sudah dikonfirmasi sebelum masuk produksi.",
+      href: "/dashboard/invitations",
+    },
+    {
+      label: "Review draft aktif",
+      detail: "Buka preview, cek data acara, tamu, media, dan publish guard.",
+      href: "/dashboard/invitations",
+    },
+    {
+      label: "Pantau RSVP",
+      detail: "Lihat tamu yang sudah hadir, belum RSVP, dan total pax.",
+      href: "/dashboard/rsvps",
+    },
+  ];
+
+  return (
+    <motion.section
+      variants={fadeUp}
+      className="rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-5 shadow-[var(--dash-shadow)]"
+    >
+      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
+        Next Actions
+      </p>
+      <h2 className="mt-1 text-xl font-semibold text-[var(--dash-ink)]">
+        Fokus hari ini
+      </h2>
+      <div className="mt-4 space-y-3">
+        {actions.map((action, index) => (
+          <a
+            key={action.label}
+            href={action.href}
+            className="block rounded-[12px] border border-[var(--dash-border)] bg-white p-3 hover:bg-[var(--dash-fog)]"
+          >
+            <div className="flex items-start gap-3">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--dash-ink)] text-xs font-semibold text-white">
+                {index + 1}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-[var(--dash-ink)]">
+                  {action.label}
+                </p>
+                <p className="mt-1 text-xs font-medium leading-5 text-[var(--dash-muted)]">
+                  {action.detail}
+                </p>
+              </div>
+            </div>
+          </a>
         ))}
       </div>
     </motion.section>

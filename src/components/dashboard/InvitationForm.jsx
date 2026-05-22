@@ -3,8 +3,8 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { createInvitationFromDashboardForm } from "../../data/sampleInvitation";
+import { mergeTemplateOverrides } from "../../data/templateAdminDefaults";
 import {
-  templates,
   fadeUp,
   initialInvitationForm,
   formSteps,
@@ -22,9 +22,18 @@ const primaryButtonClass =
 
 const lifecycleOptions = ["draft", "review", "published", "archived"];
 
-function invitationToForm(invitation) {
+function normalizeTemplateOption(template) {
+  return {
+    ...template,
+    id: template.id || template.templateId || template.template_id,
+    name: template.name || template.title || template.id || "Template",
+    status: template.status || "active",
+  };
+}
+
+function invitationToForm(invitation, templateOptions = []) {
   const event = invitation?.events?.[0] || {};
-  const template = templates.find((item) => item.id === invitation?.templateId);
+  const template = templateOptions.find((item) => item.id === invitation?.templateId);
 
   return {
     ...initialInvitationForm,
@@ -71,12 +80,66 @@ function invitationToForm(invitation) {
 
 export default function InvitationFormPanel({ invitationSlug = "" }) {
   const [activeStep, setActiveStep] = useState(0);
+  const [templateOptions, setTemplateOptions] = useState([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
   const [form, setForm] = useState({
     ...initialInvitationForm,
     slug: invitationSlug || initialInvitationForm.slug,
   });
   const [saveMessage, setSaveMessage] = useState("");
   const [publishErrors, setPublishErrors] = useState([]);
+
+  useEffect(() => {
+    let isMounted = true;
+    setIsLoadingTemplates(true);
+
+    fetch("/api/templates?scope=admin")
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Gagal mengambil template admin.");
+        }
+        return response.json();
+      })
+      .then((result) => {
+        if (!isMounted) {
+          return;
+        }
+
+        const loadedTemplates = mergeTemplateOverrides(result.data || [])
+          .map(normalizeTemplateOption)
+          .filter((template) => template.id);
+        const nextTemplates = loadedTemplates;
+
+        setTemplateOptions(nextTemplates);
+        setForm((current) => {
+          if (current.templateId && nextTemplates.some((template) => template.id === current.templateId)) {
+            const selected = nextTemplates.find((template) => template.id === current.templateId);
+            return { ...current, template: selected?.name || current.template };
+          }
+
+          const firstTemplate = nextTemplates[0];
+          return firstTemplate
+            ? { ...current, templateId: firstTemplate.id, template: firstTemplate.name }
+            : current;
+        });
+      })
+      .catch(() => {
+        if (!isMounted) {
+          return;
+        }
+
+        setTemplateOptions([]);
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingTemplates(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!invitationSlug) {
@@ -89,7 +152,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
       .then((response) => response.json())
       .then((result) => {
         if (isMounted && result.data) {
-          setForm(invitationToForm(result.data));
+          setForm(invitationToForm(result.data, templateOptions));
         }
       })
       .catch(() => {
@@ -101,7 +164,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
     return () => {
       isMounted = false;
     };
-  }, [invitationSlug]);
+  }, [invitationSlug, templateOptions]);
 
   const updateForm = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
@@ -362,17 +425,24 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
           <Field label="Template">
             <SelectInput
               value={form.templateId}
+              disabled={isLoadingTemplates || templateOptions.length === 0}
               onChange={(event) => {
-                const selected = templates.find(
+                const selected = templateOptions.find(
                   (template) => template.id === event.target.value,
                 );
                 updateForm("templateId", event.target.value);
                 updateForm("template", selected?.name || "Rana Kirana");
               }}
             >
-              {templates.map((template) => (
+              {isLoadingTemplates ? (
+                <option value="">Memuat template...</option>
+              ) : null}
+              {!isLoadingTemplates && templateOptions.length === 0 ? (
+                <option value="">Template tidak tersedia</option>
+              ) : null}
+              {templateOptions.map((template) => (
                 <option key={template.id} value={template.id}>
-                  {template.name}
+                  {template.name}{template.status === "hidden" ? " (Hidden)" : ""}
                 </option>
               ))}
             </SelectInput>

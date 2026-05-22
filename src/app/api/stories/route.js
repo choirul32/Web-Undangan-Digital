@@ -103,7 +103,7 @@ export async function POST(request) {
       year: payload.year,
       title: payload.title,
       description: payload.description,
-      sort_order: payload.sortOrder || Date.now(),
+      sort_order: payload.sortOrder || Math.floor(Date.now() / 1000),
     })
     .select()
     .single();

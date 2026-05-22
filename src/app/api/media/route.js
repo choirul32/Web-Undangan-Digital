@@ -153,7 +153,7 @@ export async function POST(request) {
       title,
       url: publicUrlData.publicUrl,
       storage_path: storagePath,
-      sort_order: Date.now(),
+      sort_order: Math.floor(Date.now() / 1000),
   };
 
   const query = existingMedia?.id

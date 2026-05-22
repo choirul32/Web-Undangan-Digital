@@ -108,7 +108,7 @@ export async function POST(request) {
       bank: payload.bank,
       account_name: payload.accountName,
       account_number: payload.accountNumber,
-      sort_order: payload.sortOrder || Date.now(),
+      sort_order: payload.sortOrder || Math.floor(Date.now() / 1000),
     })
     .select()
     .single();

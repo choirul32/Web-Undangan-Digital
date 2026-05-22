@@ -335,11 +335,7 @@ function DashboardAside({ activePage }) {
   }
 
   if (activePage === "overview") {
-    return (
-      <>
-        <TemplateHighlights />
-      </>
-    );
+    return null;
   }
 
   return <ActivityFeed />;
@@ -372,7 +368,7 @@ export default function Dashboard({
   );
   const [metrics, setMetrics] = useState(fallbackMetrics);
   const meta = pageMeta[activePage] || pageMeta.overview;
-  const showAside = activePage === "overview";
+  const showAside = false;
 
   useEffect(() => {
     let isMounted = true;

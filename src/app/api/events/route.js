@@ -111,7 +111,7 @@ export async function POST(request) {
       venue: payload.venue,
       address: payload.address,
       maps_url: payload.mapsUrl,
-      sort_order: payload.sortOrder || Date.now(),
+      sort_order: payload.sortOrder || Math.floor(Date.now() / 1000),
     })
     .select()
     .single();
