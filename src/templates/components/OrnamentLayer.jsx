@@ -308,7 +308,8 @@ export default function OrnamentLayer({ ornaments = [], className = "", pulseSyn
       animationName: entranceName(entrance),
       animationDuration: secondsValue(ornament.entranceDuration, 0.8),
       animationDelay: secondsValue(entranceDelay, 0),
-      animationTimingFunction: entrance === "pop-up" ? "cubic-bezier(.2,.8,.2,1)" : "ease-out",
+      animationTimingFunction:
+        ornament.easing || (entrance === "pop-up" ? "cubic-bezier(.2,.8,.2,1)" : "ease-out"),
       animationFillMode: "both",
       transition: hasParallax ? "transform 0.1s linear" : undefined,
     };
@@ -448,51 +449,51 @@ export default function OrnamentLayer({ ornaments = [], className = "", pulseSyn
         }
         @keyframes ornament-entrance-fade-in {
           from { opacity: 0; }
-          to { opacity: 1; }
+          to { opacity: var(--ornament-opacity); }
         }
         @keyframes ornament-entrance-fade-up {
           from { opacity: 0; translate: 0 18px; }
-          to { opacity: 1; translate: 0 0; }
+          to { opacity: var(--ornament-opacity); translate: 0 0; }
         }
         @keyframes ornament-entrance-zoom-in {
           from { opacity: 0; scale: 0.88; }
-          to { opacity: 1; scale: 1; }
+          to { opacity: var(--ornament-opacity); scale: 1; }
         }
         @keyframes ornament-entrance-pop-up {
           0% { opacity: 0; scale: 0.7; }
-          72% { opacity: 1; scale: 1.08; }
-          100% { opacity: 1; scale: 1; }
+          72% { opacity: var(--ornament-opacity); scale: 1.08; }
+          100% { opacity: var(--ornament-opacity); scale: 1; }
         }
         @keyframes ornament-entrance-slide-left {
           from { opacity: 0; translate: 24px 0; }
-          to { opacity: 1; translate: 0 0; }
+          to { opacity: var(--ornament-opacity); translate: 0 0; }
         }
         @keyframes ornament-entrance-slide-right {
           from { opacity: 0; translate: -24px 0; }
-          to { opacity: 1; translate: 0 0; }
+          to { opacity: var(--ornament-opacity); translate: 0 0; }
         }
         @keyframes ornament-entrance-drop-in {
           from { opacity: 0; translate: 0 -28px; }
-          to { opacity: 1; translate: 0 0; }
+          to { opacity: var(--ornament-opacity); translate: 0 0; }
         }
         @keyframes ornament-exit-fade-out {
-          from { opacity: 1; }
+          from { opacity: var(--ornament-opacity); }
           to { opacity: 0; }
         }
         @keyframes ornament-exit-zoom-out {
-          from { opacity: 1; scale: 1; }
+          from { opacity: var(--ornament-opacity); scale: 1; }
           to { opacity: 0; scale: 0.8; }
         }
         @keyframes ornament-exit-slide-left {
-          from { opacity: 1; translate: 0 0; }
+          from { opacity: var(--ornament-opacity); translate: 0 0; }
           to { opacity: 0; translate: -24px 0; }
         }
         @keyframes ornament-exit-slide-down {
-          from { opacity: 1; translate: 0 0; }
+          from { opacity: var(--ornament-opacity); translate: 0 0; }
           to { opacity: 0; translate: 0 24px; }
         }
         @keyframes ornament-exit-scale-down {
-          from { opacity: 1; scale: 1; }
+          from { opacity: var(--ornament-opacity); scale: 1; }
           to { opacity: 0; scale: 0.5; }
         }
         @media (prefers-reduced-motion: reduce) {

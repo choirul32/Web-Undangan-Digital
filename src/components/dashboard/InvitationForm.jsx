@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { createInvitationFromDashboardForm } from "../../data/sampleInvitation";
 import { mergeTemplateOverrides } from "../../data/templateAdminDefaults";
 import {
   fadeUp,
@@ -173,8 +172,6 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
 
   const saveDraft = async (overrides = {}) => {
     const nextForm = { ...form, ...overrides };
-    const invitationDraft = createInvitationFromDashboardForm(nextForm);
-    window.localStorage.setItem("nusa-invite:draft", JSON.stringify(invitationDraft));
 
     try {
       const response = await fetch("/api/invitations", {

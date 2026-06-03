@@ -11,10 +11,10 @@ import React from "react";
 export function Field({ label, children }) {
   return (
     <label className="block">
-      <span className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
+      <span className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
         {label}
       </span>
-      <div className="mt-2">{children}</div>
+      <div className="mt-1">{children}</div>
     </label>
   );
 }
@@ -22,11 +22,11 @@ export function Field({ label, children }) {
 /**
  * Standard text input component
  */
-export function TextInput(props) {
+export function TextInput({ className = "", ...props }) {
   return (
     <input
       {...props}
-      className="w-full rounded-lg border border-[var(--dash-border)] bg-white px-3 py-2.5 text-sm font-medium text-[var(--dash-ink)] outline-none transition-colors placeholder:text-[var(--dash-subtle)] focus:border-[var(--dash-ink)]"
+      className={`w-full rounded-xl border border-[var(--dash-border)] bg-white px-3 py-2.5 text-sm font-semibold text-[var(--dash-ink)] outline-none transition-all placeholder:font-medium placeholder:text-[var(--dash-subtle)] hover:border-[var(--color-accent-pale)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 ${className}`}
     />
   );
 }
@@ -34,11 +34,11 @@ export function TextInput(props) {
 /**
  * Standard select input component
  */
-export function SelectInput(props) {
+export function SelectInput({ className = "", ...props }) {
   return (
     <select
       {...props}
-      className="w-full rounded-lg border border-[var(--dash-border)] bg-white px-3 py-2.5 text-sm font-medium text-[var(--dash-ink)] outline-none transition-colors focus:border-[var(--dash-ink)]"
+      className={`w-full appearance-none rounded-xl border border-[var(--dash-border)] bg-white px-3 py-2.5 text-sm font-semibold text-[var(--dash-ink)] outline-none transition-all hover:border-[var(--color-accent-pale)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 ${className}`}
     />
   );
 }
@@ -85,7 +85,7 @@ export function MiniInput(props) {
   return (
     <input
       {...props}
-      className="w-full rounded-lg border border-[var(--dash-border)] bg-white px-3 py-2 text-sm font-medium text-[var(--dash-ink)] outline-none transition-colors placeholder:text-[var(--dash-subtle)] focus:border-[var(--dash-ink)]"
+      className="w-full rounded-lg border border-[var(--dash-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--dash-ink)] outline-none transition-all placeholder:text-[var(--dash-subtle)] hover:border-[var(--color-accent-pale)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20"
     />
   );
 }
@@ -98,7 +98,7 @@ export function TextAreaInput({ rows = 4, className = "", ...props }) {
     <textarea
       {...props}
       rows={rows}
-      className={`w-full rounded-lg border border-[var(--dash-border)] bg-white px-3 py-2.5 text-sm font-medium leading-6 text-[var(--dash-ink)] outline-none transition-colors placeholder:text-[var(--dash-subtle)] focus:border-[var(--dash-ink)] ${className}`}
+      className={`w-full rounded-xl border border-[var(--dash-border)] bg-white px-3 py-2.5 text-sm font-semibold leading-6 text-[var(--dash-ink)] outline-none transition-all placeholder:font-medium placeholder:text-[var(--dash-subtle)] hover:border-[var(--color-accent-pale)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 ${className}`}
     />
   );
 }

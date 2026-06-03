@@ -172,14 +172,5 @@ export function createInvitationFromDashboardForm(form) {
 }
 
 export function getStoredInvitationDraft() {
-  if (typeof window === "undefined") {
-    return null;
-  }
-
-  try {
-    const rawDraft = window.localStorage.getItem("nusa-invite:draft");
-    return rawDraft ? JSON.parse(rawDraft) : null;
-  } catch {
-    return null;
-  }
+  return null;
 }

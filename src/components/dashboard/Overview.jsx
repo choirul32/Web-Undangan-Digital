@@ -1,35 +1,82 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { sampleInvitation } from "../../data/sampleInvitation";
-import {
-  invitations,
-  templates,
-  fadeUp,
-  statusStyles,
-  activities,
-} from "./config";
+import { templates, fadeUp, statusStyles, activities } from "./config";
 
-export function MetricCard({ label, value, detail }) {
+function Icon({ name, className = "h-4 w-4" }) {
+  const common = { className, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" };
+  if (name === "warning") return <svg {...common}><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" /><path d="M12 9v4" /><path d="M12 17h.01" /></svg>;
+  if (name === "invitations") return <svg {...common}><rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 8h18" /><path d="M8 12h8" /><path d="M8 16h5" /></svg>;
+  if (name === "published") return <svg {...common}><path d="M20 6 9 17l-5-5" /></svg>;
+  if (name === "payment") return <svg {...common}><rect x="2" y="6" width="20" height="12" rx="2" /><path d="M2 10h20" /><path d="M7 14h.01" /></svg>;
+  if (name === "groups") return <svg {...common}><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>;
+  if (name === "edit") return <svg {...common}><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" /></svg>;
+  if (name === "preview") return <svg {...common}><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" /><circle cx="12" cy="12" r="3" /></svg>;
+  if (name === "publish") return <svg {...common}><path d="M12 3v12" /><path d="m7 8 5-5 5 5" /><path d="M5 21h14" /></svg>;
+  if (name === "archive") return <svg {...common}><rect x="3" y="4" width="18" height="4" rx="1" /><path d="M5 8h14v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8Z" /><path d="M10 12h4" /></svg>;
+  if (name === "template") return <svg {...common}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg>;
+  return <svg {...common}><circle cx="12" cy="12" r="9" /></svg>;
+}
+
+export function MetricCard({ label, value, detail, icon }) {
   return (
     <motion.div
       variants={fadeUp}
-      className="rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-4 shadow-[var(--dash-shadow)]"
+      className="relative h-32 overflow-hidden rounded-xl border border-[var(--color-accent-pale)] bg-white p-4 shadow-lg shadow-[var(--color-primary)]/8"
     >
-      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
-        {label}
-      </p>
-      <p className="mt-2 text-3xl font-semibold text-[var(--dash-ink)]">{value}</p>
-      <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">{detail}</p>
+      <div className="absolute -right-5 -top-5 h-24 w-24 rounded-full bg-[var(--color-accent)]/10" />
+      <div className="relative flex items-start justify-between gap-2">
+        <p className="text-xs font-black uppercase tracking-[0.08em] text-[var(--color-text)]/70">{label}</p>
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--color-primary)]">
+          <Icon name={icon} className="h-4 w-4" />
+        </span>
+      </div>
+      <p className="relative mt-2 text-4xl font-black text-[var(--color-primary)]">{value}</p>
+      <p className="relative mt-1 text-xs font-semibold text-[var(--color-text)]/80">{detail}</p>
     </motion.div>
   );
 }
 
-export function InvitationTable() {
+export function OverviewAlertStrip({ pendingCount = 0 }) {
+  if (!pendingCount) {
+    return null;
+  }
+
+  return (
+    <motion.div
+      variants={fadeUp}
+      className="flex items-start gap-3 rounded-lg border border-[var(--color-warning-border)] bg-[var(--color-warning-bg)] px-4 py-3 text-[var(--color-warning-text)]"
+    >
+      <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center text-[var(--color-warning-icon)]">
+        <Icon name="warning" className="h-4 w-4" />
+      </span>
+      <div>
+        <p className="text-xs font-black uppercase tracking-[0.08em]">Butuh Perhatian</p>
+        <p className="mt-1 text-sm font-semibold">
+          Terdapat {pendingCount} undangan dalam status draft/review yang menunggu pengecekan akhir.
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
+export function InvitationTable({ variant = "full" }) {
   const [items, setItems] = useState([]);
   const [isLoadingInvitations, setIsLoadingInvitations] = useState(true);
   const [actionMessage, setActionMessage] = useState("");
+  const isOverviewVariant = variant === "overview";
+  const isInvitationsVariant = variant === "invitations";
+  const formatDateLabel = (rawValue) => {
+    if (!rawValue) return "-";
+    const parsed = new Date(rawValue);
+    if (Number.isNaN(parsed.getTime())) return rawValue;
+    return parsed.toLocaleDateString("id-ID", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -110,15 +157,13 @@ export function InvitationTable() {
   return (
     <motion.section
       variants={fadeUp}
-      className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)] shadow-xl shadow-[var(--color-primary)]/8"
+      className="overflow-hidden rounded-xl border border-[var(--color-accent-pale)] bg-white shadow-lg shadow-[var(--color-primary)]/8"
     >
-      <div className="border-b border-[var(--color-accent-pale)] px-6 py-5">
-        <div>
-          <h2 className="text-2xl font-black text-[var(--color-primary)]">Undangan Terbaru</h2>
-          <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
-            Kelola draft, revisi, preview, dan undangan yang sudah publish.
-          </p>
-        </div>
+      <div className="flex items-center justify-between border-b border-[var(--color-accent-pale)] px-6 py-4">
+        <h2 className="text-xl font-black text-[var(--color-primary)]">Undangan Terbaru</h2>
+        <a href="/dashboard/invitations" className="text-sm font-black text-[var(--color-primary)] hover:underline">
+          Lihat Semua
+        </a>
       </div>
 
       {actionMessage ? (
@@ -128,24 +173,31 @@ export function InvitationTable() {
       ) : null}
 
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[1040px] text-left">
-          <thead className="bg-[var(--color-muted)] text-sm uppercase tracking-[0.12em] text-[var(--color-text)]">
+        <table className={`w-full text-left ${isOverviewVariant ? "min-w-[720px]" : isInvitationsVariant ? "min-w-[1220px]" : "min-w-[1040px]"}`}>
+          <thead className="bg-[var(--color-muted)] text-xs uppercase tracking-[0.12em] text-[var(--color-text)]">
             <tr>
               <th className="px-6 py-4">Pasangan</th>
-              <th className="px-6 py-4">Pemesan</th>
-              <th className="px-6 py-4">Template</th>
-              <th className="px-6 py-4">Tanggal</th>
-              <th className="px-6 py-4">RSVP</th>
-              <th className="px-6 py-4">Order</th>
-              <th className="px-6 py-4">Payment</th>
-              <th className="px-6 py-4">Aksi</th>
+              {isInvitationsVariant ? <th className="px-6 py-4">Slug</th> : <th className="px-6 py-4">Template</th>}
+              {isInvitationsVariant ? <th className="px-6 py-4">Template</th> : null}
+              {!isInvitationsVariant ? <th className="px-6 py-4">Tanggal Acara</th> : <th className="px-6 py-4">Tanggal Acara</th>}
+              {isInvitationsVariant ? <th className="px-6 py-4">Payment</th> : null}
+              {isInvitationsVariant ? <th className="px-6 py-4">Update Terakhir</th> : null}
+              <th className="px-6 py-4">Status</th>
+              {!isOverviewVariant && !isInvitationsVariant ? (
+                <>
+                  <th className="px-6 py-4">Pemesan</th>
+                  <th className="px-6 py-4">RSVP</th>
+                  <th className="px-6 py-4">Payment</th>
+                </>
+              ) : null}
+              <th className="px-6 py-4 text-right">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--color-accent-pale)]/65">
             {isLoadingInvitations ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={isOverviewVariant ? 5 : isInvitationsVariant ? 8 : 8}
                   className="px-6 py-8 text-center text-base font-semibold text-[var(--color-text)]"
                 >
                   Memuat undangan...
@@ -154,7 +206,7 @@ export function InvitationTable() {
             ) : items.length === 0 ? (
               <tr>
                 <td
-                  colSpan={8}
+                  colSpan={isOverviewVariant ? 5 : isInvitationsVariant ? 8 : 8}
                   className="px-6 py-8 text-center text-base font-semibold text-[var(--color-text)]"
                 >
                   Belum ada data undangan.
@@ -162,72 +214,107 @@ export function InvitationTable() {
               </tr>
             ) : items.map((item) => (
               <tr key={item.id} className="transition-colors hover:bg-[var(--color-bg)]">
-                <td className="px-6 py-5">
+                <td className="px-6 py-4">
                   <p className="text-lg font-black text-[var(--color-primary)]">{item.couple}</p>
-                  <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">/u/{item.slug}</p>
-                </td>
-                <td className="px-6 py-5">
-                  <p className="font-black text-[var(--color-primary)]">
-                    {item.customerName || "-"}
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">
-                    {item.customerWhatsapp || "-"}
+                  <p className="mt-1 text-xs font-semibold text-[var(--color-text)]/70">
+                    {isInvitationsVariant ? (item.package || "-") : (item.customerName || item.slug)}
                   </p>
                 </td>
-                <td className="px-6 py-5">
-                  <p className="font-black text-[var(--color-primary)]">{item.template}</p>
-                  <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">{item.category} | {item.package}</p>
+                <td className="px-6 py-4">
+                  {isInvitationsVariant ? (
+                    <p className="font-black text-[var(--color-text)]/80">{item.slug}</p>
+                  ) : (
+                    <p className="font-black text-[var(--color-primary)]">{item.template}</p>
+                  )}
+                  {!isOverviewVariant && !isInvitationsVariant ? (
+                    <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">
+                      {item.category} | {item.package}
+                    </p>
+                  ) : null}
                 </td>
-                <td className="px-6 py-5 font-bold text-[var(--color-text)]">{item.date}</td>
-                <td className="px-6 py-5 font-black text-[var(--color-primary)]">{item.rsvp}</td>
-                <td className="px-6 py-5">
-                  <span className={`rounded-full px-3 py-1.5 text-sm font-black ${statusStyles[item.orderStatus] || statusStyles[item.status] || statusStyles.draft}`}>
+                {isInvitationsVariant ? (
+                  <td className="px-6 py-4">
+                    <p className="font-black text-[var(--color-primary)]">{item.template || "-"}</p>
+                    <p className="mt-1 text-xs font-semibold text-[var(--color-text)]/70">
+                      {item.category || "-"}
+                    </p>
+                  </td>
+                ) : null}
+                <td className="px-6 py-4 font-bold text-[var(--color-text)]">
+                  {item.date || formatDateLabel(item.eventDate)}
+                </td>
+                {isInvitationsVariant ? (
+                  <td className="px-6 py-4">
+                    <span className={`rounded-full px-3 py-1.5 text-xs font-black ${statusStyles[item.paymentStatus] || statusStyles.draft}`}>
+                      {item.paymentStatus || "unpaid"}
+                    </span>
+                  </td>
+                ) : null}
+                {isInvitationsVariant ? (
+                  <td className="px-6 py-4">
+                    <p className="font-bold text-[var(--color-text)]">
+                      {formatDateLabel(item.updatedAt || item.updated_at || item.createdAt || item.created_at)}
+                    </p>
+                  </td>
+                ) : null}
+                <td className="px-6 py-4">
+                  <span className={`rounded-full px-3 py-1.5 text-xs font-black ${statusStyles[item.orderStatus] || statusStyles[item.status] || statusStyles.draft}`}>
                     {item.orderStatus || item.status}
                   </span>
-                  <p className="mt-2 text-xs font-bold text-[var(--color-text)]">
-                    invitation: {item.status}
-                  </p>
                 </td>
-                <td className="px-6 py-5">
-                  <span className={`rounded-full px-3 py-1.5 text-sm font-black ${statusStyles[item.paymentStatus] || statusStyles.draft}`}>
-                    {item.paymentStatus || "unpaid"}
-                  </span>
-                </td>
-                <td className="px-6 py-5">
-                  <div className="flex flex-wrap gap-2">
+                {!isOverviewVariant && !isInvitationsVariant ? (
+                  <>
+                    <td className="px-6 py-4">
+                      <p className="font-black text-[var(--color-primary)]">{item.customerName || "-"}</p>
+                      <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">{item.customerWhatsapp || "-"}</p>
+                    </td>
+                    <td className="px-6 py-4 font-black text-[var(--color-primary)]">{item.rsvp}</td>
+                    <td className="px-6 py-4">
+                      <span className={`rounded-full px-3 py-1.5 text-sm font-black ${statusStyles[item.paymentStatus] || statusStyles.draft}`}>
+                        {item.paymentStatus || "unpaid"}
+                      </span>
+                    </td>
+                  </>
+                ) : null}
+                <td className="px-6 py-4">
+                  <div className="flex justify-end gap-1">
                     <a
                       href={`/dashboard/invitations/${item.slug}`}
-                      className="rounded-xl border border-[var(--color-accent-pale)] px-3 py-2 text-sm font-black text-[var(--color-text)] hover:bg-white"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] text-[var(--color-text)] hover:bg-[var(--color-bg)]"
+                      title="Edit"
                     >
-                      Edit
+                      <Icon name="edit" className="h-4 w-4" />
                     </a>
                     <a
                       href={`/preview?slug=${encodeURIComponent(item.slug)}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="rounded-xl bg-[var(--color-primary)] px-3 py-2 text-sm font-black text-white hover:bg-[var(--color-primary-hover)]"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] text-[var(--color-text)] hover:bg-[var(--color-bg)]"
+                      title="Preview"
                     >
-                      Preview
+                      <Icon name="preview" className="h-4 w-4" />
                     </a>
                     {String(item.status).toLowerCase() === "published" ? (
                       <button
                         type="button"
                         onClick={() => updateInvitationStatus(item, "archive")}
-                        className="rounded-xl border border-[var(--color-accent-pale)] px-3 py-2 text-sm font-black text-[var(--color-text)] hover:bg-white"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] text-[var(--color-text)] hover:bg-[var(--color-bg)]"
+                        title="Archive"
                       >
-                        Archive
+                        <Icon name="archive" className="h-4 w-4" />
                       </button>
                     ) : String(item.status).toLowerCase() === "archived" ? (
-                      <span className="rounded-xl border border-[var(--color-accent-pale)] px-3 py-2 text-sm font-black text-[var(--color-text)]">
-                        Archived
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] text-[var(--color-text)]">
+                        <Icon name="archive" className="h-4 w-4" />
                       </span>
                     ) : (
                       <button
                         type="button"
                         onClick={() => updateInvitationStatus(item, "publish")}
-                        className="rounded-xl bg-[var(--color-accent)] px-3 py-2 text-sm font-black text-[var(--color-primary)] hover:bg-[var(--color-accent-soft)]"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] text-[var(--color-text)] hover:bg-[var(--color-bg)]"
+                        title="Publish"
                       >
-                        Publish
+                        <Icon name="publish" className="h-4 w-4" />
                       </button>
                     )}
                   </div>
@@ -236,6 +323,63 @@ export function InvitationTable() {
             ))}
           </tbody>
         </table>
+      </div>
+    </motion.section>
+  );
+}
+
+export function RSVPSnapshotCard({ stats }) {
+  const hadir = Number(stats?.rsvpHadir || 0);
+  const tidakHadir = Number(stats?.rsvpTidakHadir || 0);
+  const belum = Number(stats?.rsvpBelum || 0);
+  const total = hadir + tidakHadir + belum;
+  const hadirPercent = total > 0 ? Math.round((hadir / total) * 100) : 0;
+
+  return (
+    <motion.section variants={fadeUp} className="rounded-xl border border-[var(--color-accent-pale)] bg-white p-4 shadow-lg shadow-[var(--color-primary)]/8">
+      <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[var(--color-text)]/80">RSVP Snapshot</h3>
+      <div className="mt-4 flex items-center justify-center">
+        <div className="flex h-28 w-28 items-center justify-center rounded-full border-[12px] border-[var(--color-muted)]">
+          <div className="text-center">
+            <p className="text-2xl font-black text-[var(--color-primary)]">{hadirPercent}%</p>
+            <p className="text-xs font-semibold text-[var(--color-text)]/70">Hadir</p>
+          </div>
+        </div>
+      </div>
+      <div className="mt-4 space-y-2 text-sm font-semibold text-[var(--color-text)]">
+        <div className="flex items-center justify-between"><span>Hadir</span><span>{hadir}</span></div>
+        <div className="flex items-center justify-between"><span>Tidak Hadir</span><span>{tidakHadir}</span></div>
+        <div className="flex items-center justify-between"><span>Belum RSVP</span><span>{belum}</span></div>
+      </div>
+    </motion.section>
+  );
+}
+
+export function QuickActionsCard() {
+  const actions = [
+    { label: "Buat Undangan", href: "/dashboard/invitations" },
+    { label: "Buka Template", href: "/dashboard/templates" },
+    { label: "Cek Status RSVP", href: "/dashboard/rsvps" },
+  ];
+
+  return (
+    <motion.section variants={fadeUp} className="rounded-xl border border-[var(--color-accent-pale)] bg-white p-4 shadow-lg shadow-[var(--color-primary)]/8">
+      <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[var(--color-text)]/80">Aksi Cepat</h3>
+      <div className="mt-3 grid grid-cols-2 gap-2">
+        {actions.map((action) => (
+          <a
+            key={action.label}
+            href={action.href}
+            className={`rounded-lg border border-[var(--color-accent-pale)] px-3 py-3 text-center text-xs font-black text-[var(--color-primary)] hover:bg-[var(--color-bg)] ${
+              action.label === "Cek Status RSVP" ? "col-span-2" : ""
+            }`}
+          >
+            <span className="flex items-center justify-center gap-2">
+              <Icon name={action.label === "Buat Undangan" ? "invitations" : action.label === "Buka Template" ? "template" : "groups"} className="h-4 w-4" />
+              {action.label}
+            </span>
+          </a>
+        ))}
       </div>
     </motion.section>
   );
@@ -261,9 +405,6 @@ export function TemplateHighlights() {
             Kelola
           </a>
         </div>
-        <p className="mt-1 text-xs font-medium leading-5 text-[var(--dash-muted)]">
-          Pilihan awal, bukan ranking penjualan.
-        </p>
       </div>
 
       <div className="mt-3 divide-y divide-[var(--dash-border)]">
@@ -284,23 +425,10 @@ export function TemplateHighlights() {
               <p className="truncate text-sm font-semibold text-[var(--dash-ink)]">
                 {template.name}
               </p>
-              <p className="mt-1 text-xs font-medium text-[var(--dash-muted)]">
-                {template.category} · {template.price || "Template"}
-              </p>
             </div>
-            <span className="text-xs font-semibold text-[var(--dash-muted)] group-hover:text-[var(--dash-ink)]">
-              Lihat
-            </span>
           </a>
         ))}
       </div>
-
-      <a
-        href="/dashboard/invitations"
-        className="mt-3 flex items-center justify-center rounded-md bg-[var(--dash-fog)] px-4 py-2.5 text-sm font-semibold text-[var(--dash-ink)] hover:bg-[var(--dash-border)]"
-      >
-        Buka menu Undangan
-      </a>
     </motion.section>
   );
 }
@@ -325,58 +453,5 @@ export function ActivityFeed() {
 }
 
 export function NextActionsCard() {
-  const actions = [
-    {
-      label: "Cek waiting payment",
-      detail: "Pastikan pembayaran manual sudah dikonfirmasi sebelum masuk produksi.",
-      href: "/dashboard/invitations",
-    },
-    {
-      label: "Review draft aktif",
-      detail: "Buka preview, cek data acara, tamu, media, dan publish guard.",
-      href: "/dashboard/invitations",
-    },
-    {
-      label: "Pantau RSVP",
-      detail: "Lihat tamu yang sudah hadir, belum RSVP, dan total pax.",
-      href: "/dashboard/rsvps",
-    },
-  ];
-
-  return (
-    <motion.section
-      variants={fadeUp}
-      className="rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-5 shadow-[var(--dash-shadow)]"
-    >
-      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
-        Next Actions
-      </p>
-      <h2 className="mt-1 text-xl font-semibold text-[var(--dash-ink)]">
-        Fokus hari ini
-      </h2>
-      <div className="mt-4 space-y-3">
-        {actions.map((action, index) => (
-          <a
-            key={action.label}
-            href={action.href}
-            className="block rounded-[12px] border border-[var(--dash-border)] bg-white p-3 hover:bg-[var(--dash-fog)]"
-          >
-            <div className="flex items-start gap-3">
-              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--dash-ink)] text-xs font-semibold text-white">
-                {index + 1}
-              </span>
-              <div>
-                <p className="text-sm font-semibold text-[var(--dash-ink)]">
-                  {action.label}
-                </p>
-                <p className="mt-1 text-xs font-medium leading-5 text-[var(--dash-muted)]">
-                  {action.detail}
-                </p>
-              </div>
-            </div>
-          </a>
-        ))}
-      </div>
-    </motion.section>
-  );
+  return null;
 }

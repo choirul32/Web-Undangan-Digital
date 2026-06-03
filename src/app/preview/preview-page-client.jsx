@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { getStoredInvitationDraft, sampleInvitation } from "../../data/sampleInvitation";
+import { sampleInvitation } from "../../data/sampleInvitation";
 import {
   applyStoredTemplateOverrideToInvitation,
   defaultTemplateMetadata,
@@ -23,7 +23,7 @@ export default function PreviewPageClient() {
     let isMounted = true;
 
     const loadPreviewData = async () => {
-      let draft = getStoredInvitationDraft() || sampleInvitation;
+      let draft = sampleInvitation;
 
       if (slug) {
         try {
@@ -33,7 +33,7 @@ export default function PreviewPageClient() {
             draft = result.data;
           }
         } catch {
-          // Keep local draft/sample if slug preview API is unavailable.
+          // Keep sample data if slug preview API is unavailable.
         }
       }
 
@@ -122,6 +122,39 @@ export default function PreviewPageClient() {
       isMounted = false;
     };
   }, [editorPreview, slug, templateId]);
+
+  useEffect(() => {
+    const handleMessage = (event) => {
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+      const message = event.data;
+      if (!message || typeof message !== "object") {
+        return;
+      }
+      if (message.type !== "nusa-invite:editor-preview-update") {
+        return;
+      }
+
+      const snapshot = message.payload;
+      if (!snapshot || !snapshot.id) {
+        return;
+      }
+      if (templateId && snapshot.id !== templateId) {
+        return;
+      }
+
+      setData((current) => ({
+        ...current,
+        templateId: snapshot.id,
+        coverImage: snapshot.image || current.coverImage,
+        designConfig: snapshot.designConfig || current.designConfig,
+      }));
+    };
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, [templateId]);
 
   return (
     <InvitationRenderer

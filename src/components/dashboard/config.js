@@ -221,6 +221,41 @@ export const colorPalettePresets = [
     label: "Monochrome",
     colors: { primary: "#1a1a1a", accent: "#666666", text: "#374151", bg: "#ffffff", surface: "#fafafa" },
   },
+  {
+    id: "midnight-neon",
+    label: "Midnight Neon",
+    colors: { primary: "#0b1026", accent: "#00e5ff", text: "#1b2430", bg: "#eefbff", surface: "#ffffff" },
+  },
+  {
+    id: "sunset-punch",
+    label: "Sunset Punch",
+    colors: { primary: "#5a1f14", accent: "#ff6a00", text: "#3f2a24", bg: "#fff3e8", surface: "#fffaf5" },
+  },
+  {
+    id: "royal-violet",
+    label: "Royal Violet",
+    colors: { primary: "#2a1147", accent: "#9f5cff", text: "#2c2237", bg: "#f6f1ff", surface: "#ffffff" },
+  },
+  {
+    id: "jade-flame",
+    label: "Jade Flame",
+    colors: { primary: "#0f3a2d", accent: "#ff4d2d", text: "#1f3a34", bg: "#f2fffa", surface: "#ffffff" },
+  },
+  {
+    id: "ocean-cobalt",
+    label: "Ocean Cobalt",
+    colors: { primary: "#0e2a66", accent: "#2f80ff", text: "#1f2f4a", bg: "#eef4ff", surface: "#ffffff" },
+  },
+  {
+    id: "crimson-ink",
+    label: "Crimson Ink",
+    colors: { primary: "#3b0d14", accent: "#e11d48", text: "#3a2027", bg: "#fff1f4", surface: "#ffffff" },
+  },
+  {
+    id: "forest-lime",
+    label: "Forest Lime",
+    colors: { primary: "#173b12", accent: "#84cc16", text: "#2a3c23", bg: "#f7ffe9", surface: "#ffffff" },
+  },
 ];
 
 // ===== ANIMATION PRESETS =====
@@ -782,15 +817,29 @@ export const templatePreviewViewports = {
 
 // ===== HELPER FUNCTIONS =====
 export function mapDesignSectionToPreviewSection(section = "home") {
-  if (section === "countdown") {
-    return "countdown";
-  }
+  const normalized = String(section || "home").toLowerCase().trim();
 
-  if (section === "doa-ucapan") {
-    return "doa-ucapan";
-  }
+  const aliases = {
+    home: "home",
+    cover: "home",
+    opening: "home",
+    couple: "couple",
+    mempelai: "couple",
+    acara: "acara",
+    event: "acara",
+    events: "acara",
+    countdown: "countdown",
+    story: "story",
+    "love-story": "story",
+    gallery: "gallery",
+    gift: "gift",
+    rsvp: "rsvp",
+    doa: "doa-ucapan",
+    ucapan: "doa-ucapan",
+    "doa-ucapan": "doa-ucapan",
+  };
 
-  return section || "home";
+  return aliases[normalized] || "home";
 }
 
 // ===== ACTIVITIES =====
