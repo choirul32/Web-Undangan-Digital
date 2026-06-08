@@ -2,11 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { sampleInvitation } from "../../data/sampleInvitation";
 import { fadeUp } from "./config";
 import { TextInput, SelectInput } from "./FormControls";
 
-export default function MediaManager({ invitationSlug = sampleInvitation.slug }) {
+export default function MediaManager({ invitationSlug = "" }) {
   const [mediaItems, setMediaItems] = useState([]);
   const [mediaType, setMediaType] = useState("image");
   const [title, setTitle] = useState("Gallery");
@@ -22,6 +21,11 @@ export default function MediaManager({ invitationSlug = sampleInvitation.slug })
   const filteredMediaItems = mediaItems.filter((item) => item.mediaType === mediaType);
 
   useEffect(() => {
+    if (!invitationSlug) {
+      setMediaItems([]);
+      return undefined;
+    }
+
     let isMounted = true;
 
     fetch(`/api/media?invitationSlug=${encodeURIComponent(invitationSlug)}`)
@@ -82,7 +86,7 @@ export default function MediaManager({ invitationSlug = sampleInvitation.slug })
           ? replaceId
             ? "Media berhasil diganti."
             : "Media berhasil diupload."
-          : "Media dummy ditambahkan. Supabase belum dikonfigurasi.",
+          : "Media berhasil diupload.",
       );
     } catch (error) {
       setMessage(error.message || "Upload gagal.");
@@ -134,6 +138,21 @@ export default function MediaManager({ invitationSlug = sampleInvitation.slug })
       variants={fadeUp}
       className="overflow-hidden rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] shadow-[var(--dash-shadow)]"
     >
+      {!invitationSlug ? (
+        <div className="border-b border-[var(--dash-border)] px-5 py-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
+            Media Manager
+          </p>
+          <h2 className="mt-1 text-2xl font-semibold text-[var(--dash-ink)]">
+            Pilih order aktif dulu
+          </h2>
+          <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
+            Panel media hanya berjalan untuk satu invitation yang sedang dibuka.
+          </p>
+        </div>
+      ) : null}
+      {!invitationSlug ? null : (
+        <>
       <div className="border-b border-[var(--dash-border)] px-5 py-4">
         <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
           Media Manager
@@ -256,6 +275,8 @@ export default function MediaManager({ invitationSlug = sampleInvitation.slug })
           </div>
         ) : null}
       </div>
+        </>
+      )}
     </motion.section>
   );
 }

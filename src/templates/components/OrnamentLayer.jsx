@@ -12,6 +12,8 @@ const slotClasses = {
   "center-bottom": "bottom-0 left-1/2",
   "side-left": "left-0 top-1/2",
   "side-right": "right-0 top-1/2",
+  "middle-left": "left-0 top-1/2",
+  "middle-right": "right-0 top-1/2",
   center: "left-1/2 top-1/2",
 };
 
@@ -20,6 +22,8 @@ const slotTransforms = {
   "center-bottom": "translateX(-50%)",
   "side-left": "translateY(-50%)",
   "side-right": "translateY(-50%)",
+  "middle-left": "translateY(-50%)",
+  "middle-right": "translateY(-50%)",
   center: "translate(-50%, -50%)",
 };
 
@@ -203,17 +207,22 @@ function useParallax(hasParallaxOrnaments) {
 }
 
 export default function OrnamentLayer({ ornaments = [], className = "", pulseSync = false, pulseIntensity = "subtle" }) {
+  const visibleOrnaments = useMemo(
+    () => ornaments.filter((ornament) => !ornament.hidden && ornament.src),
+    [ornaments],
+  );
+
   // Check if any ornament has parallax
   const hasParallaxOrnaments = useMemo(
-    () => ornaments.some((o) => o.parallax && o.parallax !== "none"),
-    [ornaments],
+    () => visibleOrnaments.some((o) => o.parallax && o.parallax !== "none"),
+    [visibleOrnaments],
   );
 
   const containerRef = useParallax(hasParallaxOrnaments);
 
   // Process ornaments with track-based timeline
   const processedOrnaments = useMemo(() => {
-    if (!ornaments.length) return [];
+    if (!visibleOrnaments.length) return [];
 
     // Group ornaments by track
     const trackGroups = {};
@@ -221,7 +230,7 @@ export default function OrnamentLayer({ ornaments = [], className = "", pulseSyn
       trackGroups[i] = [];
     }
     
-    ornaments.forEach((ornament, index) => {
+    visibleOrnaments.forEach((ornament, index) => {
       const track = ornament.timelineTrack ?? 0;
       trackGroups[track].push({ ornament, originalIndex: index });
     });
@@ -234,7 +243,7 @@ export default function OrnamentLayer({ ornaments = [], className = "", pulseSyn
     });
 
     // Calculate entrance delay based on track and position
-    return ornaments.map((ornament, index) => {
+    return visibleOrnaments.map((ornament, index) => {
       const track = ornament.timelineTrack ?? 0;
       const position = ornament.timelinePosition ?? 0;
       
@@ -257,15 +266,15 @@ export default function OrnamentLayer({ ornaments = [], className = "", pulseSyn
         _position: position,
       };
     });
-  }, [ornaments]);
+  }, [visibleOrnaments]);
 
-  if (!ornaments.length) {
+  if (!visibleOrnaments.length) {
     return null;
   }
 
-  // Split ornaments into background (zIndex <= 10) and foreground (zIndex > 10)
-  const backgroundOrnaments = processedOrnaments.filter((o) => (o.zIndex ?? 0) <= 10);
-  const foregroundOrnaments = processedOrnaments.filter((o) => (o.zIndex ?? 0) > 10);
+  // Split ornaments so non-negative zIndex can render above the content layer.
+  const backgroundOrnaments = processedOrnaments.filter((o) => (o.zIndex ?? 0) < 0);
+  const foregroundOrnaments = processedOrnaments.filter((o) => (o.zIndex ?? 0) >= 0);
 
   const renderOrnamentList = (list) => list.flatMap((ornament) => {
     const sequence = ornament.sequence || {};
@@ -424,8 +433,8 @@ export default function OrnamentLayer({ ornaments = [], className = "", pulseSyn
   });
 
   return (
-    <div ref={containerRef} className={`pointer-events-none absolute inset-0 z-[5] ${className}`}>
-      <div className="absolute inset-0 overflow-hidden">
+    <div ref={containerRef} className={`pointer-events-none absolute inset-0 ${className}`}>
+      <div className="absolute inset-0 z-[5] overflow-hidden">
         <style>{`
         @keyframes ornament-fade {
           0%, 100% { opacity: var(--ornament-opacity); }
@@ -510,7 +519,7 @@ export default function OrnamentLayer({ ornaments = [], className = "", pulseSyn
         {renderOrnamentList(backgroundOrnaments)}
       </div>
       {foregroundOrnaments.length > 0 ? (
-        <div className="absolute inset-0 overflow-hidden z-20">
+        <div className="absolute inset-0 z-[20] overflow-hidden">
           {renderOrnamentList(foregroundOrnaments)}
         </div>
       ) : null}

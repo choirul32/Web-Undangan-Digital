@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { sampleInvitation } from "../../../data/sampleInvitation";
 import {
   formPayloadToInvitationRow,
   mapInvitationListItem,
@@ -15,26 +14,10 @@ function hasServiceEnv() {
 
 export async function GET() {
   if (!hasServiceEnv()) {
-    return NextResponse.json({
-      source: "sample",
-      data: [
-        {
-          id: sampleInvitation.id,
-          couple: `${sampleInvitation.couple.groomNickname} & ${sampleInvitation.couple.brideNickname}`,
-          slug: sampleInvitation.slug,
-          template: sampleInvitation.templateId,
-          category: "Sample",
-          status: "published",
-          orderStatus: "published",
-          paymentStatus: "paid",
-          customerName: "Andi Saputra",
-          customerWhatsapp: "6281234567890",
-          date: "12 Jun 2026",
-          rsvp: sampleInvitation.guests?.length || 0,
-          package: sampleInvitation.package,
-        },
-      ],
-    });
+    return NextResponse.json(
+      { error: "Production database is not configured" },
+      { status: 503 },
+    );
   }
 
   const admin = await requireAdminApiSession();
@@ -43,18 +26,33 @@ export async function GET() {
   }
 
   const supabase = createServiceSupabaseClient();
-  const { data, error } = await supabase
+  const [{ data, error }, { data: templatesData }] = await Promise.all([
+    supabase
     .from("invitations")
     .select("*")
-    .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("templates")
+      .select("template_id, name, category"),
+  ]);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  const templateLookup = new Map(
+    (templatesData || []).map((template) => [
+      template.template_id,
+      {
+        name: template.name,
+        category: template.category,
+      },
+    ]),
+  );
+
   return NextResponse.json({
     source: "supabase",
-    data: data.map(mapInvitationListItem),
+    data: data.map((row) => mapInvitationListItem(row, templateLookup)),
   });
 }
 
@@ -66,13 +64,10 @@ export async function POST(request) {
   }
 
   if (!hasServiceEnv()) {
-    return NextResponse.json({
-      source: "sample",
-      data: {
-        id: "LOCAL-DRAFT",
-        slug: payload.slug,
-      },
-    });
+    return NextResponse.json(
+      { error: "Production database is not configured" },
+      { status: 503 },
+    );
   }
 
   const admin = await requireAdminApiSession();
@@ -85,6 +80,25 @@ export async function POST(request) {
     ...formPayloadToInvitationRow(payload),
     updated_at: new Date().toISOString(),
   };
+  const originalSlug = payload.originalSlug || "";
+
+  if (originalSlug && originalSlug !== payload.slug) {
+    const { data: invitation, error } = await supabase
+      .from("invitations")
+      .update(invitationRow)
+      .eq("slug", originalSlug)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      source: "supabase",
+      data: invitation,
+    });
+  }
 
   const { data: invitation, error } = await supabase
     .from("invitations")
@@ -94,45 +108,6 @@ export async function POST(request) {
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  if (payload.eventTitle) {
-    const eventRow = {
-      invitation_id: invitation.id,
-      title: payload.eventTitle,
-      event_date: payload.eventDate || null,
-      event_time: payload.eventTime,
-      venue: payload.venue,
-      address: payload.venue,
-      maps_url: payload.mapsUrl,
-      sort_order: 1,
-    };
-
-    const { data: existingEvent } = await supabase
-      .from("invitation_events")
-      .select("id")
-      .eq("invitation_id", invitation.id)
-      .eq("sort_order", 1)
-      .maybeSingle();
-
-    if (existingEvent?.id) {
-      const { error: eventError } = await supabase
-        .from("invitation_events")
-        .update(eventRow)
-        .eq("id", existingEvent.id);
-
-      if (eventError) {
-        return NextResponse.json({ error: eventError.message }, { status: 500 });
-      }
-    } else {
-      const { error: eventError } = await supabase
-        .from("invitation_events")
-        .insert(eventRow);
-
-      if (eventError) {
-        return NextResponse.json({ error: eventError.message }, { status: 500 });
-      }
-    }
   }
 
   return NextResponse.json({

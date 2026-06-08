@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiSession } from "../../../../lib/auth";
-import { sampleInvitation } from "../../../../data/sampleInvitation";
 import { createServiceSupabaseClient } from "../../../../lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -29,34 +28,10 @@ async function countRows(supabase, table, filters = []) {
 
 export async function GET() {
   if (!hasServiceEnv()) {
-    const published = sampleInvitation.status === "published" ? 1 : 0;
-    const revision = sampleInvitation.status === "revision" ? 1 : 0;
-    const totalPax = sampleInvitation.rsvps.reduce(
-      (total, item) => total + Number(item.pax || 0),
-      0,
+    return NextResponse.json(
+      { error: "Production database is not configured" },
+      { status: 503 },
     );
-
-    return NextResponse.json({
-      source: "sample",
-      data: {
-        invitations: 1,
-        inquiry: 0,
-        waitingPayment: 0,
-        inProgress: 0,
-        review: 0,
-        activeThisMonth: published,
-        rsvps: sampleInvitation.rsvps.length,
-        rsvpPax: totalPax,
-        published,
-        revision,
-        guests: sampleInvitation.guests.length,
-        activationRate: 100,
-        publishConversion: published ? 100 : 0,
-        rsvpConversion: sampleInvitation.guests.length
-          ? Math.round((sampleInvitation.rsvps.length / sampleInvitation.guests.length) * 100)
-          : 0,
-      },
-    });
   }
 
   const admin = await requireAdminApiSession();

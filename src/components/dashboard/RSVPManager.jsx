@@ -2,18 +2,23 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { sampleInvitation } from "../../data/sampleInvitation";
 import { fadeUp } from "./config";
 import { SelectInput, TextInput } from "./FormControls";
 
-export default function RSVPManager({ invitationSlug = sampleInvitation.slug }) {
-  const [rsvps, setRsvps] = useState(sampleInvitation.rsvps);
-  const [guests, setGuests] = useState(sampleInvitation.guests);
+export default function RSVPManager({ invitationSlug = "" }) {
+  const [rsvps, setRsvps] = useState([]);
+  const [guests, setGuests] = useState([]);
   const [attendanceFilter, setAttendanceFilter] = useState("all");
   const [groupFilter, setGroupFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("");
 
   useEffect(() => {
+    if (!invitationSlug) {
+      setRsvps([]);
+      setGuests([]);
+      return undefined;
+    }
+
     let isMounted = true;
 
     Promise.all([
@@ -39,8 +44,8 @@ export default function RSVPManager({ invitationSlug = sampleInvitation.slug }) 
       })
       .catch(() => {
         if (isMounted) {
-          setRsvps(sampleInvitation.rsvps);
-          setGuests(sampleInvitation.guests);
+          setRsvps([]);
+          setGuests([]);
         }
       });
 
@@ -193,6 +198,21 @@ export default function RSVPManager({ invitationSlug = sampleInvitation.slug }) 
       variants={fadeUp}
       className="overflow-hidden rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] shadow-[var(--dash-shadow)]"
     >
+      {!invitationSlug ? (
+        <div className="border-b border-[var(--dash-border)] px-5 py-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
+            RSVP Manager
+          </p>
+          <h2 className="mt-1 text-2xl font-semibold text-[var(--dash-ink)]">
+            Pilih order aktif dulu
+          </h2>
+          <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
+            Panel RSVP hanya berjalan untuk satu invitation yang sedang dibuka.
+          </p>
+        </div>
+      ) : null}
+      {!invitationSlug ? null : (
+        <>
       <div className="flex flex-col gap-4 border-b border-[var(--dash-border)] px-5 py-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
@@ -375,6 +395,8 @@ export default function RSVPManager({ invitationSlug = sampleInvitation.slug }) 
           </tbody>
         </table>
       </div>
+        </>
+      )}
     </motion.section>
   );
 }

@@ -103,20 +103,15 @@ export function profileNameClass(config) {
 }
 
 export function normalizeEventExamples(events = []) {
-  if (events.length !== 1) return events;
-  const [event] = events;
-  return [
-    { ...event, title: event.title === "Akad & Resepsi" ? "Akad Nikah" : event.title },
-    { ...event, title: event.title === "Akad & Resepsi" ? "Resepsi" : `${event.title} (2)` },
-  ];
+  return events.filter(Boolean);
 }
 
 export function SectionTitle({ eyebrow, title, desc }) {
   return (
-    <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.28 }} variants={fadeUp} className="relative z-10 mx-auto max-w-3xl text-center">
+    <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.28 }} variants={fadeUp} className="template-section-title relative z-10 mx-auto max-w-3xl text-center">
       <p className="text-sm font-black uppercase tracking-[0.18em] text-[var(--color-accent)]">{eyebrow}</p>
-      <h2 className="mt-3 text-4xl font-black leading-tight text-[var(--color-primary)] sm:text-5xl" style={{ fontFamily: "var(--font-heading)" }}>{title}</h2>
-      {desc ? <p className="mt-4 text-lg font-semibold leading-8 text-[var(--color-text)]">{desc}</p> : null}
+      <h2 className="template-section-title-heading mt-3 text-4xl font-black leading-tight text-[var(--color-primary)] sm:text-5xl" style={{ fontFamily: "var(--font-heading)" }}>{title}</h2>
+      {desc ? <p className="template-section-title-desc mt-4 text-lg font-semibold leading-8 text-[var(--color-text)]">{desc}</p> : null}
     </motion.div>
   );
 }

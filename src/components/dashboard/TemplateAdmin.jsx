@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import { sampleInvitation } from "../../data/sampleInvitation";
 import {
   addStoredDeletedTemplateId,
   getStoredDeletedTemplateIds,
@@ -80,6 +79,7 @@ import StepNavigator from "./template-admin/StepNavigator";
 import PublishStepPanel from "./template-admin/PublishStepPanel";
 import TemplateSaveBar from "./template-admin/TemplateSaveBar";
 import MetadataStep from "./template-admin/MetadataStep";
+import CoverStep from "./template-admin/CoverStep";
 import WidgetsStep from "./template-admin/WidgetsStep";
 import TemplateCatalogGrid from "./template-admin/TemplateCatalogGrid";
 import OpeningStep from "./template-admin/OpeningStep";
@@ -148,11 +148,12 @@ function TemplateAdminPage() {
   const editorSteps = [
     { id: 1, label: "Metadata" },
     { id: 3, label: "Global Style" },
-    { id: 4, label: "Opening" },
-    { id: 5, label: "Widgets" },
-    { id: 6, label: "Ornaments" },
-    { id: 7, label: "Preview" },
-    { id: 8, label: "Publish" },
+    { id: 4, label: "Cover" },
+    { id: 5, label: "Opening" },
+    { id: 6, label: "Widgets" },
+    { id: 7, label: "Ornaments" },
+    { id: 8, label: "Preview" },
+    { id: 9, label: "Publish" },
   ];
   const [items, setItems] = useState([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
@@ -187,6 +188,7 @@ function TemplateAdminPage() {
   const [timelineInteraction, setTimelineInteraction] = useState(null);
   const [ornamentSearchQuery, setOrnamentSearchQuery] = useState("");
   const timelineContainerRef = useRef(null);
+  const fullPreviewIframeRef = useRef(null);
   const editorStepIds = editorSteps.map((step) => step.id);
   const currentStepIndex = Math.max(0, editorStepIds.indexOf(editorStep));
   const totalEditorSteps = editorSteps.length;
@@ -341,12 +343,6 @@ function TemplateAdminPage() {
         ornament.entrance && ornament.entrance !== "none",
     );
 
-    if (!presetSections.includes(activeDesignSection) && activeDesignSection !== "section") {
-      warnings.push(
-        `Section "${activeDesignSection}" belum termasuk preset template ini. Ornament mungkin tidak tampil di template publik.`,
-      );
-    }
-
     if (activeOrnaments.length > 12) {
       warnings.push(
         `Section "${activeDesignSection}" punya ${activeOrnaments.length} ornament. Pertimbangkan kurangi ke 12 atau kurang agar mobile tetap ringan.`,
@@ -373,7 +369,7 @@ function TemplateAdminPage() {
       }
 
       if (width > 860) {
-        warnings.push(`${label}: width ${width}px cukup besar untuk canvas mobile. Cek lagi di Mobile 430.`);
+        warnings.push(`${label}: width ${width}px cukup besar untuk canvas mobile. Cek lagi di Samsung A54.`);
       }
     });
 
@@ -396,9 +392,9 @@ function TemplateAdminPage() {
     Object.entries(parsedDesignConfig.sections || {}).forEach(([section, config]) => {
       const width = parseOrnamentSize(config.maxWidth || config.contentWidth || "");
 
-      if (width > 430) {
+      if (width > 412) {
         warnings.push(
-          `Section "${section}" punya width ${width}px. Cek mobile 430 agar tidak overflow.`,
+          `Section "${section}" punya width ${width}px. Cek Samsung A54 agar tidak overflow.`,
         );
       }
 
@@ -635,7 +631,7 @@ function TemplateAdminPage() {
     [activeDesignSection],
   );
   const templatePreviewSrc = useMemo(() => {
-    const previewTemplateId = templateDraft?.id || sampleInvitation.templateId;
+    const previewTemplateId = templateDraft?.id || "standard";
     const guestQuery =
       previewGuestMode === "withGuest"
         ? `&previewGuest=${encodeURIComponent("Bapak/Ibu Preview")}`
@@ -691,7 +687,7 @@ function TemplateAdminPage() {
     setManagerMessage("Clipboard browser tidak tersedia. Silakan copy manual dari textarea prompt.");
   };
   const openingSectionPreviewSrc = useMemo(() => {
-    const previewTemplateId = templateDraft?.id || sampleInvitation.templateId;
+    const previewTemplateId = templateDraft?.id || "standard";
     const guestQuery =
       previewGuestMode === "withGuest"
         ? `&previewGuest=${encodeURIComponent("Bapak/Ibu Preview")}`
@@ -709,6 +705,24 @@ function TemplateAdminPage() {
         : null,
     [parsedDesignConfig, templateDraft],
   );
+
+  const postFullPreviewSnapshot = () => {
+    if (!editorPreviewSnapshot || !fullPreviewIframeRef.current?.contentWindow) {
+      return;
+    }
+
+    fullPreviewIframeRef.current.contentWindow.postMessage(
+      {
+        type: "nusa-invite:editor-preview-update",
+        payload: editorPreviewSnapshot,
+      },
+      window.location.origin,
+    );
+  };
+
+  useEffect(() => {
+    postFullPreviewSnapshot();
+  }, [editorPreviewSnapshot]);
 
   useEffect(() => {
     if (!templateDraft) {
@@ -2012,123 +2026,17 @@ function TemplateAdminPage() {
               visible={editorStep === 1}
               templateDraft={templateDraft}
               editingTemplateId={editingTemplateId}
-              updateTemplateDraft={updateTemplateDraft}
+                updateTemplateDraft={updateTemplateDraft}
               templateCategoryOptions={templateCategoryOptions}
               templateBadgeOptions={templateBadgeOptions}
               selectedBadgeOption={selectedBadgeOption}
               currentStepNumber={currentStepNumber}
               totalEditorSteps={totalEditorSteps}
-              isUploadingThumbnail={isUploadingThumbnail}
-              updateTemplateThumbnail={updateTemplateThumbnail}
-            />
-            <div className="mt-5 grid gap-5 md:grid-cols-2">
-              <div className={`scroll-mt-24 md:col-span-2 ${editorStep === 2 ? "" : "hidden"}`}>
-                <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                    <div>
-                      <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
-                        Preset-First Workflow
-                      </p>
-                      <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
-                        Mulai dari preset agar template tidak dibangun dari JSON kosong.
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => applyTemplateStylePreset("template")}
-                      className="rounded-xl bg-[var(--color-primary)] px-4 py-2 text-sm font-black text-white"
-                    >
-                      Apply Preset
-                    </button>
-                  </div>
-                  <div className="mt-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-4">
-                    <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
-                      <div>
-                        <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-accent)]">
-                          Smart Theme Composer
-                        </p>
-                        <p className="mt-1 text-sm font-semibold leading-6 text-[var(--color-text)]">
-                          Pilih konsep, lalu composer mengisi design config default yang tetap bisa diedit lanjut.
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={applySmartThemeConcept}
-                        className="rounded-xl border border-[var(--color-primary)] bg-[var(--color-primary)] px-4 py-2 text-sm font-black text-white"
-                      >
-                        Generate From Concept
-                      </button>
-                    </div>
-                    <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-                      {smartThemeConcepts.map((concept) => (
-                        <button
-                          key={concept.id}
-                          type="button"
-                          onClick={() => setSelectedThemeConcept(concept.id)}
-                          className={`rounded-[8px] border p-4 text-left transition-colors ${
-                            selectedThemeConcept === concept.id
-                              ? "border-[var(--color-primary)] bg-[var(--color-bg)]"
-                              : "border-[var(--color-accent-pale)] bg-white hover:bg-[var(--color-bg)]"
-                          }`}
-                        >
-                          <p className="text-sm font-black text-[var(--color-primary)]">
-                            {concept.label}
-                          </p>
-                          <p className="mt-1 text-xs font-semibold leading-5 text-[var(--color-text)]">
-                            {concept.description}
-                          </p>
-                          <p className="mt-3 text-[10px] font-black uppercase tracking-[0.1em] text-[var(--color-accent)]">
-                            preset: {concept.presetId}
-                          </p>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                    {templateStylePresets.map((preset) => (
-                      <button
-                        key={preset.id}
-                        type="button"
-                        onClick={() => setSelectedTemplatePreset(preset.id)}
-                        className={`rounded-[8px] border p-4 text-left transition-colors ${
-                          selectedTemplatePreset === preset.id
-                            ? "border-[var(--color-primary)] bg-white"
-                            : "border-[var(--color-accent-pale)] bg-white/70 hover:bg-white"
-                        }`}
-                      >
-                        <p className="text-base font-black text-[var(--color-primary)]">
-                          {preset.label}
-                        </p>
-                        <p className="mt-1 text-sm font-semibold leading-6 text-[var(--color-text)]">
-                          {preset.description || "Mengatur warna, typography, spacing, opening, widget, dan animasi dasar."}
-                        </p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <span className="rounded-full bg-[var(--color-accent-pale)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[var(--color-primary)]">
-                            {preset.sectionStyle?.fontPreset || "font"}
-                          </span>
-                          <span className="rounded-full bg-[var(--color-accent-pale)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[var(--color-primary)]">
-                            {preset.widgets?.openingSequence?.preset || "opening"}
-                          </span>
-                          <span className="rounded-full bg-[var(--color-accent-pale)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.08em] text-[var(--color-primary)]">
-                            {preset.widgets?.gallery?.variant || "gallery"}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <GlobalStyleStep
-                visible={editorStep === 3}
-                colorPalettePresets={colorPalettePresets}
-                parsedDesignConfig={parsedDesignConfig}
-                applyColorPalette={applyColorPalette}
-                globalSectionStyleConfig={globalSectionStyleConfig}
-                updateGlobalSectionStyle={updateGlobalSectionStyle}
-                headingFontOptions={headingFontOptions}
-                bodyFontOptions={bodyFontOptions}
-                sectionSpacingPresetOptions={sectionSpacingPresetOptions}
-                sectionEntranceOptions={sectionEntranceOptions}
+                isUploadingThumbnail={isUploadingThumbnail}
+                updateTemplateThumbnail={updateTemplateThumbnail}
+              />
+              <CoverStep
+                visible={editorStep === 4}
                 coverSectionConfig={coverSectionConfig}
                 updateTemplateSectionConfig={updateTemplateSectionConfig}
                 coverLayoutOptions={coverLayoutOptions}
@@ -2136,12 +2044,25 @@ function TemplateAdminPage() {
                 coverOpeningAnimationOptions={coverOpeningAnimationOptions}
                 coverBackgroundModeOptions={coverBackgroundModeOptions}
                 updateCoverBackgroundImage={updateCoverBackgroundImage}
+              />
+              <GlobalStyleStep
+                visible={editorStep === 3}
+                colorPalettePresets={colorPalettePresets}
+                parsedDesignConfig={parsedDesignConfig}
+                applyColorPalette={applyColorPalette}
+                globalSectionStyleConfig={globalSectionStyleConfig}
+                updateGlobalSectionStyle={updateGlobalSectionStyle}
+                updateTemplateSectionConfig={updateTemplateSectionConfig}
+                headingFontOptions={headingFontOptions}
+                bodyFontOptions={bodyFontOptions}
+                sectionSpacingPresetOptions={sectionSpacingPresetOptions}
+                sectionEntranceOptions={sectionEntranceOptions}
                 coupleSectionConfig={coupleSectionConfig}
                 couplePhotoStyleOptions={couplePhotoStyleOptions}
                 coupleFontPresetOptions={coupleFontPresetOptions}
               />
               <OpeningStep
-                visible={editorStep === 4}
+                visible={editorStep === 5}
                 openingRevealWidgetConfig={openingRevealWidgetConfig}
                 openingSequenceWidgetConfig={openingSequenceWidgetConfig}
                 openingRevealAnimationOptions={openingRevealAnimationOptions}
@@ -2156,7 +2077,7 @@ function TemplateAdminPage() {
                 onReplayPreview={() => setTemplatePreviewTick((current) => current + 1)}
               />
               <WidgetsStep
-                visible={editorStep === 5}
+                visible={editorStep === 6}
                 countdownWidgetConfig={countdownWidgetConfig}
                 storyWidgetConfig={storyWidgetConfig}
                 galleryWidgetConfig={galleryWidgetConfig}
@@ -2180,51 +2101,74 @@ function TemplateAdminPage() {
                 updateGiftWidget={updateGiftWidget}
                 updateRsvpWidget={updateRsvpWidget}
               />
-              <div id="template-ornaments" className={`scroll-mt-24 md:col-span-2 ${editorStep === 6 ? "" : "hidden"}`}>
-                <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
+              <div id="template-ornaments" className={`scroll-mt-24 md:col-span-2 ${editorStep === 7 ? "" : "hidden"}`}>
+                <div className="overflow-anchor-none rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-3 pb-24">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
-                      <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
+                      <p className="text-xs font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
                         Ornament Editor
                       </p>
-                      <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
-                        Edit posisi ornament berdasarkan canvas 430px.
+                      <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">
+                        Edit posisi ornament berdasarkan canvas 412px.
                       </p>
                     </div>
                   </div>
 
-                  <OrnamentTimelinePanel
-                    activeOrnaments={activeOrnaments}
-                    previewEntranceKey={previewEntranceKey}
-                    setPreviewEntranceKey={setPreviewEntranceKey}
-                    timelineZoom={timelineZoom}
-                    setTimelineZoom={setTimelineZoom}
-                    timelineSnapEnabled={timelineSnapEnabled}
-                    setTimelineSnapEnabled={setTimelineSnapEnabled}
-                    timelineSnapUnit={timelineSnapUnit}
-                    setTimelineSnapUnit={setTimelineSnapUnit}
-                    timelineContainerRef={timelineContainerRef}
-                    setSelectedOrnamentIndex={setSelectedOrnamentIndex}
-                    setTimelineInteraction={setTimelineInteraction}
-                    selectedOrnamentIndex={selectedOrnamentIndex}
-                  />
                   {parsedDesignConfig ? (
-                    <div className="mt-5 grid gap-5 xl:grid-cols-[280px_minmax(320px,1fr)_360px]">
-                      <OrnamentLayerPanel
-                        activeDesignSection={activeDesignSection}
-                        setActiveDesignSection={setActiveDesignSection}
-                        setSelectedOrnamentIndex={setSelectedOrnamentIndex}
-                        designSectionNames={designSectionNames}
-                        ornamentSearchQuery={ornamentSearchQuery}
-                        setOrnamentSearchQuery={setOrnamentSearchQuery}
-                        addOrnament={addOrnament}
-                        activeOrnaments={activeOrnaments}
-                        selectedOrnamentIndex={selectedOrnamentIndex}
-                        updateOrnamentAtIndex={updateOrnamentAtIndex}
-                        duplicateOrnamentAtIndex={duplicateOrnamentAtIndex}
-                        removeOrnamentAtIndex={removeOrnamentAtIndex}
-                        reorderSelectedOrnament={reorderSelectedOrnament}
-                      />
+                    <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+                      <div className="min-w-0 space-y-4">
+                        <OrnamentTimelinePanel
+                          activeOrnaments={activeOrnaments}
+                          previewEntranceKey={previewEntranceKey}
+                          setPreviewEntranceKey={setPreviewEntranceKey}
+                          timelineZoom={timelineZoom}
+                          setTimelineZoom={setTimelineZoom}
+                          timelineSnapEnabled={timelineSnapEnabled}
+                          setTimelineSnapEnabled={setTimelineSnapEnabled}
+                          timelineSnapUnit={timelineSnapUnit}
+                          setTimelineSnapUnit={setTimelineSnapUnit}
+                          timelineContainerRef={timelineContainerRef}
+                          setSelectedOrnamentIndex={setSelectedOrnamentIndex}
+                          setTimelineInteraction={setTimelineInteraction}
+                          selectedOrnamentIndex={selectedOrnamentIndex}
+                        />
+                        <div className="grid gap-4 lg:grid-cols-[280px_minmax(300px,1fr)] lg:items-start">
+                          <OrnamentLayerPanel
+                            activeDesignSection={activeDesignSection}
+                            setActiveDesignSection={setActiveDesignSection}
+                            setSelectedOrnamentIndex={setSelectedOrnamentIndex}
+                            designSectionNames={designSectionNames}
+                            ornamentSearchQuery={ornamentSearchQuery}
+                            setOrnamentSearchQuery={setOrnamentSearchQuery}
+                            addOrnament={addOrnament}
+                            activeOrnaments={activeOrnaments}
+                            selectedOrnamentIndex={selectedOrnamentIndex}
+                            updateOrnamentAtIndex={updateOrnamentAtIndex}
+                            duplicateOrnamentAtIndex={duplicateOrnamentAtIndex}
+                            removeOrnamentAtIndex={removeOrnamentAtIndex}
+                            reorderSelectedOrnament={reorderSelectedOrnament}
+                          />
+                          {selectedOrnament ? (
+                            <OrnamentPropertiesPanel
+                              selectedOrnament={selectedOrnament}
+                              updateOrnament={updateOrnament}
+                              updateSelectedOrnamentFile={updateSelectedOrnamentFile}
+                              dynamicOrnamentAssets={dynamicOrnamentAssets}
+                              applyOrnamentAsset={applyOrnamentAsset}
+                              ornamentEntranceOptions={ornamentEntranceOptions}
+                              ornamentLoopModeOptions={ornamentLoopModeOptions}
+                              ornamentExitAnimationOptions={ornamentExitAnimationOptions}
+                              ornamentParallaxDirectionOptions={ornamentParallaxDirectionOptions}
+                            />
+                          ) : (
+                            <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-6 text-center">
+                              <p className="text-base font-black text-[var(--color-primary)]">
+                                Pilih atau tambah ornament dulu.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                       <OrnamentCanvasPanel
                         activeDesignSection={activeDesignSection}
                         activeOrnaments={activeOrnaments}
@@ -2234,25 +2178,6 @@ function TemplateAdminPage() {
                         templatePreviewSrc={ornamentCanvasPreviewSrc}
                         previewSnapshot={editorPreviewSnapshot}
                       />
-                      {selectedOrnament ? (
-                        <OrnamentPropertiesPanel
-                          selectedOrnament={selectedOrnament}
-                          updateOrnament={updateOrnament}
-                          updateSelectedOrnamentFile={updateSelectedOrnamentFile}
-                          dynamicOrnamentAssets={dynamicOrnamentAssets}
-                          applyOrnamentAsset={applyOrnamentAsset}
-                          ornamentEntranceOptions={ornamentEntranceOptions}
-                          ornamentLoopModeOptions={ornamentLoopModeOptions}
-                          ornamentExitAnimationOptions={ornamentExitAnimationOptions}
-                          ornamentParallaxDirectionOptions={ornamentParallaxDirectionOptions}
-                        />
-                      ) : (
-                        <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-6 text-center">
-                          <p className="text-base font-black text-[var(--color-primary)]">
-                            Pilih atau tambah ornament dulu.
-                          </p>
-                        </div>
-                      )}
                     </div>
                   ) : (
                     <p className="mt-5 rounded-[8px] bg-white px-4 py-3 text-sm font-black text-[var(--color-primary)]">
@@ -2263,7 +2188,7 @@ function TemplateAdminPage() {
               </div>
               <div
                 id="template-preview"
-                className={`scroll-mt-24 md:col-span-2 ${editorStep === 7 ? "" : "hidden"}`}
+                className={`scroll-mt-24 md:col-span-2 ${editorStep === 8 ? "" : "hidden"}`}
               >
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-primary)] p-4 shadow-xl shadow-[var(--color-primary)]/12">
                   <div className="mb-3 flex flex-col gap-1 text-white sm:flex-row sm:items-center sm:justify-between">
@@ -2366,13 +2291,15 @@ function TemplateAdminPage() {
                     <div
                       className={`mx-auto overflow-auto rounded-[8px] bg-white ${activePreviewViewport.frameClass}`}
                     >
-                      <iframe
-                        key={templatePreviewSrc}
-                        src={templatePreviewSrc}
-                        title="Template live preview"
-                        className="origin-top-left border-0"
-                        style={{
-                          width: `${activePreviewViewport.viewportWidth}px`,
+	                      <iframe
+	                        ref={fullPreviewIframeRef}
+	                        key={templatePreviewSrc}
+	                        src={templatePreviewSrc}
+	                        title="Template live preview"
+	                        className="origin-top-left border-0"
+	                        onLoad={postFullPreviewSnapshot}
+	                        style={{
+	                          width: `${activePreviewViewport.viewportWidth}px`,
                           height: `${activePreviewViewport.viewportHeight}px`,
                           transform: `scale(${activePreviewViewport.scale})`,
                           transformOrigin: "top left",
@@ -2381,9 +2308,8 @@ function TemplateAdminPage() {
                     </div>
                   </div>
                 </div>
-              </div>
               <PublishStepPanel
-                visible={editorStep === 8}
+                visible={editorStep === 9}
                 templateDraft={templateDraft}
                 isAdvancedOpen={isAdvancedOpen}
                 onToggleAdvanced={() => setIsAdvancedOpen((current) => !current)}
@@ -2395,7 +2321,7 @@ function TemplateAdminPage() {
               />
             </div>
 
-            <div className={`mt-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-4 py-3 text-sm font-black text-[var(--color-primary)] ${editorStep === 8 ? "" : "hidden"}`}>
+            <div className={`mt-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-4 py-3 text-sm font-black text-[var(--color-primary)] ${editorStep === 9 ? "" : "hidden"}`}>
               Gunakan tombol Simpan di bar bawah untuk menyimpan perubahan.
             </div>
 

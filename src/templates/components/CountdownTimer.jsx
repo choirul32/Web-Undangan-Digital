@@ -79,9 +79,10 @@ function parseIndonesianDate(dateText = "", timeText = "") {
   return new Date(year, month, day, hours, minutes, 0, 0);
 }
 
-function parseTargetDate(event = {}) {
-  const dateText = event.date || event.eventDate || event.event_date;
-  const timeText = event.time || event.eventTime || event.event_time;
+function parseTargetDate(event) {
+  const safeEvent = event || {};
+  const dateText = safeEvent.date || safeEvent.eventDate || safeEvent.event_date;
+  const timeText = safeEvent.time || safeEvent.eventTime || safeEvent.event_time;
 
   if (!dateText) {
     return null;

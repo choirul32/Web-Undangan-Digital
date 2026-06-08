@@ -69,10 +69,7 @@ export async function isAdminEmail(email) {
 
 export async function getAdminSession() {
   if (!isAuthConfigured()) {
-    return {
-      mode: "dev",
-      email: "dev-admin@nustainvite.local",
-    };
+    return null;
   }
 
   if (!isServiceConfigured()) {

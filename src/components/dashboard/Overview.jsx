@@ -15,6 +15,7 @@ function Icon({ name, className = "h-4 w-4" }) {
   if (name === "preview") return <svg {...common}><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12Z" /><circle cx="12" cy="12" r="3" /></svg>;
   if (name === "publish") return <svg {...common}><path d="M12 3v12" /><path d="m7 8 5-5 5 5" /><path d="M5 21h14" /></svg>;
   if (name === "archive") return <svg {...common}><rect x="3" y="4" width="18" height="4" rx="1" /><path d="M5 8h14v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8Z" /><path d="M10 12h4" /></svg>;
+  if (name === "trash") return <svg {...common}><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="m19 6-1 14H6L5 6" /><path d="M10 11v5" /><path d="M14 11v5" /></svg>;
   if (name === "template") return <svg {...common}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg>;
   return <svg {...common}><circle cx="12" cy="12" r="9" /></svg>;
 }
@@ -65,6 +66,8 @@ export function InvitationTable({ variant = "full" }) {
   const [items, setItems] = useState([]);
   const [isLoadingInvitations, setIsLoadingInvitations] = useState(true);
   const [actionMessage, setActionMessage] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeletingInvitation, setIsDeletingInvitation] = useState(false);
   const isOverviewVariant = variant === "overview";
   const isInvitationsVariant = variant === "invitations";
   const formatDateLabel = (rawValue) => {
@@ -154,11 +157,45 @@ export function InvitationTable({ variant = "full" }) {
     }
   };
 
+  const closeDeleteModal = () => {
+    if (isDeletingInvitation) return;
+    setDeleteTarget(null);
+  };
+
+  const deleteInvitation = async () => {
+    if (!deleteTarget) return;
+
+    setIsDeletingInvitation(true);
+    setActionMessage(`Menghapus ${deleteTarget.slug}...`);
+
+    try {
+      const response = await fetch(`/api/invitations/${encodeURIComponent(deleteTarget.slug)}`, {
+        method: "DELETE",
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Gagal menghapus undangan.");
+      }
+
+      setItems((current) =>
+        current.filter((item) => item.slug !== deleteTarget.slug),
+      );
+      setActionMessage(`${deleteTarget.slug} berhasil dihapus.`);
+      setDeleteTarget(null);
+    } catch (error) {
+      setActionMessage(error.message || "Gagal menghapus undangan.");
+    } finally {
+      setIsDeletingInvitation(false);
+    }
+  };
+
   return (
-    <motion.section
-      variants={fadeUp}
-      className="overflow-hidden rounded-xl border border-[var(--color-accent-pale)] bg-white shadow-lg shadow-[var(--color-primary)]/8"
-    >
+    <>
+      <motion.section
+        variants={fadeUp}
+        className="overflow-hidden rounded-xl border border-[var(--color-accent-pale)] bg-white shadow-lg shadow-[var(--color-primary)]/8"
+      >
       <div className="flex items-center justify-between border-b border-[var(--color-accent-pale)] px-6 py-4">
         <h2 className="text-xl font-black text-[var(--color-primary)]">Undangan Terbaru</h2>
         <a href="/dashboard/invitations" className="text-sm font-black text-[var(--color-primary)] hover:underline">
@@ -317,6 +354,16 @@ export function InvitationTable({ variant = "full" }) {
                         <Icon name="publish" className="h-4 w-4" />
                       </button>
                     )}
+                    {isInvitationsVariant ? (
+                      <button
+                        type="button"
+                        onClick={() => setDeleteTarget(item)}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 text-red-600 hover:bg-red-50"
+                        title="Hapus"
+                      >
+                        <Icon name="trash" className="h-4 w-4" />
+                      </button>
+                    ) : null}
                   </div>
                 </td>
               </tr>
@@ -324,7 +371,48 @@ export function InvitationTable({ variant = "full" }) {
           </tbody>
         </table>
       </div>
-    </motion.section>
+      </motion.section>
+
+      {deleteTarget ? (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl border border-red-100 bg-white p-6 shadow-2xl shadow-slate-950/20">
+            <div className="flex items-start gap-3">
+              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
+                <Icon name="warning" className="h-5 w-5" />
+              </span>
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.12em] text-red-600">Peringatan Hapus</p>
+                <h3 className="mt-2 text-xl font-black text-[var(--color-primary)]">
+                  Hapus undangan ini?
+                </h3>
+                <p className="mt-3 text-sm font-semibold leading-6 text-[var(--color-text)]">
+                  Undangan <span className="font-black">{deleteTarget.couple || deleteTarget.slug}</span> dengan slug <span className="font-black">{deleteTarget.slug}</span> akan dihapus permanen beserta acara, tamu, RSVP, story, rekening, dan media terkait.
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={closeDeleteModal}
+                disabled={isDeletingInvitation}
+                className="rounded-lg border border-[var(--color-accent-pale)] px-4 py-2 text-sm font-black text-[var(--color-text)] hover:bg-[var(--color-bg)] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={deleteInvitation}
+                disabled={isDeletingInvitation}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-red-600/20 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {isDeletingInvitation ? "Menghapus..." : "Ya, Hapus"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </>
   );
 }
 

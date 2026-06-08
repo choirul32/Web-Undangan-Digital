@@ -20,6 +20,34 @@ const primaryButtonClass =
   "rounded-md bg-[var(--dash-ink)] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--dash-dark)]";
 
 const lifecycleOptions = ["draft", "review", "published", "archived"];
+const lifecycleLabels = {
+  draft: "Draft",
+  review: "Review",
+  published: "Published",
+  archived: "Arsip",
+};
+const orderStatusLabels = {
+  inquiry: "Inquiry",
+  waiting_payment: "Menunggu Pembayaran",
+  paid: "Dibayar",
+  in_progress: "Dikerjakan",
+  review: "Review",
+  revision: "Revisi",
+  approved: "Disetujui",
+  published: "Published",
+  completed: "Selesai",
+  cancelled: "Batal",
+};
+const paymentStatusLabels = {
+  unpaid: "Belum Bayar",
+  waiting_confirmation: "Menunggu Konfirmasi",
+  paid: "Lunas",
+  refunded: "Refund",
+};
+
+function statusLabel(labels, value) {
+  return labels[value] || value || "-";
+}
 
 function normalizeTemplateOption(template) {
   return {
@@ -31,7 +59,6 @@ function normalizeTemplateOption(template) {
 }
 
 function invitationToForm(invitation, templateOptions = []) {
-  const event = invitation?.events?.[0] || {};
   const template = templateOptions.find((item) => item.id === invitation?.templateId);
 
   return {
@@ -63,11 +90,6 @@ function invitationToForm(invitation, templateOptions = []) {
     brideNickname:
       invitation?.couple?.brideNickname || initialInvitationForm.brideNickname,
     quote: invitation?.couple?.quote || initialInvitationForm.quote,
-    eventTitle: event.title || initialInvitationForm.eventTitle,
-    eventDate: event.date || initialInvitationForm.eventDate,
-    eventTime: event.time || initialInvitationForm.eventTime,
-    venue: event.venue || initialInvitationForm.venue,
-    mapsUrl: event.mapsUrl || initialInvitationForm.mapsUrl,
     rsvp: Boolean(invitation?.features?.rsvp ?? initialInvitationForm.rsvp),
     gift: Boolean(invitation?.features?.gift ?? initialInvitationForm.gift),
     music: Boolean(invitation?.features?.music ?? initialInvitationForm.music),
@@ -87,6 +109,12 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
   });
   const [saveMessage, setSaveMessage] = useState("");
   const [publishErrors, setPublishErrors] = useState([]);
+
+  const publicPath = `/u/${form.slug || "slug-order"}`;
+  const publicUrl =
+    typeof window !== "undefined" && form.slug
+      ? `${window.location.origin}${publicPath}`
+      : publicPath;
 
   useEffect(() => {
     let isMounted = true;
@@ -170,6 +198,17 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
     setPublishErrors([]);
   };
 
+  const redirectToActiveOrder = (savedInvitation) => {
+    const savedSlug = savedInvitation?.slug || form.slug;
+
+    if (savedSlug && savedSlug !== invitationSlug) {
+      window.location.href = `/dashboard/invitations/${encodeURIComponent(savedSlug)}`;
+      return true;
+    }
+
+    return false;
+  };
+
   const saveDraft = async (overrides = {}) => {
     const nextForm = { ...form, ...overrides };
 
@@ -177,7 +216,11 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
       const response = await fetch("/api/invitations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...nextForm, status: nextForm.status || "draft" }),
+        body: JSON.stringify({
+          ...nextForm,
+          originalSlug: invitationSlug || undefined,
+          status: nextForm.status || "draft",
+        }),
       });
       const result = await response.json();
 
@@ -190,11 +233,16 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
           ? "Draft tersimpan ke Supabase."
           : "Draft lokal tersimpan. Supabase belum dikonfigurasi.",
       );
-      return true;
+      return result.data || true;
     } catch (error) {
       setSaveMessage(error.message || "Draft lokal tersimpan. API belum tersedia.");
-      return false;
+      return null;
     }
+  };
+
+  const saveDraftAndMaybeRedirect = async () => {
+    const saved = await saveDraft();
+    redirectToActiveOrder(saved);
   };
 
   const markReview = async () => {
@@ -204,6 +252,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
     if (saved) {
       setForm((current) => ({ ...current, status: "review", orderStatus: "review" }));
       setSaveMessage("Order ditandai sebagai review. Kirim preview ke customer via WhatsApp.");
+      redirectToActiveOrder(saved);
     }
   };
 
@@ -211,7 +260,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
     const slug = form.slug || invitationSlug;
 
     if (!slug) {
-      setPublishErrors(["Slug public wajib diisi sebelum publish."]);
+      setPublishErrors(["Slug publik wajib diisi sebelum publish."]);
       return;
     }
 
@@ -238,7 +287,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
             ? result.details
             : [result.error || "Undangan belum bisa dipublish."],
         );
-        setSaveMessage("Publish dibatalkan. Lengkapi data yang wajib dulu.");
+        setSaveMessage("Publikasi dibatalkan. Lengkapi data yang wajib dulu.");
         return;
       }
 
@@ -246,12 +295,13 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
       setPublishErrors([]);
       setSaveMessage(
         result.source === "supabase"
-          ? "Undangan berhasil dipublish."
+          ? "Undangan berhasil dipublikasikan."
           : "Mode sample: undangan dianggap published.",
       );
+      redirectToActiveOrder(saved);
     } catch (error) {
-      setPublishErrors([error.message || "Publish gagal."]);
-      setSaveMessage("Publish gagal.");
+      setPublishErrors([error.message || "Publikasi gagal."]);
+      setSaveMessage("Publikasi gagal.");
     }
   };
 
@@ -259,7 +309,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
     const slug = form.slug || invitationSlug;
 
     if (!slug) {
-      setPublishErrors(["Slug public wajib diisi sebelum archive."]);
+      setPublishErrors(["Slug publik wajib diisi sebelum arsip."]);
       return;
     }
 
@@ -274,7 +324,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || "Archive gagal.");
+        throw new Error(result.error || "Arsip gagal.");
       }
 
       setForm((current) => ({ ...current, status: "archived" }));
@@ -285,37 +335,24 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
           : "Mode sample: undangan dianggap archived.",
       );
     } catch (error) {
-      setPublishErrors([error.message || "Archive gagal."]);
-      setSaveMessage("Archive gagal.");
+      setPublishErrors([error.message || "Arsip gagal."]);
+      setSaveMessage("Arsip gagal.");
     }
   };
 
-  const openPreview = async () => {
-    await saveDraft();
-    const slug = form.slug || invitationSlug;
-    const previewUrl = slug ? `/preview?slug=${encodeURIComponent(slug)}` : "/preview";
-    window.open(previewUrl, "_blank", "noopener,noreferrer");
+  const copyPublicLink = async () => {
+    if (!form.slug) {
+      setSaveMessage("Isi slug publik dulu sebelum copy link.");
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      setSaveMessage("Link publish berhasil dicopy.");
+    } catch {
+      setSaveMessage(`Link publish: ${publicUrl}`);
+    }
   };
-
-  useEffect(() => {
-    const handleEditorAction = (event) => {
-      const action = event.detail?.action;
-
-      if (action === "save") {
-        saveDraft();
-      }
-
-      if (action === "publish") {
-        publishInvitation();
-      }
-    };
-
-    window.addEventListener("nusa-invite:active-editor-action", handleEditorAction);
-
-    return () => {
-      window.removeEventListener("nusa-invite:active-editor-action", handleEditorAction);
-    };
-  });
 
   const renderStep = () => {
     if (activeStep === 0) {
@@ -343,15 +380,15 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
               onChange={(event) => updateForm("orderStatus", event.target.value)}
             >
               <option value="inquiry">Inquiry</option>
-              <option value="waiting_payment">Waiting Payment</option>
-              <option value="paid">Paid</option>
-              <option value="in_progress">In Progress</option>
+              <option value="waiting_payment">Menunggu Pembayaran</option>
+              <option value="paid">Dibayar</option>
+              <option value="in_progress">Dikerjakan</option>
               <option value="review">Review</option>
-              <option value="revision">Revision</option>
-              <option value="approved">Approved</option>
+              <option value="revision">Revisi</option>
+              <option value="approved">Disetujui</option>
               <option value="published">Published</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="completed">Selesai</option>
+              <option value="cancelled">Batal</option>
             </SelectInput>
           </Field>
           <Field label="Lifecycle Undangan">
@@ -361,7 +398,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
             >
               {lifecycleOptions.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {statusLabel(lifecycleLabels, status)}
                 </option>
               ))}
             </SelectInput>
@@ -371,9 +408,9 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
               value={form.paymentStatus}
               onChange={(event) => updateForm("paymentStatus", event.target.value)}
             >
-              <option value="unpaid">Unpaid</option>
-              <option value="waiting_confirmation">Waiting Confirmation</option>
-              <option value="paid">Paid</option>
+              <option value="unpaid">Belum Bayar</option>
+              <option value="waiting_confirmation">Menunggu Konfirmasi</option>
+              <option value="paid">Lunas</option>
               <option value="refunded">Refunded</option>
             </SelectInput>
           </Field>
@@ -428,7 +465,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
                   (template) => template.id === event.target.value,
                 );
                 updateForm("templateId", event.target.value);
-                updateForm("template", selected?.name || "Rana Kirana");
+                updateForm("template", selected?.name || "Standard");
               }}
             >
               {isLoadingTemplates ? (
@@ -454,19 +491,19 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
               <option>Exclusive</option>
             </SelectInput>
           </Field>
-          <Field label="Slug Public">
+          <Field label="Slug Publik">
             <TextInput
               value={form.slug}
               onChange={(event) => updateForm("slug", event.target.value)}
-              placeholder="dimas-salsa"
+              placeholder="slug-order"
             />
           </Field>
           <div className={mutedPanelClass}>
             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
-              Public URL
+              URL Publik
             </p>
             <p className="mt-2 break-all text-base font-semibold text-[var(--dash-ink)]">
-              /u/{form.slug || "slug-undangan"}
+              {publicPath}
             </p>
           </div>
         </div>
@@ -515,47 +552,6 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
 
     if (activeStep === 3) {
       return (
-        <div className="grid gap-5 md:grid-cols-2">
-          <Field label="Judul Acara">
-            <TextInput
-              value={form.eventTitle}
-              onChange={(event) => updateForm("eventTitle", event.target.value)}
-            />
-          </Field>
-          <Field label="Tanggal">
-            <TextInput
-              type="date"
-              value={form.eventDate}
-              onChange={(event) => updateForm("eventDate", event.target.value)}
-            />
-          </Field>
-          <Field label="Jam">
-            <TextInput
-              type="time"
-              value={form.eventTime}
-              onChange={(event) => updateForm("eventTime", event.target.value)}
-            />
-          </Field>
-          <Field label="Lokasi">
-            <TextInput
-              value={form.venue}
-              onChange={(event) => updateForm("venue", event.target.value)}
-            />
-          </Field>
-          <div className="md:col-span-2">
-            <Field label="Google Maps URL">
-              <TextInput
-                value={form.mapsUrl}
-                onChange={(event) => updateForm("mapsUrl", event.target.value)}
-              />
-            </Field>
-          </div>
-        </div>
-      );
-    }
-
-    if (activeStep === 4) {
-      return (
         <div className="grid gap-4 md:grid-cols-2">
           <ToggleField
             checked={form.rsvp}
@@ -585,58 +581,6 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
       );
     }
 
-    if (activeStep === 5) {
-      return (
-        <div className="grid gap-5 lg:grid-cols-2">
-          <div className={mutedPanelClass}>
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
-              Media Manager
-            </p>
-            <h3 className="mt-2 text-lg font-semibold text-[var(--dash-ink)]">
-              Upload cover, gallery, music, dan video di panel Media.
-            </h3>
-            <p className="mt-2 text-sm font-medium leading-6 text-[var(--dash-muted)]">
-              Untuk mode edit order aktif, panel Media berada di bawah form ini dan sudah memakai slug yang sama.
-            </p>
-          </div>
-          <div className={mutedPanelClass}>
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
-              Publish Safety
-            </p>
-            <p className="mt-2 text-sm font-medium leading-6 text-[var(--dash-muted)]">
-              Cover atau gallery kosong tidak boleh membuat public page rusak. Simpan draft dulu sebelum mengisi asset agar semua media terikat ke order yang benar.
-            </p>
-          </div>
-        </div>
-      );
-    }
-
-    if (activeStep === 6) {
-      return (
-        <div className="grid gap-5 lg:grid-cols-2">
-          <div className={mutedPanelClass}>
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
-              Guest Manager
-            </p>
-            <h3 className="mt-2 text-lg font-semibold text-[var(--dash-ink)]">
-              Tambah tamu, personal link, dan teks broadcast manual.
-            </h3>
-            <p className="mt-2 text-sm font-medium leading-6 text-[var(--dash-muted)]">
-              Panel Guest berada di workspace order aktif. Setelah publish, admin bisa copy link personal atau template WhatsApp per tamu.
-            </p>
-          </div>
-          <div className={mutedPanelClass}>
-            <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
-              Manual Broadcast
-            </p>
-            <p className="mt-2 text-sm font-medium leading-6 text-[var(--dash-muted)]">
-              Sistem tidak mengirim broadcast otomatis di phase ini. Admin tetap mengirim manual via WhatsApp agar aman dari risiko spam dan policy.
-            </p>
-          </div>
-        </div>
-      );
-    }
-
     return (
       <div className="grid gap-5 lg:grid-cols-[1fr_280px]">
         <div className="rounded-[14px] border border-[var(--dash-border)] bg-white p-5">
@@ -647,7 +591,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
             <div>
               <dt className="font-semibold text-[var(--dash-ink)]">Order</dt>
               <dd className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
-                {form.customerName} | {form.orderStatus} | {form.paymentStatus}
+                {form.customerName || "-"} | {statusLabel(orderStatusLabels, form.orderStatus)} | {statusLabel(paymentStatusLabels, form.paymentStatus)}
               </dd>
             </div>
             <div>
@@ -663,12 +607,6 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
               </dd>
             </div>
             <div>
-              <dt className="font-semibold text-[var(--dash-ink)]">Acara</dt>
-              <dd className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
-                {form.eventTitle}, {form.eventDate} {form.eventTime}
-              </dd>
-            </div>
-            <div>
               <dt className="font-semibold text-[var(--dash-ink)]">Fitur</dt>
               <dd className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
                 {[form.rsvp && "RSVP", form.gift && "Amplop", form.music && "Music", form.guestName && "Nama Tamu"]
@@ -680,40 +618,48 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
         </div>
         <div className="rounded-[14px] bg-[var(--dash-ink)] p-5 text-white">
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-white/60">
-            Preview URL
+            Path Publik
           </p>
-          <p className="mt-3 break-all text-lg font-semibold">/u/{form.slug}</p>
+          <p className="mt-3 break-all text-lg font-semibold">{publicPath}</p>
           <p className="mt-2 text-sm font-medium text-white/68">
-            Status: {form.status || "draft"}
+            Status: {statusLabel(lifecycleLabels, form.status || "draft")}
           </p>
-          <button
-            type="button"
-            onClick={() => saveDraft()}
-            className="mt-5 w-full rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-[var(--dash-ink)] hover:bg-[var(--dash-fog)]"
-          >
-            Simpan Draft
-          </button>
-          <button
-            type="button"
-            onClick={openPreview}
-            className="mt-3 w-full rounded-md border border-white/18 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/16"
-          >
-            Preview Undangan
-          </button>
-          <button
-            type="button"
-            onClick={publishInvitation}
-            className="mt-3 w-full rounded-md border border-white/18 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/16"
-          >
-            Publish
-          </button>
-          {form.status === "published" ? (
+	          <button
+	            type="button"
+	            onClick={publishInvitation}
+	            className="mt-5 w-full rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-[var(--dash-ink)] hover:bg-[var(--dash-fog)]"
+	          >
+	            Publikasikan
+	          </button>
+	          <div className="mt-3 grid grid-cols-2 gap-2">
+	            <a
+	              href={form.slug ? publicPath : undefined}
+	              target="_blank"
+	              rel="noreferrer"
+	              aria-disabled={!form.slug}
+	              className={`rounded-md border border-white/18 px-4 py-2.5 text-center text-sm font-semibold ${
+	                form.slug
+	                  ? "bg-white/10 text-white hover:bg-white/16"
+	                  : "pointer-events-none bg-white/5 text-white/35"
+	              }`}
+	            >
+	              Buka Link
+	            </a>
+	            <button
+	              type="button"
+	              onClick={copyPublicLink}
+	              className="rounded-md border border-white/18 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/16"
+	            >
+	              Copy Link
+	            </button>
+	          </div>
+	          {form.status === "published" ? (
             <button
               type="button"
               onClick={archiveInvitation}
               className="mt-3 w-full rounded-md border border-white/18 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/16"
             >
-              Archive
+              Arsipkan
             </button>
           ) : null}
         </div>
@@ -730,24 +676,24 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
-              Create / Edit Order
+              Informasi Utama
             </p>
             <h2 className="mt-1 text-2xl font-semibold text-[var(--dash-ink)]">
-              Form data undangan
+              Setup undangan
             </h2>
             <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
-              Isi order WhatsApp, data mempelai, acara, fitur, lalu review sebelum publish.
+              Isi data order, template, mempelai, fitur, lalu tinjau sebelum publish.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="rounded-md border border-[var(--dash-border)] bg-[var(--dash-fog)] px-3 py-2 text-xs font-semibold text-[var(--dash-muted)]">
-              Order: {form.orderStatus}
+              Order: {statusLabel(orderStatusLabels, form.orderStatus)}
             </span>
             <span className="rounded-md border border-[var(--dash-border)] bg-[var(--dash-fog)] px-3 py-2 text-xs font-semibold text-[var(--dash-muted)]">
-              Payment: {form.paymentStatus}
+              Pembayaran: {statusLabel(paymentStatusLabels, form.paymentStatus)}
             </span>
             <span className="rounded-md border border-[var(--dash-border)] bg-[var(--dash-fog)] px-3 py-2 text-xs font-semibold text-[var(--dash-muted)]">
-              Status: {form.status || "draft"}
+              Status: {statusLabel(lifecycleLabels, form.status || "draft")}
             </span>
           </div>
         </div>
@@ -756,23 +702,12 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
       <div className="sticky top-[81px] z-20 border-b border-[var(--dash-border)] bg-[var(--dash-canvas)]/95 px-5 py-3 backdrop-blur-xl">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={() => saveDraft()} className={actionButtonClass}>
-              Save Draft
-            </button>
-            <button type="button" onClick={openPreview} className={actionButtonClass}>
-              Preview
+            <button type="button" onClick={saveDraftAndMaybeRedirect} className={actionButtonClass}>
+              Simpan Draft
             </button>
             <button type="button" onClick={markReview} className={actionButtonClass}>
-              Mark Review
+              Tandai Review
             </button>
-            <button type="button" onClick={publishInvitation} className={primaryButtonClass}>
-              Publish
-            </button>
-            {form.status === "published" ? (
-              <button type="button" onClick={archiveInvitation} className={actionButtonClass}>
-                Archive
-              </button>
-            ) : null}
           </div>
           {saveMessage ? (
             <p className="text-sm font-medium text-[var(--dash-muted)]">{saveMessage}</p>
@@ -780,17 +715,20 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
         </div>
       </div>
 
-      <div className="border-b border-[var(--dash-border)] px-5 py-4">
-        <div className="flex flex-wrap gap-3">
+      <div className="border-b border-[var(--dash-border)] bg-[var(--dash-fog)]/35 px-5 py-4">
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--dash-muted)]">
+          Langkah Setup
+        </p>
+        <div className="flex flex-wrap gap-2">
           {formSteps.map((step, index) => (
             <button
               key={step}
               type="button"
               onClick={() => setActiveStep(index)}
-              className={`rounded-md border px-3 py-2 text-sm font-semibold transition-colors ${
+              className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
                 activeStep === index
                   ? "border-[var(--dash-ink)] bg-[var(--dash-ink)] text-white"
-                  : "border-[var(--dash-border)] bg-white text-[var(--dash-muted)] hover:bg-[var(--dash-fog)] hover:text-[var(--dash-ink)]"
+                  : "border-[var(--dash-border)] bg-[var(--dash-canvas)] text-[var(--dash-muted)] hover:bg-white hover:text-[var(--dash-ink)]"
               }`}
             >
               {index + 1}. {step}
@@ -804,7 +742,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
       {publishErrors.length > 0 ? (
         <div className="border-t border-[var(--dash-border)] bg-[var(--dash-fog)] px-5 py-5">
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
-            Publish Guard
+            Validasi Publish
           </p>
           <ul className="mt-3 space-y-2">
             {publishErrors.map((error) => (
@@ -829,37 +767,17 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
           Sebelumnya
         </button>
         <div className="flex flex-wrap items-center justify-end gap-3">
-          {activeStep === formSteps.length - 1 ? (
-            <>
-              <button
-                type="button"
-                onClick={openPreview}
-                className={actionButtonClass}
-              >
-                Preview
-              </button>
-              <button
-                type="button"
-                onClick={publishInvitation}
-                className={primaryButtonClass}
-              >
-                Publish
-              </button>
-            </>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => {
-              if (activeStep === formSteps.length - 1) {
-                saveDraft();
-                return;
+          {activeStep < formSteps.length - 1 ? (
+            <button
+              type="button"
+              onClick={() =>
+                setActiveStep((current) => Math.min(formSteps.length - 1, current + 1))
               }
-              setActiveStep((current) => Math.min(formSteps.length - 1, current + 1));
-            }}
-            className={primaryButtonClass}
-          >
-            {activeStep === formSteps.length - 1 ? "Simpan Draft" : "Lanjut"}
-          </button>
+              className={primaryButtonClass}
+            >
+              Lanjut
+            </button>
+          ) : null}
         </div>
       </div>
     </motion.section>

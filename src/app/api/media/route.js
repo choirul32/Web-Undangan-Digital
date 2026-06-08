@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { sampleInvitation } from "../../../data/sampleInvitation";
 import { requireAdminApiSession } from "../../../lib/auth";
 import { createServiceSupabaseClient } from "../../../lib/supabase/server";
 
@@ -37,18 +36,17 @@ function mapMedia(item) {
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const invitationSlug = searchParams.get("invitationSlug") || "dimas-salsa";
+  const invitationSlug = searchParams.get("invitationSlug") || "";
+
+  if (!invitationSlug) {
+    return NextResponse.json({ error: "invitationSlug is required" }, { status: 400 });
+  }
 
   if (!hasServiceEnv()) {
-    return NextResponse.json({
-      source: "sample",
-      data: sampleInvitation.gallery.map((url, index) => ({
-        id: `sample-${index}`,
-        mediaType: "image",
-        title: `Gallery ${index + 1}`,
-        url,
-      })),
-    });
+    return NextResponse.json(
+      { error: "Production database is not configured" },
+      { status: 503 },
+    );
   }
 
   const admin = await requireAdminApiSession();
@@ -81,7 +79,7 @@ export async function GET(request) {
 
 export async function POST(request) {
   const formData = await request.formData();
-  const invitationSlug = formData.get("invitationSlug") || "dimas-salsa";
+  const invitationSlug = formData.get("invitationSlug") || "";
   const mediaType = formData.get("mediaType") || "image";
   const title = formData.get("title") || "Media";
   const replaceId = formData.get("replaceId");
@@ -91,16 +89,15 @@ export async function POST(request) {
     return NextResponse.json({ error: "file is required" }, { status: 400 });
   }
 
+  if (!invitationSlug) {
+    return NextResponse.json({ error: "invitationSlug is required" }, { status: 400 });
+  }
+
   if (!hasServiceEnv()) {
-    return NextResponse.json({
-      source: "sample",
-      data: {
-        id: `local-${Date.now()}`,
-        mediaType,
-        title,
-        url: "/assets/nusantara-premium.svg",
-      },
-    });
+    return NextResponse.json(
+      { error: "Production database is not configured" },
+      { status: 503 },
+    );
   }
 
   const admin = await requireAdminApiSession();
@@ -188,7 +185,10 @@ export async function DELETE(request) {
   }
 
   if (!hasServiceEnv()) {
-    return NextResponse.json({ source: "sample", data: { id: payload.id } });
+    return NextResponse.json(
+      { error: "Production database is not configured" },
+      { status: 503 },
+    );
   }
 
   const admin = await requireAdminApiSession();

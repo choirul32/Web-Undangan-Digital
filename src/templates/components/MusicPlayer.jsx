@@ -197,7 +197,7 @@ export default function MusicPlayer({
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 1.2, type: "spring", stiffness: 260, damping: 20 }}
-          className={`fixed ${positionClass} z-[100] flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-accent-pale)] bg-[var(--color-surface)]/95 text-[var(--color-primary)] shadow-xl shadow-[var(--color-primary)]/15 backdrop-blur-md transition-colors hover:bg-[var(--color-accent)] hover:text-[var(--color-primary)]`}
+          className={`template-music-player fixed ${positionClass} z-[100] flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-accent-pale)] bg-[var(--color-surface)]/95 text-[var(--color-primary)] shadow-xl shadow-[var(--color-primary)]/15 backdrop-blur-md transition-colors hover:bg-[var(--color-accent)] hover:text-[var(--color-primary)]`}
           aria-label={isPlaying ? "Pause musik" : "Putar musik"}
         >
           {isPlaying ? <PauseIcon /> : <PlayerIcon isPlaying={false} />}
@@ -274,7 +274,7 @@ export default function MusicPlayer({
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ delay: 1.2, type: "spring", stiffness: 260, damping: 20 }}
-        className={`fixed ${positionClass} z-[100]`}
+        className={`template-music-player fixed ${positionClass} z-[100]`}
       >
         <AnimatePresence mode="wait">
           {isExpanded ? (

@@ -105,17 +105,18 @@ function FullscreenViewer({ images, activeIndex, onClose, onNavigate }) {
       onTouchEnd={handleTouchEnd}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-5 py-4">
-        <p className="text-sm font-black text-white/80">
+      <div className="relative z-10 flex items-center justify-between px-5 py-4 pt-[max(1rem,env(safe-area-inset-top))]">
+        <p className="rounded-full bg-black/40 px-3 py-1.5 text-sm font-black text-white/90 backdrop-blur">
           {activeIndex + 1} / {total}
         </p>
         <button
           type="button"
           onClick={onClose}
-          className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
+          className="fixed right-4 top-4 z-[220] inline-flex h-11 items-center gap-2 rounded-full border border-white/70 bg-white px-4 text-sm font-black text-slate-950 shadow-2xl shadow-black/35 transition-colors hover:bg-slate-100"
           aria-label="Tutup gallery"
         >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2">
+          <span>Tutup</span>
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.4">
             <path d="M18 6L6 18M6 6l12 12" />
           </svg>
         </button>

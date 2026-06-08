@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
-import { sampleInvitation } from "../data/sampleInvitation";
+import { emptyInvitation } from "../data/emptyInvitation";
 import {
   getCoupleSectionConfig,
   getCoverSectionConfig,
@@ -22,15 +22,21 @@ import HomeSection from "./sections/HomeSection";
 import { CoupleSection, GiftSection, WishesSection } from "./sections/BaseSections";
 import { CountdownSection, EventSection, GallerySection, RsvpSection, StorySection } from "./sections/WidgetSections";
 
-export default function UniversalTemplate({ data = sampleInvitation, guestName, guestSlug }) {
+export default function UniversalTemplate({
+  data = emptyInvitation,
+  guestName,
+  guestSlug,
+  framedPreview = false,
+}) {
   const musicRef = useRef(null);
   const musicFadeRef = useRef(null);
+  const [isNarrowViewport, setIsNarrowViewport] = useState(false);
   const [isRevealOpen, setIsRevealOpen] = useState(false);
 
-  const invitation = { ...sampleInvitation, ...data };
-  const couple = invitation.couple || sampleInvitation.couple;
-  const events = normalizeEventExamples(invitation.events?.length ? invitation.events : sampleInvitation.events);
-  const story = invitation.story?.length ? invitation.story : sampleInvitation.story;
+  const invitation = { ...emptyInvitation, ...data };
+  const couple = invitation.couple || emptyInvitation.couple;
+  const events = normalizeEventExamples(invitation.events || []);
+  const story = invitation.story || [];
 
   const designConfig = getDesignConfig(invitation.templateId, invitation.designConfig);
   const globalStyleConfig = designConfig?.sections?.global || {};
@@ -46,9 +52,26 @@ export default function UniversalTemplate({ data = sampleInvitation, guestName, 
   const storyConfig = getStoryWidgetConfig(designConfig);
   const musicConfig = getMusicWidgetConfig(designConfig);
   const profileImages = ["/assets/CoverPasangan.png", "/assets/catin_wanita.jpg", "/assets/catin_pria.jpg"];
+  const coupleProfileImages = {
+    bride: profileImages[1],
+    groom: profileImages[2],
+  };
 
   const { previewFocusSection, previewSectionOnly, shouldRenderSection } = usePreviewSectionFilter(invitation.templateId);
-  const isCompactHomePreview = previewSectionOnly && previewFocusSection === "home";
+  const isCompactHomePreview =
+    framedPreview || (previewSectionOnly && previewFocusSection === "home") || isNarrowViewport;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const media = window.matchMedia("(max-width: 480px)");
+    const updateViewportState = () => setIsNarrowViewport(media.matches);
+
+    updateViewportState();
+    media.addEventListener("change", updateViewportState);
+
+    return () => media.removeEventListener("change", updateViewportState);
+  }, []);
 
   const startMusic = ({ fadeIn = true } = {}) => {
     const audio = musicRef.current;
@@ -125,7 +148,7 @@ export default function UniversalTemplate({ data = sampleInvitation, guestName, 
   }, []);
 
   return (
-    <main className="min-h-screen bg-[var(--color-bg)] text-[var(--color-primary)]" style={cssVars(globalStyleConfig)}>
+    <main className={`relative min-h-screen bg-[var(--color-bg)] text-[var(--color-primary)] ${framedPreview ? "framed-preview-mobile" : ""}`} style={cssVars(globalStyleConfig)}>
       <AnimatePresence>
         {!isRevealOpen ? (
           <OpeningRevealOverlay
@@ -134,6 +157,7 @@ export default function UniversalTemplate({ data = sampleInvitation, guestName, 
             couple={couple}
             guestName={personalizedGuestName}
             onOpen={openInvitation}
+            framedPreview={framedPreview}
           />
         ) : null}
       </AnimatePresence>
@@ -150,7 +174,7 @@ export default function UniversalTemplate({ data = sampleInvitation, guestName, 
         />
       ) : null}
 
-      {shouldRenderSection("couple") ? <CoupleSection designConfig={designConfig} couple={couple} coupleConfig={coupleConfig} profileImages={profileImages} /> : null}
+      {shouldRenderSection("couple") ? <CoupleSection designConfig={designConfig} couple={couple} coupleConfig={coupleConfig} profileImages={coupleProfileImages} /> : null}
       {shouldRenderSection("acara") ? <EventSection designConfig={designConfig} events={events} eventConfig={eventConfig} /> : null}
       {shouldRenderSection("countdown") ? <CountdownSection designConfig={designConfig} events={events} countdownConfig={countdownConfig} /> : null}
       {shouldRenderSection("story") ? <StorySection designConfig={designConfig} story={story} storyConfig={storyConfig} /> : null}

@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { sampleInvitation } from "../../../data/sampleInvitation";
 import { requireAdminApiSession } from "../../../lib/auth";
 import { createServiceSupabaseClient } from "../../../lib/supabase/server";
 import { fail, ok } from "../../../lib/api-response";
@@ -28,13 +27,20 @@ function mapRsvp(item) {
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const invitationSlug = searchParams.get("invitationSlug") || "dimas-salsa";
+  const invitationSlug = searchParams.get("invitationSlug") || "";
+
+  if (!invitationSlug) {
+    return fail("invitationSlug is required", {
+      status: 400,
+      code: "invalid_input",
+    });
+  }
 
   if (!hasServiceEnv()) {
-    return NextResponse.json({
-      source: "sample",
-      data: sampleInvitation.slug === invitationSlug ? sampleInvitation.rsvps : [],
-    });
+    return NextResponse.json(
+      { error: "Production database is not configured" },
+      { status: 503 },
+    );
   }
 
   const admin = await requireAdminApiSession();
@@ -109,16 +115,10 @@ export async function POST(request) {
   const safePayload = validation.value;
 
   if (!hasServiceEnv()) {
-    return ok(
-      {
-        guestName: safePayload.guestName,
-        attendance: safePayload.attendance,
-        pax: safePayload.pax,
-        message: safePayload.message,
-        createdAt: new Date().toISOString(),
-      },
-      { source: "sample" },
-    );
+    return fail("Production database is not configured.", {
+      status: 503,
+      code: "service_unavailable",
+    });
   }
 
   try {

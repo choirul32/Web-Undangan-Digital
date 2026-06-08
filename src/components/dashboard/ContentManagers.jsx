@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { sampleInvitation } from "../../data/sampleInvitation";
 import { fadeUp } from "./config";
 import { TextInput, TextAreaInput } from "./FormControls";
 
@@ -36,27 +35,25 @@ async function persistSortOrder(endpoint, invitationSlug, items) {
   );
 }
 
-function MultiEventManager({ invitationSlug = sampleInvitation.slug }) {
-  const [events, setEvents] = useState(
-    sampleInvitation.events.map((event, index) => ({
-      ...event,
-      id: event.id || `sample-event-${index}`,
-      eventDate: event.eventDate || event.date,
-      eventTime: event.eventTime || event.time,
-    })),
-  );
+function MultiEventManager({ invitationSlug = "" }) {
+  const [events, setEvents] = useState([]);
   const [form, setForm] = useState({
-    title: "Akad Nikah",
-    eventDate: "2026-06-12",
-    eventTime: "09.00 WIB",
-    venue: "Gedung Serbaguna Nusantara",
-    address: "Jl. Melati Raya No. 12, Bandung",
-    mapsUrl: "https://maps.google.com",
+    title: "",
+    eventDate: "",
+    eventTime: "",
+    venue: "",
+    address: "",
+    mapsUrl: "",
   });
   const [message, setMessage] = useState("");
   const [editingId, setEditingId] = useState("");
 
   useEffect(() => {
+    if (!invitationSlug) {
+      setEvents([]);
+      return undefined;
+    }
+
     let isMounted = true;
 
     fetch(`/api/events?invitationSlug=${encodeURIComponent(invitationSlug)}`)
@@ -68,7 +65,7 @@ function MultiEventManager({ invitationSlug = sampleInvitation.slug }) {
       })
       .catch(() => {
         if (isMounted) {
-          setEvents(sampleInvitation.events);
+          setEvents([]);
         }
       });
 
@@ -83,12 +80,12 @@ function MultiEventManager({ invitationSlug = sampleInvitation.slug }) {
 
   const resetForm = () => {
     setForm({
-      title: "Akad Nikah",
-      eventDate: "2026-06-12",
-      eventTime: "09.00 WIB",
-      venue: "Gedung Serbaguna Nusantara",
-      address: "Jl. Melati Raya No. 12, Bandung",
-      mapsUrl: "https://maps.google.com",
+      title: "",
+      eventDate: "",
+      eventTime: "",
+      venue: "",
+      address: "",
+      mapsUrl: "",
     });
     setEditingId("");
   };
@@ -134,7 +131,7 @@ function MultiEventManager({ invitationSlug = sampleInvitation.slug }) {
           ? editingId
             ? "Acara berhasil diupdate."
             : "Acara tersimpan ke Supabase."
-          : "Acara sample tersimpan.",
+          : "Acara berhasil tersimpan.",
       );
       resetForm();
     } catch (error) {
@@ -269,23 +266,22 @@ function MultiEventManager({ invitationSlug = sampleInvitation.slug }) {
   );
 }
 
-function StoryManager({ invitationSlug = sampleInvitation.slug }) {
-  const [stories, setStories] = useState(
-    sampleInvitation.story.map((story, index) => ({
-      ...story,
-      id: story.id || `sample-story-${index}`,
-      description: story.description || story.desc,
-    })),
-  );
+function StoryManager({ invitationSlug = "" }) {
+  const [stories, setStories] = useState([]);
   const [form, setForm] = useState({
-    year: "2026",
-    title: "Hari Bahagia",
-    description: "Kami mengundang Bapak/Ibu/Saudara/i untuk hadir dan mendoakan.",
+    year: "",
+    title: "",
+    description: "",
   });
   const [message, setMessage] = useState("");
   const [editingId, setEditingId] = useState("");
 
   useEffect(() => {
+    if (!invitationSlug) {
+      setStories([]);
+      return undefined;
+    }
+
     let isMounted = true;
 
     fetch(`/api/stories?invitationSlug=${encodeURIComponent(invitationSlug)}`)
@@ -297,7 +293,7 @@ function StoryManager({ invitationSlug = sampleInvitation.slug }) {
       })
       .catch(() => {
         if (isMounted) {
-          setStories(sampleInvitation.story);
+          setStories([]);
         }
       });
 
@@ -312,9 +308,9 @@ function StoryManager({ invitationSlug = sampleInvitation.slug }) {
 
   const resetForm = () => {
     setForm({
-      year: "2026",
-      title: "Hari Bahagia",
-      description: "Kami mengundang Bapak/Ibu/Saudara/i untuk hadir dan mendoakan.",
+      year: "",
+      title: "",
+      description: "",
     });
     setEditingId("");
   };
@@ -361,7 +357,7 @@ function StoryManager({ invitationSlug = sampleInvitation.slug }) {
           ? editingId
             ? "Story berhasil diupdate."
             : "Story tersimpan ke Supabase."
-          : "Story sample tersimpan.",
+          : "Story berhasil tersimpan.",
       );
       resetForm();
     } catch (error) {
@@ -438,13 +434,13 @@ function StoryManager({ invitationSlug = sampleInvitation.slug }) {
     >
       <div className={panelHeaderClass}>
         <p className={panelEyebrowClass}>
-          Love Story
+          Cerita Pasangan
         </p>
         <h2 className={panelTitleClass}>
           Cerita pasangan
         </h2>
         <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
-          Perubahan story langsung berdampak ke section Love Story.
+          Perubahan cerita langsung berdampak ke section Love Story.
         </p>
       </div>
       <div className={`${formGridClass} md:grid-cols-[160px_1fr]`}>
@@ -493,24 +489,22 @@ function StoryManager({ invitationSlug = sampleInvitation.slug }) {
   );
 }
 
-function BankAccountManager({ invitationSlug = sampleInvitation.slug }) {
-  const [accounts, setAccounts] = useState(
-    sampleInvitation.bankAccounts.map((account, index) => ({
-      ...account,
-      id: account.id || `sample-bank-${index}`,
-      accountName: account.accountName || account.name,
-      accountNumber: account.accountNumber || account.number,
-    })),
-  );
+function BankAccountManager({ invitationSlug = "" }) {
+  const [accounts, setAccounts] = useState([]);
   const [form, setForm] = useState({
-    bank: "BCA",
-    accountName: "Dimas Pratama",
-    accountNumber: "1234567890",
+    bank: "",
+    accountName: "",
+    accountNumber: "",
   });
   const [message, setMessage] = useState("");
   const [editingId, setEditingId] = useState("");
 
   useEffect(() => {
+    if (!invitationSlug) {
+      setAccounts([]);
+      return undefined;
+    }
+
     let isMounted = true;
 
     fetch(`/api/bank-accounts?invitationSlug=${encodeURIComponent(invitationSlug)}`)
@@ -522,7 +516,7 @@ function BankAccountManager({ invitationSlug = sampleInvitation.slug }) {
       })
       .catch(() => {
         if (isMounted) {
-          setAccounts(sampleInvitation.bankAccounts);
+          setAccounts([]);
         }
       });
 
@@ -537,9 +531,9 @@ function BankAccountManager({ invitationSlug = sampleInvitation.slug }) {
 
   const resetForm = () => {
     setForm({
-      bank: "BCA",
-      accountName: "Dimas Pratama",
-      accountNumber: "1234567890",
+      bank: "",
+      accountName: "",
+      accountNumber: "",
     });
     setEditingId("");
   };
@@ -587,7 +581,7 @@ function BankAccountManager({ invitationSlug = sampleInvitation.slug }) {
           ? editingId
             ? "Rekening berhasil diupdate."
             : "Rekening tersimpan ke Supabase."
-          : "Rekening sample tersimpan.",
+          : "Rekening berhasil tersimpan.",
       );
       resetForm();
     } catch (error) {
@@ -646,7 +640,7 @@ function BankAccountManager({ invitationSlug = sampleInvitation.slug }) {
           Amplop digital
         </h2>
         <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
-          Perubahan rekening langsung berdampak ke widget Gift.
+          Perubahan rekening langsung berdampak ke widget Amplop.
         </p>
       </div>
       <div className={`${formGridClass} md:grid-cols-[160px_1fr_1fr_auto]`}>
@@ -688,16 +682,42 @@ function BankAccountManager({ invitationSlug = sampleInvitation.slug }) {
   );
 }
 
-export default function ContentManagers({ invitationSlug = sampleInvitation.slug }) {
+export default function ContentManagers({ invitationSlug = "", section = "all" }) {
+  if (!invitationSlug) {
+    return (
+      <section className="rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-5 shadow-[var(--dash-shadow)]">
+        <p className={panelEyebrowClass}>Content Panels</p>
+        <h2 className="mt-1 text-2xl font-semibold text-[var(--dash-ink)]">
+          Pilih order aktif dulu
+        </h2>
+        <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
+          Panel events, story, dan rekening hanya berjalan untuk satu invitation yang sedang dibuka.
+        </p>
+      </section>
+    );
+  }
+
+  if (section === "events") {
+    return <MultiEventManager invitationSlug={invitationSlug} />;
+  }
+
+  if (section === "story") {
+    return <StoryManager invitationSlug={invitationSlug} />;
+  }
+
+  if (section === "gift") {
+    return <BankAccountManager invitationSlug={invitationSlug} />;
+  }
+
   return (
     <div className="space-y-6">
       <section className="rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-5 shadow-[var(--dash-shadow)]">
         <p className={panelEyebrowClass}>Content Panels</p>
         <h2 className="mt-1 text-2xl font-semibold text-[var(--dash-ink)]">
-          Events, Love Story, dan Gift Accounts
+          Acara, Cerita, dan Amplop Digital
         </h2>
         <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
-          Semua panel memakai order aktif /u/{invitationSlug}. Preview public akan berubah setelah data tersimpan.
+          Semua panel memakai order aktif /u/{invitationSlug}. Preview publik akan berubah setelah data tersimpan.
         </p>
       </section>
       <MultiEventManager invitationSlug={invitationSlug} />

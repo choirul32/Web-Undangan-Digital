@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
-import { sampleInvitation } from "../../../../data/sampleInvitation";
 import { requireAdminApiSession } from "../../../../lib/auth";
 import { writeAuditLog } from "../../../../lib/audit-log";
 import { mapSupabaseInvitation } from "../../../../lib/invitations";
 import { createServiceSupabaseClient } from "../../../../lib/supabase/server";
+
+const MEDIA_BUCKET_NAME = "invitation-media";
 
 function hasServiceEnv() {
   return Boolean(
@@ -71,18 +72,28 @@ async function getInvitationBySlug(supabase, slug) {
   return { data, error };
 }
 
+async function getTemplateById(supabase, templateId) {
+  if (!templateId) {
+    return null;
+  }
+
+  const { data } = await supabase
+    .from("templates")
+    .select("template_id, design_config")
+    .eq("template_id", templateId)
+    .maybeSingle();
+
+  return data || null;
+}
+
 export async function GET(_request, { params }) {
   const slug = params.slug;
 
   if (!hasServiceEnv()) {
-    if (sampleInvitation.slug !== slug) {
-      return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({
-      source: "sample",
-      data: sampleInvitation,
-    });
+    return NextResponse.json(
+      { error: "Production database is not configured" },
+      { status: 503 },
+    );
   }
 
   const adminResult = await requireAdminApiSession();
@@ -97,9 +108,11 @@ export async function GET(_request, { params }) {
     return NextResponse.json({ error: error.message }, { status: 404 });
   }
 
+  const template = await getTemplateById(supabase, data.template_id);
+
   return NextResponse.json({
     source: "supabase",
-    data: mapSupabaseInvitation(data),
+    data: mapSupabaseInvitation(data, template),
   });
 }
 
@@ -112,17 +125,10 @@ export async function PATCH(request, { params }) {
   }
 
   if (!hasServiceEnv()) {
-    if (sampleInvitation.slug !== slug) {
-      return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
-    }
-
-    return NextResponse.json({
-      source: "sample",
-      data: {
-        ...sampleInvitation,
-        status: payload.action === "archive" ? "archived" : "published",
-      },
-    });
+    return NextResponse.json(
+      { error: "Production database is not configured" },
+      { status: 503 },
+    );
   }
 
   const admin = await requireAdminApiSession();
@@ -154,8 +160,8 @@ export async function PATCH(request, { params }) {
     }
 
     await writeAuditLog(supabase, {
-      actorUserId: adminResult.session?.userId,
-      actorEmail: adminResult.session?.email,
+      actorUserId: admin.session?.userId,
+      actorEmail: admin.session?.email,
       action: "invitation.archive",
       entityType: "invitation",
       entityId: archived.id,
@@ -168,7 +174,8 @@ export async function PATCH(request, { params }) {
     });
   }
 
-  const invitation = mapSupabaseInvitation(data);
+  const template = await getTemplateById(supabase, data.template_id);
+  const invitation = mapSupabaseInvitation(data, template);
   const guardErrors = getPublishGuardErrors(invitation);
 
   if (guardErrors.length > 0) {
@@ -198,8 +205,8 @@ export async function PATCH(request, { params }) {
   }
 
   await writeAuditLog(supabase, {
-    actorUserId: adminResult.session?.userId,
-    actorEmail: adminResult.session?.email,
+    actorUserId: admin.session?.userId,
+    actorEmail: admin.session?.email,
     action: "invitation.publish",
     entityType: "invitation",
     entityId: updated.id,
@@ -209,5 +216,65 @@ export async function PATCH(request, { params }) {
   return NextResponse.json({
     source: "supabase",
     data: updated,
+  });
+}
+
+export async function DELETE(_request, { params }) {
+  const slug = params.slug;
+
+  if (!hasServiceEnv()) {
+    return NextResponse.json(
+      { error: "Production database is not configured" },
+      { status: 503 },
+    );
+  }
+
+  const admin = await requireAdminApiSession();
+  if (admin.error) {
+    return NextResponse.json(admin.error, { status: 401 });
+  }
+
+  const supabase = createServiceSupabaseClient();
+  const { data, error } = await getInvitationBySlug(supabase, slug);
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 404 });
+  }
+
+  const storagePaths = (data.invitation_media || [])
+    .map((item) => item.storage_path)
+    .filter(Boolean);
+
+  const { error: deleteError } = await supabase
+    .from("invitations")
+    .delete()
+    .eq("id", data.id);
+
+  if (deleteError) {
+    return NextResponse.json({ error: deleteError.message }, { status: 500 });
+  }
+
+  if (storagePaths.length > 0) {
+    await supabase.storage.from(MEDIA_BUCKET_NAME).remove(storagePaths);
+  }
+
+  await writeAuditLog(supabase, {
+    actorUserId: admin.session?.userId,
+    actorEmail: admin.session?.email,
+    action: "invitation.delete",
+    entityType: "invitation",
+    entityId: data.id,
+    metadata: {
+      slug,
+      couple: {
+        groomName: data.groom_name,
+        brideName: data.bride_name,
+      },
+    },
+  });
+
+  return NextResponse.json({
+    source: "supabase",
+    data: { id: data.id, slug },
   });
 }

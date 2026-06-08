@@ -2,7 +2,6 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { sampleInvitation } from "../data/sampleInvitation";
 import { fadeUp } from "./dashboard/config";
 
 // Page components
@@ -23,11 +22,17 @@ import InvitationFormPanel from "./dashboard/InvitationForm";
 import TemplateAdminPage from "./dashboard/TemplateAdmin";
 import SettingsPage from "./dashboard/SettingsPage";
 
-function Sidebar({ activePage = "overview", collapsed = false, onToggleCollapse }) {
+function Sidebar({
+  activePage = "overview",
+  collapsed = false,
+  onToggleCollapse,
+  invitationCount = 0,
+  templateCount = 0,
+}) {
   const menu = [
     { label: "Overview", page: "overview", href: "/dashboard", icon: "dashboard" },
-    { label: "Undangan", page: "invitations", href: "/dashboard/invitations", count: 5, icon: "mail" },
-    { label: "Template", page: "templates", href: "/dashboard/templates", icon: "style" },
+    { label: "Undangan", page: "invitations", href: "/dashboard/invitations", count: invitationCount, icon: "mail" },
+    { label: "Template", page: "templates", href: "/dashboard/templates", count: templateCount, icon: "style" },
     { label: "Tamu", page: "guests", href: "/dashboard/guests", icon: "group" },
     { label: "Pengaturan", page: "settings", href: "/dashboard/settings", icon: "settings" },
   ];
@@ -146,64 +151,45 @@ function HeaderPrimaryActions({ activePage, activeInvitationSlug }) {
   const previewUrl = hasActiveOrder
     ? `/preview?slug=${encodeURIComponent(activeInvitationSlug)}`
     : "/preview";
-
-  const dispatchEditorAction = (action) => {
-    if (!hasActiveOrder) {
-      return;
-    }
-
-    window.dispatchEvent(
-      new CustomEvent("nusa-invite:active-editor-action", {
-        detail: { action },
-      }),
-    );
-  };
+  const publicUrl = hasActiveOrder
+    ? `/u/${encodeURIComponent(activeInvitationSlug)}`
+    : "";
 
   if (activePage !== "invitation-detail") {
     return (
       <div className="flex flex-wrap items-center gap-2">
         <a
-          href="/dashboard/invitations"
+          href="/dashboard/invitations/new"
           className="rounded-md bg-[var(--dash-ink)] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--dash-dark)]"
         >
-          Create Order
-        </a>
-        <a
-          href="/preview"
-          target="_blank"
-          rel="noreferrer"
-          className="rounded-md border border-[var(--dash-border)] bg-[var(--dash-canvas)] px-3 py-2 text-sm font-semibold text-[var(--dash-ink)] transition-colors hover:bg-[var(--dash-fog)]"
-        >
-          Preview
+          Buat Order
         </a>
       </div>
     );
   }
 
+  if (!hasActiveOrder) {
+    return null;
+  }
+
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <button
-        type="button"
-        onClick={() => dispatchEditorAction("save")}
-        className="rounded-md border border-[var(--dash-border)] bg-[var(--dash-canvas)] px-3 py-2 text-sm font-semibold text-[var(--dash-ink)] transition-colors hover:bg-[var(--dash-fog)]"
-      >
-        Save
-      </button>
       <a
         href={previewUrl}
         target="_blank"
         rel="noreferrer"
         className="rounded-md border border-[var(--dash-border)] bg-[var(--dash-canvas)] px-3 py-2 text-sm font-semibold text-[var(--dash-ink)] transition-colors hover:bg-[var(--dash-fog)]"
       >
-        Preview
+        Pratinjau
       </a>
-      <button
-        type="button"
-        onClick={() => dispatchEditorAction("publish")}
+      <a
+        href={publicUrl}
+        target="_blank"
+        rel="noreferrer"
         className="rounded-md bg-[var(--dash-ink)] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--dash-dark)]"
       >
-        Publish
-      </button>
+        Link Publish
+      </a>
     </div>
   );
 }
@@ -277,52 +263,72 @@ const pageMeta = {
 };
 
 function ActiveInvitationWorkspace({ invitationSlug }) {
-  const previewUrl = invitationSlug
-    ? `/preview?slug=${encodeURIComponent(invitationSlug)}`
-    : "/preview";
-  const publicUrl = invitationSlug ? `/u/${invitationSlug}` : "/u/slug-undangan";
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = useState("order");
+  const workspaceTabs = [
+    { id: "order", label: "Informasi Utama" },
+    { id: "events", label: "Acara", requiresOrder: true },
+    { id: "story", label: "Cerita", requiresOrder: true },
+    { id: "gift", label: "Amplop", requiresOrder: true },
+    { id: "media", label: "Media", requiresOrder: true },
+    { id: "guests", label: "Tamu", requiresOrder: true },
+    { id: "rsvp", label: "RSVP", requiresOrder: true },
+  ];
+
+  const renderActiveWorkspaceTab = () => {
+    if (activeWorkspaceTab === "events") {
+      return <ContentManagers invitationSlug={invitationSlug} section="events" />;
+    }
+
+    if (activeWorkspaceTab === "story") {
+      return <ContentManagers invitationSlug={invitationSlug} section="story" />;
+    }
+
+    if (activeWorkspaceTab === "gift") {
+      return <ContentManagers invitationSlug={invitationSlug} section="gift" />;
+    }
+
+    if (activeWorkspaceTab === "media") {
+      return <MediaManager invitationSlug={invitationSlug} />;
+    }
+
+    if (activeWorkspaceTab === "guests") {
+      return <GuestManager invitationSlug={invitationSlug} />;
+    }
+
+    if (activeWorkspaceTab === "rsvp") {
+      return <RSVPManager invitationSlug={invitationSlug} />;
+    }
+
+    return <InvitationFormPanel invitationSlug={invitationSlug} />;
+  };
 
   return (
     <>
-      <motion.section
-        variants={fadeUp}
-        className="rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-4 text-[var(--dash-ink)] shadow-[var(--dash-shadow)]"
-      >
-        <p className="text-xs font-semibold uppercase text-[var(--dash-muted)]">
-          Active Invitation
-        </p>
-        <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div>
-            <h2 className="text-2xl font-semibold">{invitationSlug || "Draft baru"}</h2>
-            <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
-              Semua panel di bawah ini memakai konteks slug yang sama.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <a
-              href={previewUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-md border border-[var(--dash-border)] bg-[var(--dash-canvas)] px-4 py-2 text-sm font-semibold text-[var(--dash-ink)] hover:bg-[var(--dash-fog)]"
-            >
-              Preview
-            </a>
-            <a
-              href={publicUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="rounded-md bg-[var(--dash-ink)] px-4 py-2 text-sm font-semibold text-white hover:bg-[var(--dash-dark)]"
-            >
-              Public URL
-            </a>
-          </div>
+      <nav className="overflow-x-auto rounded-[18px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-1.5 shadow-[var(--dash-shadow)]">
+        <div className="flex min-w-max gap-1.5">
+          {workspaceTabs.map((tab) => {
+            const disabled = tab.requiresOrder && !invitationSlug;
+            const active = activeWorkspaceTab === tab.id;
+
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                disabled={disabled}
+                onClick={() => setActiveWorkspaceTab(tab.id)}
+                className={`rounded-[14px] px-4 py-3 text-sm font-semibold transition-colors ${
+                  active
+                    ? "bg-[var(--dash-ink)] text-white"
+                    : "text-[var(--dash-muted)] hover:bg-[var(--dash-fog)] hover:text-[var(--dash-ink)]"
+                } disabled:cursor-not-allowed disabled:opacity-35`}
+              >
+                {tab.label}
+              </button>
+            );
+          })}
         </div>
-      </motion.section>
-      <InvitationFormPanel invitationSlug={invitationSlug} />
-      <ContentManagers invitationSlug={invitationSlug} />
-      <MediaManager invitationSlug={invitationSlug} />
-      <GuestManager invitationSlug={invitationSlug} />
-      <RSVPManager invitationSlug={invitationSlug} />
+      </nav>
+      {renderActiveWorkspaceTab()}
     </>
   );
 }
@@ -363,19 +369,19 @@ function DashboardMainContent({ activePage, metrics, activeInvitationSlug, stats
   }
 
   if (activePage === "rsvps") {
-    return <RSVPManager />;
+    return <RSVPManager invitationSlug={activeInvitationSlug} />;
   }
 
   if (activePage === "guests") {
-    return <GuestManager />;
+    return <GuestManager invitationSlug={activeInvitationSlug} />;
   }
 
   if (activePage === "media") {
-    return <MediaManager />;
+    return <MediaManager invitationSlug={activeInvitationSlug} />;
   }
 
   if (activePage === "content") {
-    return <ContentManagers />;
+    return <ContentManagers invitationSlug={activeInvitationSlug} />;
   }
 
   if (activePage === "settings") {
@@ -441,36 +447,34 @@ export default function Dashboard({
   const fallbackMetrics = useMemo(
     () =>
       buildDashboardMetrics({
-        invitations: 1,
-        activeThisMonth: 1,
-        rsvps: sampleInvitation.rsvps.length,
-        rsvpPax: sampleInvitation.rsvps.reduce(
-          (total, item) => total + Number(item.pax || 0),
-          0,
-        ),
-        published: 1,
+        invitations: 0,
+        activeThisMonth: 0,
+        rsvps: 0,
+        rsvpPax: 0,
+        published: 0,
         revision: 0,
-        guests: sampleInvitation.guests.length,
+        guests: 0,
         inquiry: 0,
         waitingPayment: 0,
-        inProgress: 1,
+        inProgress: 0,
         review: 0,
       }),
     [],
   );
   const [metrics, setMetrics] = useState(fallbackMetrics);
   const [stats, setStats] = useState({
-    invitations: 1,
-    activeThisMonth: 1,
-    rsvpPax: sampleInvitation.rsvps.reduce((total, item) => total + Number(item.pax || 0), 0),
-    published: 1,
+    invitations: 0,
+    activeThisMonth: 0,
+    rsvpPax: 0,
+    published: 0,
     waitingPayment: 0,
-    inProgress: 1,
+    inProgress: 0,
     review: 0,
     rsvpHadir: 0,
     rsvpTidakHadir: 0,
     rsvpBelum: 0,
   });
+  const [templateCount, setTemplateCount] = useState(0);
   const meta = pageMeta[activePage] || pageMeta.overview;
   const showAside = false;
 
@@ -545,19 +549,39 @@ export default function Dashboard({
   useEffect(() => {
     let isMounted = true;
 
-    fetch("/api/dashboard/stats")
-      .then((response) => response.json())
-      .then((result) => {
+    const loadDashboardStats = async () => {
+      try {
+        const response = await fetch("/api/dashboard/stats");
+        const result = await response.json();
+
         if (isMounted && result.data) {
           setStats(result.data);
           setMetrics(buildDashboardMetrics(result.data));
         }
-      })
-      .catch(() => {
+      } catch {
         if (isMounted) {
           setMetrics(fallbackMetrics);
         }
-      });
+      }
+    };
+
+    const loadTemplateCount = async () => {
+      try {
+        const response = await fetch("/api/templates?scope=admin");
+        const result = await response.json();
+
+        if (isMounted && Array.isArray(result.data)) {
+          setTemplateCount(result.data.length);
+        }
+      } catch {
+        if (isMounted) {
+          setTemplateCount(0);
+        }
+      }
+    };
+
+    loadDashboardStats();
+    loadTemplateCount();
 
     return () => {
       isMounted = false;
@@ -571,9 +595,11 @@ export default function Dashboard({
           activePage={activePage}
           collapsed={isSidebarCollapsed}
           onToggleCollapse={() => setIsSidebarCollapsed((current) => !current)}
+          invitationCount={stats.invitations}
+          templateCount={templateCount}
         />
         <section className="min-w-0 flex-1">
-          <header className="sticky top-0 z-30 border-b border-[var(--dash-border)] bg-[var(--dash-canvas)]/92 px-5 py-3 backdrop-blur-xl sm:px-6">
+      <header className="border-b border-[var(--dash-border)] bg-[var(--dash-canvas)] px-5 py-3 sm:px-6">
             <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase text-[var(--dash-muted)]">
@@ -583,8 +609,8 @@ export default function Dashboard({
                   {meta.title}
                 </h1>
                 {activeInvitationSlug ? (
-                  <p className="mt-1 text-xs font-medium text-[var(--dash-muted)]">
-                    Active order: <span className="font-semibold text-[var(--dash-ink)]">{activeInvitationSlug}</span>
+                <p className="mt-1 text-xs font-medium text-[var(--dash-muted)]">
+                    Order aktif: <span className="font-semibold text-[var(--dash-ink)]">{activeInvitationSlug}</span>
                   </p>
                 ) : null}
               </div>

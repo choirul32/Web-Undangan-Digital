@@ -3,7 +3,14 @@ import { motion } from "framer-motion";
 import OpeningSequence, { OpeningSequenceAsset, OpeningSequenceAtmosphere } from "../components/OpeningSequence";
 import { revealExitMotion } from "../utils/templateStyling";
 
-export default function OpeningRevealOverlay({ config, coverConfig, couple, guestName, onOpen }) {
+export default function OpeningRevealOverlay({
+  config,
+  coverConfig,
+  couple,
+  guestName,
+  onOpen,
+  framedPreview = false,
+}) {
   const [isOpening, setIsOpening] = useState(false);
   if (!config.enabled) return null;
 
@@ -29,7 +36,7 @@ export default function OpeningRevealOverlay({ config, coverConfig, couple, gues
   };
 
   return (
-    <motion.div exit={revealExitMotion(animation)} transition={{ duration: 0.72, ease: "easeInOut" }} className={`fixed inset-0 z-[120] flex items-center justify-center overflow-hidden px-6 py-12 text-center ${frameClass}`} style={{ backgroundColor }}>
+    <motion.div exit={revealExitMotion(animation)} transition={{ duration: 0.72, ease: "easeInOut" }} className={`${framedPreview ? "absolute inset-x-0 top-0 h-screen" : "fixed inset-0"} z-[120] flex items-center justify-center overflow-hidden px-6 py-12 text-center ${frameClass}`} style={{ backgroundColor }}>
       {isSplitAnimation ? (
         <>
           <motion.div initial={false} animate={isOpening ? { x: "-102%" } : { x: 0 }} transition={{ duration: 0.85, ease: [0.76, 0, 0.24, 1] }} className={`${splitPanelClass} left-0`} style={splitPanelStyle("left")} />

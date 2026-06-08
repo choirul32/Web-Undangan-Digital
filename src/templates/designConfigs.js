@@ -9,13 +9,15 @@ const emptyDesignConfig = {
 };
 
 export function normalizeDesignConfig(config = {}) {
+  const safeConfig = config || {};
+
   return {
-    ...config,
-    canvas: config.canvas || {},
-    sections: config.sections || {},
-    ornaments: config.ornaments || {},
-    widgets: config.widgets || {},
-    animations: config.animations || {},
+    ...safeConfig,
+    canvas: safeConfig.canvas || {},
+    sections: safeConfig.sections || {},
+    ornaments: safeConfig.ornaments || {},
+    widgets: safeConfig.widgets || {},
+    animations: safeConfig.animations || {},
   };
 }
 

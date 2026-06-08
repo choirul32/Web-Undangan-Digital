@@ -5,68 +5,6 @@
 
 import { defaultTemplateMetadata } from "../../data/templateAdminDefaults";
 
-// Sample data imports (for reference in constants)
-import { sampleInvitation } from "../../data/sampleInvitation";
-
-// ===== INVITATIONS SAMPLE DATA =====
-export const invitations = [
-  {
-    id: "INV-001",
-    couple: "Dimas & Salsa",
-    slug: "dimas-salsa",
-    template: "Rana Kirana",
-    category: "Adat",
-    status: "Published",
-    date: "12 Jun 2026",
-    rsvp: 128,
-    package: "Premium",
-  },
-  {
-    id: "INV-002",
-    couple: "Fahri & Nabila",
-    slug: "fahri-nabila",
-    template: "Sadajiwa",
-    category: "Muslim",
-    status: "Review",
-    date: "22 Jun 2026",
-    rsvp: 64,
-    package: "Premium",
-  },
-  {
-    id: "INV-003",
-    couple: "Raka & Kirana",
-    slug: "raka-kirana",
-    template: "Nawasena",
-    category: "Adat",
-    status: "Draft",
-    date: "03 Jul 2026",
-    rsvp: 0,
-    package: "Exclusive",
-  },
-  {
-    id: "INV-004",
-    couple: "Bagas & Ayu",
-    slug: "bagas-ayu",
-    template: "Melati Senja",
-    category: "Modern",
-    status: "Revision",
-    date: "18 Jul 2026",
-    rsvp: 42,
-    package: "Basic",
-  },
-  {
-    id: "INV-005",
-    couple: "Rizky & Hana",
-    slug: "rizky-hana",
-    template: "Kidung",
-    category: "Non Foto",
-    status: "Published",
-    date: "01 Agu 2026",
-    rsvp: 216,
-    package: "Premium",
-  },
-];
-
 // ===== TEMPLATES =====
 export const templates = defaultTemplateMetadata.map((metadata, index) => {
   return {
@@ -793,10 +731,10 @@ export const templateSectionPresets = templates.reduce(
 // ===== PREVIEW VIEWPORTS =====
 export const templatePreviewViewports = {
   mobile: {
-    label: "Mobile 430",
-    frameClass: "h-[680px] max-w-[430px]",
-    viewportWidth: 430,
-    viewportHeight: 680,
+    label: "Samsung A54",
+    frameClass: "h-[915px] max-w-[412px]",
+    viewportWidth: 412,
+    viewportHeight: 915,
     scale: 1,
   },
   tablet: {
@@ -883,12 +821,9 @@ export const fadeUp = {
 export const formSteps = [
   "Order",
   "Template",
-  "Couple",
-  "Events",
-  "Features",
-  "Media",
-  "Guests",
-  "Review",
+  "Mempelai",
+  "Fitur",
+  "Tinjau",
 ];
 
 // ===== INITIAL INVITATION FORM =====
@@ -910,11 +845,6 @@ export const initialInvitationForm = {
   brideName: "",
   brideNickname: "",
   quote: "",
-  eventTitle: "",
-  eventDate: "",
-  eventTime: "",
-  venue: "",
-  mapsUrl: "",
   rsvp: true,
   gift: true,
   music: true,
@@ -948,6 +878,3 @@ export function buildDashboardMetrics(stats) {
     },
   ];
 }
-
-// Re-export sampleInvitation for components that need it
-export { sampleInvitation };

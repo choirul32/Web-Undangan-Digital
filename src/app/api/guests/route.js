@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { sampleInvitation } from "../../../data/sampleInvitation";
 import { requireAdminApiSession } from "../../../lib/auth";
 import { createServiceSupabaseClient } from "../../../lib/supabase/server";
 
@@ -33,13 +32,17 @@ function mapGuest(guest) {
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
-  const invitationSlug = searchParams.get("invitationSlug") || "dimas-salsa";
+  const invitationSlug = searchParams.get("invitationSlug") || "";
+
+  if (!invitationSlug) {
+    return NextResponse.json({ error: "invitationSlug is required" }, { status: 400 });
+  }
 
   if (!hasServiceEnv()) {
-    return NextResponse.json({
-      source: "sample",
-      data: sampleInvitation.guests,
-    });
+    return NextResponse.json(
+      { error: "Production database is not configured" },
+      { status: 503 },
+    );
   }
 
   const admin = await requireAdminApiSession();
@@ -84,17 +87,10 @@ export async function POST(request) {
   }
 
   if (!hasServiceEnv()) {
-    return NextResponse.json({
-      source: "sample",
-      data: {
-        name: payload.name,
-        slug: payload.slug,
-        group: payload.group,
-        phone: payload.phone,
-        rsvpStatus: "Belum RSVP",
-        pax: 0,
-      },
-    });
+    return NextResponse.json(
+      { error: "Production database is not configured" },
+      { status: 503 },
+    );
   }
 
   const admin = await requireAdminApiSession();
@@ -147,17 +143,10 @@ export async function PUT(request) {
   }
 
   if (!hasServiceEnv()) {
-    return NextResponse.json({
-      source: "sample",
-      data: {
-        name: payload.name,
-        slug: payload.slug,
-        group: payload.group,
-        phone: payload.phone,
-        rsvpStatus: payload.rsvpStatus || "Belum RSVP",
-        pax: payload.pax || 0,
-      },
-    });
+    return NextResponse.json(
+      { error: "Production database is not configured" },
+      { status: 503 },
+    );
   }
 
   const admin = await requireAdminApiSession();
@@ -209,10 +198,10 @@ export async function DELETE(request) {
   }
 
   if (!hasServiceEnv()) {
-    return NextResponse.json({
-      source: "sample",
-      data: { slug: payload.slug },
-    });
+    return NextResponse.json(
+      { error: "Production database is not configured" },
+      { status: 503 },
+    );
   }
 
   const admin = await requireAdminApiSession();

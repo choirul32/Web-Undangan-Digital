@@ -38,7 +38,7 @@ export function SelectInput({ className = "", ...props }) {
   return (
     <select
       {...props}
-      className={`w-full appearance-none rounded-xl border border-[var(--dash-border)] bg-white px-3 py-2.5 text-sm font-semibold text-[var(--dash-ink)] outline-none transition-all hover:border-[var(--color-accent-pale)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 ${className}`}
+      className={`w-full appearance-none rounded-2xl border border-[var(--dash-border)] bg-white px-3.5 py-2.5 pr-10 text-sm font-semibold text-[var(--dash-ink)] outline-none transition-all hover:border-[var(--color-accent-pale)] focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20 ${className}`}
     />
   );
 }

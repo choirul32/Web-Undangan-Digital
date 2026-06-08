@@ -12,15 +12,10 @@ function hasServiceEnv() {
 
 export async function GET() {
   if (!hasServiceEnv()) {
-    return NextResponse.json({
-      source: "sample",
-      data: {
-        status: "degraded",
-        database: "not_configured",
-        auth: "dev",
-        checkedAt: new Date().toISOString(),
-      },
-    });
+    return NextResponse.json(
+      { error: "Production database is not configured" },
+      { status: 503 },
+    );
   }
 
   const admin = await requireAdminApiSession();

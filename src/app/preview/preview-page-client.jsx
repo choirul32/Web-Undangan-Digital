@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { sampleInvitation } from "../../data/sampleInvitation";
+import { emptyInvitation } from "../../data/emptyInvitation";
+import { previewInvitation } from "../../data/previewInvitation";
 import {
   applyStoredTemplateOverrideToInvitation,
   defaultTemplateMetadata,
@@ -12,18 +13,23 @@ import InvitationRenderer from "../../templates/InvitationRenderer";
 
 export default function PreviewPageClient() {
   const searchParams = useSearchParams();
-  const [data, setData] = useState(sampleInvitation);
   const slug = searchParams.get("slug");
   const templateId = searchParams.get("templateId");
   const editorPreview = searchParams.get("editorPreview") === "1";
+  const previewSectionOnly = searchParams.get("previewSectionOnly") === "1";
   const previewGuest = searchParams.get("previewGuest") || "";
   const previewDataMode = searchParams.get("previewDataMode") || "filled";
+  const framedDesktopPreview = !editorPreview && !previewSectionOnly;
+  const [data, setData] = useState(() => (
+    !slug && previewDataMode !== "empty" ? previewInvitation : emptyInvitation
+  ));
+  const [replayKey, setReplayKey] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadPreviewData = async () => {
-      let draft = sampleInvitation;
+      let draft = slug ? emptyInvitation : previewInvitation;
 
       if (slug) {
         try {
@@ -33,13 +39,12 @@ export default function PreviewPageClient() {
             draft = result.data;
           }
         } catch {
-          // Keep sample data if slug preview API is unavailable.
+          // Keep the blank draft if slug preview API is unavailable.
         }
       }
 
       const previewData = templateId
         ? {
-            ...sampleInvitation,
             ...draft,
             templateId,
           }
@@ -121,7 +126,7 @@ export default function PreviewPageClient() {
     return () => {
       isMounted = false;
     };
-  }, [editorPreview, slug, templateId]);
+  }, [editorPreview, previewDataMode, slug, templateId]);
 
   useEffect(() => {
     const handleMessage = (event) => {
@@ -132,6 +137,12 @@ export default function PreviewPageClient() {
       if (!message || typeof message !== "object") {
         return;
       }
+      if (message.type === "nusa-invite:editor-preview-replay") {
+        window.scrollTo(0, 0);
+        setReplayKey((current) => current + 1);
+        return;
+      }
+
       if (message.type !== "nusa-invite:editor-preview-update") {
         return;
       }
@@ -157,10 +168,28 @@ export default function PreviewPageClient() {
   }, [templateId]);
 
   return (
-    <InvitationRenderer
-      data={data}
-      guestName={previewGuest || undefined}
-      guestSlug={previewGuest ? "preview-guest" : undefined}
-    />
+    <div
+      className={
+        framedDesktopPreview
+          ? "min-h-screen bg-[#e8edf2] lg:px-8"
+          : ""
+      }
+    >
+      <div
+        className={
+          framedDesktopPreview
+            ? "mx-auto min-h-screen w-full overflow-hidden bg-[var(--color-bg)] lg:min-h-[915px] lg:max-w-[412px] lg:rounded-[28px] lg:border lg:border-black/10 lg:shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
+            : ""
+        }
+      >
+        <InvitationRenderer
+          key={replayKey}
+          data={data}
+          guestName={previewGuest || undefined}
+          guestSlug={previewGuest ? "preview-guest" : undefined}
+          framedPreview={framedDesktopPreview}
+        />
+      </div>
+    </div>
   );
 }

@@ -57,25 +57,46 @@ export default function OrnamentTimelinePanel({
     return () => window.clearInterval(timer);
   }, [isPlaying, timelineDuration]);
 
-  const togglePlay = () => {
-    if (!isPlaying && playheadSeconds >= timelineDuration) {
-      setPlayheadSeconds(0);
+  const keepPageScroll = (action) => {
+    const scrollPosition = { x: window.scrollX, y: window.scrollY };
+    const activeElement = document.activeElement;
+    action();
+    if (activeElement instanceof HTMLElement) {
+      activeElement.blur();
     }
-    setPreviewEntranceKey((k) => k + 1);
-    setIsPlaying((current) => !current);
+    const restoreScroll = () => window.scrollTo(scrollPosition.x, scrollPosition.y);
+    window.requestAnimationFrame(() => {
+      restoreScroll();
+      window.requestAnimationFrame(restoreScroll);
+    });
+    window.setTimeout(restoreScroll, 80);
+  };
+
+  const togglePlay = () => {
+    keepPageScroll(() => {
+      if (!isPlaying && playheadSeconds >= timelineDuration) {
+        setPlayheadSeconds(0);
+      }
+      setPreviewEntranceKey((k) => k + 1);
+      setIsPlaying((current) => !current);
+    });
   };
 
   const stopPlayback = () => {
-    setIsPlaying(false);
-    setPlayheadSeconds(0);
-    setPreviewEntranceKey(0);
+    keepPageScroll(() => {
+      setIsPlaying(false);
+      setPlayheadSeconds(0);
+      setPreviewEntranceKey(0);
+    });
   };
 
   const stepPlayback = (delta) => {
-    setIsPlaying(false);
-    setPlayheadSeconds((current) =>
-      Math.max(0, Math.min(timelineDuration, Number((current + delta).toFixed(1)))),
-    );
+    keepPageScroll(() => {
+      setIsPlaying(false);
+      setPlayheadSeconds((current) =>
+        Math.max(0, Math.min(timelineDuration, Number((current + delta).toFixed(1)))),
+      );
+    });
   };
 
   const beginInteraction = (event, mode, ornament, ornamentIndex, trackIndex) => {
@@ -115,22 +136,23 @@ export default function OrnamentTimelinePanel({
   };
 
   return (
-    <div className="mt-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3">
+    <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-2">
       <div className="rounded-lg border border-black/10 bg-white">
-        <div className="flex items-center justify-between border-b border-black/10 px-3 py-2">
+        <div className="flex items-center justify-between gap-2 border-b border-black/10 px-2.5 py-1.5">
           <div className="flex items-center gap-2">
-            <svg viewBox="0 0 20 20" className="h-4 w-4 text-[var(--color-text)]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 text-[var(--color-text)]" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <rect x="4" y="4" width="12" height="3" rx="1" />
               <rect x="4" y="9" width="12" height="3" rx="1" />
               <rect x="4" y="14" width="12" height="3" rx="1" />
             </svg>
-            <p className="text-sm font-black text-[var(--color-text)]">Timeline Animasi</p>
+            <p className="text-xs font-black text-[var(--color-text)]">Timeline Animasi</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
             <button
               type="button"
+              onMouseDown={(event) => event.preventDefault()}
               onClick={togglePlay}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-black/10 text-[var(--color-text)] hover:bg-[var(--color-bg)]"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-black/10 text-[var(--color-text)] hover:bg-[var(--color-bg)]"
               title={isPlaying ? "Pause" : "Play"}
             >
               {isPlaying ? (
@@ -144,16 +166,18 @@ export default function OrnamentTimelinePanel({
             </button>
             <button
               type="button"
+              onMouseDown={(event) => event.preventDefault()}
               onClick={stopPlayback}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-black/10 text-[var(--color-text)] hover:bg-[var(--color-bg)]"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-black/10 text-[var(--color-text)] hover:bg-[var(--color-bg)]"
               title="Stop"
             >
               <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="currentColor"><rect x="5" y="5" width="10" height="10" rx="1.5" /></svg>
             </button>
             <button
               type="button"
+              onMouseDown={(event) => event.preventDefault()}
               onClick={() => stepPlayback(-1)}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-black/10 text-[var(--color-text)] hover:bg-[var(--color-bg)]"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-black/10 text-[var(--color-text)] hover:bg-[var(--color-bg)]"
               title="Backward 1s"
             >
               <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="currentColor">
@@ -163,8 +187,9 @@ export default function OrnamentTimelinePanel({
             </button>
             <button
               type="button"
+              onMouseDown={(event) => event.preventDefault()}
               onClick={() => stepPlayback(1)}
-              className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-black/10 text-[var(--color-text)] hover:bg-[var(--color-bg)]"
+              className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-black/10 text-[var(--color-text)] hover:bg-[var(--color-bg)]"
               title="Forward 1s"
             >
               <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="currentColor">
@@ -172,12 +197,12 @@ export default function OrnamentTimelinePanel({
                 <rect x="4.7" y="5.5" width="1.8" height="9" rx="0.8" />
               </svg>
             </button>
-            <span className="px-1 text-xs font-bold text-[var(--color-text)]/80">
+            <span className="px-1 text-[11px] font-bold text-[var(--color-text)]/80">
               {playhead.toFixed(1)}s / {timelineDuration}s
             </span>
-            <button type="button" onClick={() => setTimelineZoom((z) => Math.max(1, Number((z - 0.25).toFixed(2))))} className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-black/10 text-[var(--color-text)] hover:bg-[var(--color-bg)]" title="Zoom Out">-</button>
-            <button type="button" onClick={() => setTimelineZoom((z) => Math.min(2.5, Number((z + 0.25).toFixed(2))))} className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-black/10 text-[var(--color-text)] hover:bg-[var(--color-bg)]" title="Zoom In">+</button>
-            <button type="button" onClick={() => setTimelineSnapEnabled((v) => !v)} className="ml-1 flex items-center gap-1.5 text-xs font-semibold text-[var(--color-text)]/85">
+            <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => keepPageScroll(() => setTimelineZoom((z) => Math.max(1, Number((z - 0.25).toFixed(2)))))} className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-black/10 text-[var(--color-text)] hover:bg-[var(--color-bg)]" title="Zoom Out">-</button>
+            <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => keepPageScroll(() => setTimelineZoom((z) => Math.min(2.5, Number((z + 0.25).toFixed(2)))))} className="inline-flex h-6 w-6 items-center justify-center rounded-md border border-black/10 text-[var(--color-text)] hover:bg-[var(--color-bg)]" title="Zoom In">+</button>
+            <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={() => keepPageScroll(() => setTimelineSnapEnabled((v) => !v))} className="ml-1 flex items-center gap-1.5 text-[11px] font-semibold text-[var(--color-text)]/85">
               <span className={`inline-flex h-4 w-7 rounded-full p-0.5 ${timelineSnapEnabled ? "bg-[var(--color-accent)]" : "bg-black/25"}`}>
                 <span className={`h-3 w-3 rounded-full bg-white transition-transform ${timelineSnapEnabled ? "translate-x-3" : ""}`} />
               </span>
@@ -186,7 +211,7 @@ export default function OrnamentTimelinePanel({
             <select
               value={String(timelineSnapUnit)}
               onChange={(event) => setTimelineSnapUnit(Number(event.target.value))}
-              className="h-7 rounded-md border border-black/10 bg-white px-2 text-[11px] font-bold text-[var(--color-text)]"
+              className="h-6 rounded-md border border-black/10 bg-white px-2 text-[10px] font-bold text-[var(--color-text)]"
               title="Snap Grid"
             >
               <option value="0.25">0.25s</option>
@@ -196,9 +221,9 @@ export default function OrnamentTimelinePanel({
           </div>
         </div>
 
-        <div className="overflow-x-auto px-3 pb-3 pt-2">
-          <div className="min-w-[980px]">
-            <div className="ml-[120px] mb-2 grid" style={{ width: `${timelineZoom * 100}%`, gridTemplateColumns: `repeat(${rulerTicks.length}, minmax(0, 1fr))` }}>
+        <div className="overflow-x-auto px-2 pb-2 pt-1.5">
+          <div className="min-w-[860px]">
+            <div className="ml-[92px] mb-1.5 grid" style={{ width: `${timelineZoom * 100}%`, gridTemplateColumns: `repeat(${rulerTicks.length}, minmax(0, 1fr))` }}>
               {rulerTicks.map((tick) => (
                 <span key={tick} className="text-[10px] font-bold text-[var(--color-text)]/60">
                   {tick}s
@@ -206,7 +231,7 @@ export default function OrnamentTimelinePanel({
               ))}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               {trackLabels.map((trackLabel, trackIndex) => {
                 const trackOrnaments = activeOrnaments
                   .map((ornament, idx) => ({ ornament, idx }))
@@ -214,8 +239,8 @@ export default function OrnamentTimelinePanel({
                   .filter(({ ornament }) => trackVisibility[trackIndex] && !hiddenOrnamentIds.has(ornament.id));
                 return (
                   <div key={trackLabel} className="relative flex items-center gap-2">
-                    <div className="flex w-[110px] items-center justify-between pr-2">
-                      <span className="text-xs font-bold text-[var(--color-text)]">{trackLabel}</span>
+                    <div className="flex w-[84px] items-center justify-between pr-1.5">
+                      <span className="text-[11px] font-bold text-[var(--color-text)]">{trackLabel}</span>
                       <div className="flex items-center gap-1 text-[var(--color-text)]/50">
                         <button
                           type="button"
@@ -252,7 +277,7 @@ export default function OrnamentTimelinePanel({
                       </div>
                     </div>
 
-                    <div ref={trackIndex === 0 ? timelineContainerRef : null} className="relative h-10 flex-1 overflow-hidden rounded border border-black/10 bg-[#fafafa] touch-none" style={{ width: `${timelineZoom * 100}%` }}>
+                    <div ref={trackIndex === 0 ? timelineContainerRef : null} className="relative h-8 flex-1 overflow-hidden rounded border border-black/10 bg-[#fafafa] touch-none" style={{ width: `${timelineZoom * 100}%` }}>
                       <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${timelineDuration}, minmax(0, 1fr))` }}>
                         {Array.from({ length: timelineDuration }).map((_, i) => (
                           <div key={i} className="border-r border-black/5" />
@@ -285,7 +310,7 @@ export default function OrnamentTimelinePanel({
                               if (trackLocked[trackIndex]) return;
                               beginInteraction(event, "move", ornament, realIndex, trackIndex);
                             }}
-                            className={`absolute top-1 h-8 rounded-md border px-3 text-left text-[10px] font-bold shadow-sm transition-shadow ${
+                            className={`absolute top-1 h-6 rounded-md border px-2 text-left text-[9px] font-bold shadow-sm transition-shadow ${
                               selected ? "ring-2 ring-red-300" : ""
                             }`}
                             style={{
@@ -317,7 +342,7 @@ export default function OrnamentTimelinePanel({
                               aria-label="Resize end"
                             />
                             <div className="truncate">{(ornament.id || `Ornament ${idx + 1}`).replace("ornament-", "Ornament ")}</div>
-                            <div className="text-[9px] font-semibold opacity-75">
+                            <div className="text-[8px] font-semibold opacity-75">
                               {start}s - {Math.min(timelineDuration, start + duration)}s
                             </div>
                           </div>

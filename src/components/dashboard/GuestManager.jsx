@@ -2,15 +2,14 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { sampleInvitation } from "../../data/sampleInvitation";
 import { fadeUp } from "./config";
 import { TextInput, SelectInput, TextAreaInput } from "./FormControls";
 
 const defaultBroadcastTemplate =
   "Assalamualaikum Wr. Wb.\n\nYth. {guest_name},\nKami mengundang Bapak/Ibu/Saudara/i untuk hadir di acara pernikahan kami.\n\nBuka undangan personal:\n{guest_link}\n\nTerima kasih.";
 
-export default function GuestManager({ invitationSlug = sampleInvitation.slug }) {
-  const [guests, setGuests] = useState(sampleInvitation.guests);
+export default function GuestManager({ invitationSlug = "" }) {
+  const [guests, setGuests] = useState([]);
   const [guestName, setGuestName] = useState("");
   const [guestGroup, setGuestGroup] = useState("Keluarga");
   const [guestPhone, setGuestPhone] = useState("");
@@ -23,6 +22,11 @@ export default function GuestManager({ invitationSlug = sampleInvitation.slug })
   const [bulkImportText, setBulkImportText] = useState("");
 
   useEffect(() => {
+    if (!invitationSlug) {
+      setGuests([]);
+      return undefined;
+    }
+
     let isMounted = true;
 
     fetch(`/api/guests?invitationSlug=${encodeURIComponent(invitationSlug)}`)
@@ -34,7 +38,7 @@ export default function GuestManager({ invitationSlug = sampleInvitation.slug })
       })
       .catch(() => {
         if (isMounted) {
-          setGuests(sampleInvitation.guests);
+          setGuests([]);
         }
       });
 
@@ -177,8 +181,8 @@ export default function GuestManager({ invitationSlug = sampleInvitation.slug })
             ? "Tamu berhasil diupdate."
             : "Tamu tersimpan ke Supabase."
           : editingSlug
-            ? "Tamu sample berhasil diupdate."
-            : "Tamu ditambahkan sementara. Supabase belum dikonfigurasi.",
+            ? "Tamu berhasil diupdate."
+            : "Tamu berhasil ditambahkan.",
       );
       resetForm();
     } catch (error) {
@@ -360,13 +364,32 @@ export default function GuestManager({ invitationSlug = sampleInvitation.slug })
       setSaveMessage(
         source === "supabase"
           ? `${uniqueRows.length} tamu berhasil diimport.`
-          : `${uniqueRows.length} tamu sample diimport sementara.`,
+          : `${uniqueRows.length} tamu berhasil diimport.`,
       );
     } catch (error) {
       setGuests(previousGuests);
       setSaveMessage(error.message || "Import tamu dibatalkan.");
     }
   };
+
+  if (!invitationSlug) {
+    return (
+      <motion.section
+        variants={fadeUp}
+        className="overflow-hidden rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-5 shadow-[var(--dash-shadow)]"
+      >
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
+          Guest Manager
+        </p>
+        <h2 className="mt-1 text-2xl font-semibold text-[var(--dash-ink)]">
+          Pilih order aktif dulu
+        </h2>
+        <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
+          Panel tamu hanya berjalan untuk satu invitation yang sedang dibuka.
+        </p>
+      </motion.section>
+    );
+  }
 
   return (
     <motion.section

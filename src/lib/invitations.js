@@ -1,11 +1,13 @@
-import { createServerSupabaseClient } from "./supabase/server";
-import { sampleInvitation } from "../data/sampleInvitation";
+import {
+  createServerSupabaseClient,
+  createServiceSupabaseClient,
+} from "./supabase/server";
 
 function sortByOrder(items = []) {
   return [...items].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 }
 
-export function mapSupabaseInvitation(row) {
+export function mapSupabaseInvitation(row, templateRow = null) {
   if (!row) {
     return null;
   }
@@ -14,6 +16,7 @@ export function mapSupabaseInvitation(row) {
     id: row.id,
     slug: row.slug,
     templateId: row.template_id,
+    designConfig: templateRow?.design_config || row.design_config || {},
     status: row.status,
     package: row.package,
     order: {
@@ -81,12 +84,34 @@ function hasSupabaseEnv() {
   );
 }
 
-export async function getInvitationBySlug(slug) {
-  if (!hasSupabaseEnv()) {
-    return sampleInvitation.slug === slug ? sampleInvitation : null;
+function hasServiceEnv() {
+  return Boolean(
+    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY,
+  );
+}
+
+async function getTemplateRowById(supabase, templateId) {
+  if (!templateId) {
+    return null;
   }
 
-  const supabase = createServerSupabaseClient();
+  const { data } = await supabase
+    .from("templates")
+    .select("template_id, design_config")
+    .eq("template_id", templateId)
+    .maybeSingle();
+
+  return data || null;
+}
+
+export async function getInvitationBySlug(slug) {
+  if (!hasSupabaseEnv() && !hasServiceEnv()) {
+    return null;
+  }
+
+  const supabase = hasServiceEnv()
+    ? createServiceSupabaseClient()
+    : createServerSupabaseClient();
 
   const { data, error } = await supabase
     .from("invitations")
@@ -104,14 +129,16 @@ export async function getInvitationBySlug(slug) {
     .single();
 
   if (error) {
-    return sampleInvitation.slug === slug ? sampleInvitation : null;
+    return null;
   }
 
   if (data.status !== "published") {
     return null;
   }
 
-  return mapSupabaseInvitation(data);
+  const templateRow = await getTemplateRowById(supabase, data.template_id);
+
+  return mapSupabaseInvitation(data, templateRow);
 }
 
 export async function getInvitationAndGuest(slug, guestSlug) {
@@ -126,15 +153,18 @@ export async function getInvitationAndGuest(slug, guestSlug) {
   return { invitation, guest };
 }
 
-export function mapInvitationListItem(row) {
+export function mapInvitationListItem(row, templateLookup = new Map()) {
+  const template = templateLookup.get(row.template_id);
+
   return {
     id: row.id,
     couple: `${row.groom_nickname || row.groom_name || "Mempelai"} & ${
       row.bride_nickname || row.bride_name || "Mempelai"
     }`,
     slug: row.slug,
-    template: row.template_id,
-    category: row.template_id,
+    templateId: row.template_id,
+    template: template?.name || row.template_id,
+    category: template?.category || row.template_id,
     status: row.status,
     orderStatus: row.order_status || "inquiry",
     paymentStatus: row.payment_status || "unpaid",

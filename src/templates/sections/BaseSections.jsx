@@ -2,15 +2,19 @@
 import { SectionFrame, SectionTitle, fadeUp, profileImageClass, profileNameClass } from "../utils/templateStyling";
 
 export function CoupleSection({ designConfig, couple, coupleConfig, profileImages }) {
+  const brideImage = profileImages?.bride || profileImages?.[1] || profileImages?.[0] || "/assets/catin_wanita.jpg";
+  const groomImage = profileImages?.groom || profileImages?.[2] || profileImages?.[1] || "/assets/catin_pria.jpg";
+  const profiles = [
+    { name: couple.brideName, image: brideImage, role: "Mempelai Wanita" },
+    { name: couple.groomName, image: groomImage, role: "Mempelai Pria" },
+  ].filter((profile) => profile.name);
+
   return (
     <SectionFrame section="couple" designConfig={designConfig} baseClassName="bg-[var(--color-surface)]">
       <div className="relative z-10 mx-auto max-w-6xl">
         <SectionTitle eyebrow="Mempelai" title={`${couple.groomName} & ${couple.brideName}`} />
         <div className="mt-12 grid gap-8 md:grid-cols-2">
-          {[
-            { name: couple.brideName, image: profileImages[1], role: "Mempelai Wanita" },
-            { name: couple.groomName, image: profileImages[2], role: "Mempelai Pria" },
-          ].map((profile) => (
+          {profiles.map((profile) => (
             <motion.article key={profile.name} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.25 }} variants={fadeUp} className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-7 text-center shadow-xl shadow-[var(--color-primary)]/8">
               {coupleConfig.photoEnabled ? <img src={profile.image} alt={profile.name} className={profileImageClass(coupleConfig)} /> : null}
               <h3 className={profileNameClass(coupleConfig)}>{profile.name}</h3>

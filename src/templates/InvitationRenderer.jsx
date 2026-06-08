@@ -1,13 +1,21 @@
 "use client";
 
 import React from "react";
-import { sampleInvitation } from "../data/sampleInvitation";
+import { emptyInvitation } from "../data/emptyInvitation";
 import UniversalTemplate from "./UniversalTemplate";
 
 export default function InvitationRenderer({
-  data = sampleInvitation,
+  data = emptyInvitation,
   guestName,
   guestSlug,
+  framedPreview = false,
 }) {
-  return <UniversalTemplate data={data} guestName={guestName} guestSlug={guestSlug} />;
+  return (
+    <UniversalTemplate
+      data={data}
+      guestName={guestName}
+      guestSlug={guestSlug}
+      framedPreview={framedPreview}
+    />
+  );
 }

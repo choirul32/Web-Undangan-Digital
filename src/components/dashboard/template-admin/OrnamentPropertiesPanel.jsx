@@ -3,7 +3,7 @@
 function MiniInput({ label, value, onChange, type = "text", step }) {
   return (
     <label className="block">
-      <span className="text-xs font-bold text-[var(--color-text)]/70">{label}</span>
+      <span className="text-[11px] font-bold text-[var(--color-text)]/70">{label}</span>
       <input
         type={type}
         step={step}
@@ -16,7 +16,7 @@ function MiniInput({ label, value, onChange, type = "text", step }) {
           }
           onChange(event.target.value);
         }}
-        className="mt-1.5 h-10 w-full rounded-lg border border-[var(--color-accent-pale)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
+        className="mt-1 h-8 w-full rounded-md border border-[var(--color-accent-pale)] bg-white px-2.5 text-xs font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
       />
     </label>
   );
@@ -34,49 +34,51 @@ export default function OrnamentPropertiesPanel({
   ornamentParallaxDirectionOptions,
 }) {
   const [showAllAssets, setShowAllAssets] = useState(false);
-
-  if (!selectedOrnament) {
-    return (
-      <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-6 text-center">
-        <p className="text-base font-black text-[var(--color-primary)]">Pilih atau tambah ornament dulu.</p>
-      </div>
-    );
-  }
-
   const parallaxNumeric = useMemo(() => {
+    if (!selectedOrnament) return 0;
     if (typeof selectedOrnament.parallax === "number") return selectedOrnament.parallax;
     if (selectedOrnament.parallax === "slow") return 0.08;
     if (selectedOrnament.parallax === "medium") return 0.16;
     if (selectedOrnament.parallax === "fast") return 0.24;
     return 0;
-  }, [selectedOrnament.parallax]);
+  }, [selectedOrnament]);
+
+  if (!selectedOrnament) {
+    return (
+      <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-4 text-center xl:sticky xl:top-4">
+        <p className="text-sm font-black text-[var(--color-primary)]">Pilih atau tambah ornament dulu.</p>
+      </div>
+    );
+  }
 
   const displayedAssets = showAllAssets
     ? dynamicOrnamentAssets
     : dynamicOrnamentAssets.slice(0, 6);
 
   return (
-    <div className="rounded-[10px] border border-[var(--color-accent-pale)] bg-white p-4">
-      <p className="mb-3 text-sm font-black text-[var(--color-text)]">Properti Ornamen</p>
+    <div className="rounded-[10px] border border-[var(--color-accent-pale)] bg-white p-3 xl:sticky xl:top-4 xl:max-h-[calc(100vh-6.5rem)] xl:overflow-y-auto">
+      <div className="sticky -top-3 z-10 -mx-3 -mt-3 mb-3 border-b border-[var(--color-accent-pale)] bg-white px-3 py-2.5">
+        <p className="text-xs font-black text-[var(--color-text)]">Properti Ornamen</p>
+      </div>
 
-      <div className="grid gap-3 md:grid-cols-[1fr_120px]">
+      <div className="grid gap-2 md:grid-cols-[1fr_112px]">
         <label className="block">
-          <span className="text-xs font-bold text-[var(--color-text)]/70">ID Ornamen</span>
+          <span className="text-[11px] font-bold text-[var(--color-text)]/70">ID Ornamen</span>
           <input
             value={selectedOrnament.id || ""}
             onChange={(e) => updateOrnament("id", e.target.value)}
-            className="mt-1.5 h-10 w-full rounded-lg border border-[var(--color-accent-pale)] bg-white px-3 text-sm font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
+            className="mt-1 h-8 w-full rounded-md border border-[var(--color-accent-pale)] bg-white px-2.5 text-xs font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
           />
         </label>
         <div>
-          <span className="text-xs font-bold text-[var(--color-text)]/70">Slot Posisi</span>
-          <div className="mt-1.5 grid grid-cols-3 gap-1 rounded-lg border border-[var(--color-accent-pale)] p-1">
+          <span className="text-[11px] font-bold text-[var(--color-text)]/70">Slot Posisi</span>
+          <div className="mt-1 grid grid-cols-3 gap-1 rounded-md border border-[var(--color-accent-pale)] p-1">
             {["top-left", "center-top", "top-right", "side-left", "center", "side-right", "bottom-left", "center-bottom", "bottom-right"].map((slot) => (
               <button
                 key={slot}
                 type="button"
                 onClick={() => updateOrnament("slot", slot)}
-                className={`h-6 rounded text-[10px] font-bold ${
+                className={`h-5 rounded text-[9px] font-bold ${
                   selectedOrnament.slot === slot
                     ? "bg-[var(--color-accent)] text-white"
                     : "bg-[var(--color-bg)] text-[var(--color-text)]/70"
@@ -94,7 +96,7 @@ export default function OrnamentPropertiesPanel({
         </div>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3">
+      <div className="mt-3 grid grid-cols-2 gap-2">
         <MiniInput
           label="Lebar (W)"
           type="number"
@@ -128,15 +130,15 @@ export default function OrnamentPropertiesPanel({
         <MiniInput
           label="Z-index"
           type="number"
-          value={selectedOrnament.zIndex || 1}
+          value={selectedOrnament.zIndex ?? 0}
           onChange={(v) => updateOrnament("zIndex", v)}
         />
       </div>
 
-      <div className="mt-3">
-        <span className="text-xs font-bold text-[var(--color-text)]/70">Opacity (%)</span>
-        <div className="mt-1.5 flex items-center gap-2">
-          <span className="w-8 text-sm font-bold text-[var(--color-text)]">
+      <div className="mt-2.5">
+        <span className="text-[11px] font-bold text-[var(--color-text)]/70">Opacity (%)</span>
+        <div className="mt-1 flex items-center gap-2">
+          <span className="w-7 text-xs font-bold text-[var(--color-text)]">
             {Math.round((selectedOrnament.opacity ?? 1) * 100)}
           </span>
           <input
@@ -150,15 +152,15 @@ export default function OrnamentPropertiesPanel({
         </div>
       </div>
 
-      <div className="mt-4 border-t border-[var(--color-accent-pale)] pt-4">
-        <p className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">Animasi</p>
-        <div className="mt-2 grid grid-cols-2 gap-3">
+      <div className="mt-3 border-t border-[var(--color-accent-pale)] pt-3">
+        <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[var(--color-text)]">Animasi</p>
+        <div className="mt-2 grid grid-cols-2 gap-2">
           <label>
-            <span className="text-xs font-bold text-[var(--color-text)]/70">Entrance</span>
+            <span className="text-[11px] font-bold text-[var(--color-text)]/70">Entrance</span>
             <select
               value={selectedOrnament.entrance || "none"}
               onChange={(e) => updateOrnament("entrance", e.target.value)}
-              className="mt-1.5 h-10 w-full rounded-lg border border-[var(--color-accent-pale)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
+              className="mt-1 h-8 w-full rounded-md border border-[var(--color-accent-pale)] bg-white px-2 text-xs font-semibold text-[var(--color-text)]"
             >
               {ornamentEntranceOptions.map((v) => (
                 <option key={v} value={v}>
@@ -168,11 +170,11 @@ export default function OrnamentPropertiesPanel({
             </select>
           </label>
           <label>
-            <span className="text-xs font-bold text-[var(--color-text)]/70">Loop Mode</span>
+            <span className="text-[11px] font-bold text-[var(--color-text)]/70">Loop Mode</span>
             <select
               value={selectedOrnament.loopMode || "infinite"}
               onChange={(e) => updateOrnament("loopMode", e.target.value)}
-              className="mt-1.5 h-10 w-full rounded-lg border border-[var(--color-accent-pale)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
+              className="mt-1 h-8 w-full rounded-md border border-[var(--color-accent-pale)] bg-white px-2 text-xs font-semibold text-[var(--color-text)]"
             >
               {ornamentLoopModeOptions.map((v) => (
                 <option key={v} value={v}>
@@ -182,11 +184,11 @@ export default function OrnamentPropertiesPanel({
             </select>
           </label>
           <label>
-            <span className="text-xs font-bold text-[var(--color-text)]/70">Exit Animation</span>
+            <span className="text-[11px] font-bold text-[var(--color-text)]/70">Exit Animation</span>
             <select
               value={selectedOrnament.exitAnimation || "fade-out"}
               onChange={(e) => updateOrnament("exitAnimation", e.target.value)}
-              className="mt-1.5 h-10 w-full rounded-lg border border-[var(--color-accent-pale)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
+              className="mt-1 h-8 w-full rounded-md border border-[var(--color-accent-pale)] bg-white px-2 text-xs font-semibold text-[var(--color-text)]"
             >
               {ornamentExitAnimationOptions.map((v) => (
                 <option key={v} value={v}>
@@ -210,11 +212,11 @@ export default function OrnamentPropertiesPanel({
             onChange={(v) => updateOrnament("entranceDelay", Math.max(0, Number(v || 0)))}
           />
           <label>
-            <span className="text-xs font-bold text-[var(--color-text)]/70">Easing</span>
+            <span className="text-[11px] font-bold text-[var(--color-text)]/70">Easing</span>
             <select
               value={selectedOrnament.easing || "ease-out"}
               onChange={(e) => updateOrnament("easing", e.target.value)}
-              className="mt-1.5 h-10 w-full rounded-lg border border-[var(--color-accent-pale)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
+              className="mt-1 h-8 w-full rounded-md border border-[var(--color-accent-pale)] bg-white px-2 text-xs font-semibold text-[var(--color-text)]"
             >
               <option value="linear">Linear</option>
               <option value="ease-in-out">Ease In Out</option>
@@ -225,10 +227,10 @@ export default function OrnamentPropertiesPanel({
         </div>
       </div>
 
-      <div className="mt-4 border-t border-[var(--color-accent-pale)] pt-4">
-        <p className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">Efek</p>
-        <div className="mt-2 grid grid-cols-2 gap-3">
-          <label className="flex h-10 items-center justify-between rounded-lg border border-[var(--color-accent-pale)] px-3 text-sm font-semibold text-[var(--color-text)]">
+      <div className="mt-3 border-t border-[var(--color-accent-pale)] pt-3">
+        <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[var(--color-text)]">Efek</p>
+        <div className="mt-2 grid grid-cols-2 gap-2">
+          <label className="flex h-8 items-center justify-between rounded-md border border-[var(--color-accent-pale)] px-2.5 text-xs font-semibold text-[var(--color-text)]">
             Flip
             <input
               type="checkbox"
@@ -236,7 +238,7 @@ export default function OrnamentPropertiesPanel({
               onChange={(e) => updateOrnament("flip", e.target.checked)}
             />
           </label>
-          <label className="flex h-10 items-center justify-between rounded-lg border border-[var(--color-accent-pale)] px-3 text-sm font-semibold text-[var(--color-text)]">
+          <label className="flex h-8 items-center justify-between rounded-md border border-[var(--color-accent-pale)] px-2.5 text-xs font-semibold text-[var(--color-text)]">
             Mirror
             <input
               type="checkbox"
@@ -252,11 +254,11 @@ export default function OrnamentPropertiesPanel({
             onChange={(v) => updateOrnament("parallax", Math.max(0, Number(v || 0)))}
           />
           <label>
-            <span className="text-xs font-bold text-[var(--color-text)]/70">Arah</span>
+            <span className="text-[11px] font-bold text-[var(--color-text)]/70">Arah</span>
             <select
               value={selectedOrnament.parallaxDirection || "vertical"}
               onChange={(e) => updateOrnament("parallaxDirection", e.target.value)}
-              className="mt-1.5 h-10 w-full rounded-lg border border-[var(--color-accent-pale)] bg-white px-3 text-sm font-semibold text-[var(--color-text)]"
+              className="mt-1 h-8 w-full rounded-md border border-[var(--color-accent-pale)] bg-white px-2 text-xs font-semibold text-[var(--color-text)]"
             >
               {ornamentParallaxDirectionOptions.map((v) => (
                 <option key={v} value={v}>
@@ -268,25 +270,25 @@ export default function OrnamentPropertiesPanel({
         </div>
       </div>
 
-      <div className="mt-4 border-t border-[var(--color-accent-pale)] pt-4">
-        <p className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">Aset Ornamen</p>
+      <div className="mt-3 border-t border-[var(--color-accent-pale)] pt-3">
+        <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[var(--color-text)]">Aset Ornamen</p>
         <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-          <label className="flex min-h-[96px] cursor-pointer flex-col items-center justify-center rounded-lg border border-dashed border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-3 py-2 text-center">
+          <label className="flex min-h-[76px] cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-2 py-2 text-center">
             <input
               type="file"
               accept="image/*"
               onChange={(event) => updateSelectedOrnamentFile(event.target.files?.[0])}
               className="hidden"
             />
-            <span className="text-xs font-bold text-[var(--color-text)]">Drag & drop file di sini</span>
-            <span className="mt-1 text-[11px] font-medium text-[var(--color-text)]/65">
+            <span className="text-[11px] font-bold text-[var(--color-text)]">Drag & drop file di sini</span>
+            <span className="mt-1 text-[10px] font-medium text-[var(--color-text)]/65">
               atau klik untuk upload PNG, WEBP, SVG
             </span>
           </label>
           <button
             type="button"
             onClick={() => setShowAllAssets((current) => !current)}
-            className="flex min-h-[96px] w-16 flex-col items-center justify-center rounded-lg border border-[var(--color-accent-pale)] bg-white text-[var(--color-text)] hover:bg-[var(--color-bg)]"
+            className="flex min-h-[76px] w-14 flex-col items-center justify-center rounded-md border border-[var(--color-accent-pale)] bg-white text-[var(--color-text)] hover:bg-[var(--color-bg)]"
           >
             <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
               <rect x="3" y="3" width="5.5" height="5.5" rx="1" />

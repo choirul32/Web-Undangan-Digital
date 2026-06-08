@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.overflow-anchor-none {
+  overflow-anchor: none;
+}
+
 :root {
   --color-primary: #0f1f3d;
   --color-primary-dark: #071022;
@@ -268,6 +272,131 @@ body {
 
 .dashboard-ui * {
   letter-spacing: -0.35px;
+}
+
+.dashboard-ui select {
+  appearance: none;
+  -webkit-appearance: none;
+  border-radius: 16px;
+  background-color: #ffffff;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--dash-muted) 50%),
+    linear-gradient(135deg, var(--dash-muted) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) calc(50% - 2px),
+    calc(100% - 13px) calc(50% - 2px);
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 2.75rem;
+}
+
+.dashboard-ui select:hover {
+  background-color: var(--dash-canvas);
+}
+
+.dashboard-ui select:focus {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
+}
+
+.dashboard-ui select option {
+  background: #ffffff;
+  color: var(--dash-ink);
+}
+
+/* The framed desktop preview must behave like its 412px Samsung A54 canvas,
+   instead of inheriting responsive breakpoints from the desktop browser. */
+.framed-preview-mobile [data-preview-section] {
+  padding-left: 1.5rem !important;
+  padding-right: 1.5rem !important;
+  padding-top: 4rem !important;
+  padding-bottom: 4rem !important;
+}
+
+.framed-preview-mobile .template-section-title-heading {
+  font-size: 1.75rem !important;
+  line-height: 1.1 !important;
+}
+
+.framed-preview-mobile .template-section-title p,
+.framed-preview-mobile #section-rsvp > div > p {
+  font-size: 0.72rem !important;
+  letter-spacing: 0.14em !important;
+}
+
+.framed-preview-mobile .template-section-title + *,
+.framed-preview-mobile .template-section-title ~ .mt-10,
+.framed-preview-mobile .template-section-title ~ .mt-12 {
+  margin-top: 1.75rem !important;
+}
+
+.framed-preview-mobile #section-couple article,
+.framed-preview-mobile #section-gift [class*="shadow-lg"],
+.framed-preview-mobile #section-doa-ucapan [class*="shadow-lg"],
+.framed-preview-mobile #section-story [class*="shadow-lg"],
+.framed-preview-mobile #section-acara article {
+  padding: 1.25rem !important;
+}
+
+.framed-preview-mobile #section-couple article img {
+  width: 8.5rem !important;
+}
+
+.framed-preview-mobile #section-couple h3,
+.framed-preview-mobile #section-acara h3,
+.framed-preview-mobile #section-story h3,
+.framed-preview-mobile #section-gift p:nth-child(2) {
+  font-size: 1.45rem !important;
+  line-height: 1.15 !important;
+}
+
+.framed-preview-mobile #section-couple article p,
+.framed-preview-mobile #section-acara article p,
+.framed-preview-mobile #section-story article p,
+.framed-preview-mobile #section-gift p,
+.framed-preview-mobile #section-doa-ucapan p,
+.framed-preview-mobile .template-section-title-desc {
+  font-size: 0.9rem !important;
+  line-height: 1.55 !important;
+}
+
+.framed-preview-mobile #section-acara article a,
+.framed-preview-mobile #section-rsvp button {
+  font-size: 0.9rem !important;
+  padding: 0.75rem 1rem !important;
+}
+
+.framed-preview-mobile #section-countdown .grid {
+  gap: 0.5rem !important;
+}
+
+.framed-preview-mobile #section-countdown .grid > * {
+  padding: 0.85rem 0.45rem !important;
+}
+
+.framed-preview-mobile #section-countdown .grid p:first-child {
+  font-size: 1.35rem !important;
+}
+
+.framed-preview-mobile #section-countdown .grid p:last-child {
+  font-size: 0.62rem !important;
+  letter-spacing: 0.08em !important;
+}
+
+.framed-preview-mobile #section-couple .grid,
+.framed-preview-mobile #section-acara .grid,
+.framed-preview-mobile #section-story .grid,
+.framed-preview-mobile #section-gallery .grid,
+.framed-preview-mobile #section-gift .grid,
+.framed-preview-mobile #section-doa-ucapan .grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+
+.framed-preview-mobile .template-music-player.right-6 {
+  right: max(1.5rem, calc((100vw - 412px) / 2 + 1.5rem)) !important;
+}
+
+.framed-preview-mobile .template-music-player.left-6 {
+  left: max(1.5rem, calc((100vw - 412px) / 2 + 1.5rem)) !important;
 }
 
 .nusantara-pattern {

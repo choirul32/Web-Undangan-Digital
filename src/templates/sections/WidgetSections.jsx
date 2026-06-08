@@ -68,7 +68,7 @@ export function RsvpSection({ designConfig, invitation, personalizedGuestName, g
     <SectionFrame section="rsvp" designConfig={designConfig} applySectionStyle={false} baseClassName="bg-[var(--color-primary)] text-white">
       <div className="relative z-10 mx-auto max-w-3xl text-center">
         <p className="text-sm font-black uppercase tracking-[0.18em] text-[var(--color-accent-soft)]">RSVP</p>
-        <h2 className="mt-3 text-4xl font-black leading-tight text-white sm:text-5xl">Konfirmasi kehadiran</h2>
+        <h2 className="template-section-title-heading mt-3 text-4xl font-black leading-tight text-white sm:text-5xl">Konfirmasi kehadiran</h2>
         <RSVPForm invitationSlug={invitation.slug} guestSlug={personalizedGuestName ? guestSlug : undefined} guestName={personalizedGuestName} />
       </div>
     </SectionFrame>
