@@ -33,8 +33,10 @@ export function mapSupabaseInvitation(row, templateRow = null) {
     couple: {
       groomName: row.groom_name,
       groomNickname: row.groom_nickname,
+      groomParents: row.groom_parents,
       brideName: row.bride_name,
       brideNickname: row.bride_nickname,
+      brideParents: row.bride_parents,
       quote: row.quote,
     },
     events: sortByOrder(row.invitation_events || []).map((event) => ({
@@ -196,8 +198,10 @@ export function formPayloadToInvitationRow(payload) {
         : null,
     groom_name: payload.groomName,
     groom_nickname: payload.groomNickname,
+    groom_parents: payload.groomParents || null,
     bride_name: payload.brideName,
     bride_nickname: payload.brideNickname,
+    bride_parents: payload.brideParents || null,
     quote: payload.quote,
     features: {
       rsvp: Boolean(payload.rsvp),

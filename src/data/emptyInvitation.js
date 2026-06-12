@@ -7,8 +7,10 @@ export const emptyInvitation = {
   couple: {
     groomName: "",
     groomNickname: "",
+    groomParents: "",
     brideName: "",
     brideNickname: "",
+    brideParents: "",
     quote: "",
   },
   events: [],

@@ -8,8 +8,10 @@ export const previewInvitation = {
   couple: {
     groomName: "Dimas Pratama",
     groomNickname: "Dimas",
+    groomParents: "Bapak Ahmad Pratama & Ibu Siti Aminah",
     brideName: "Salsa Kirana",
     brideNickname: "Salsa",
+    brideParents: "Bapak Budi Santoso & Ibu Dewi Lestari",
     quote: "Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu pasangan hidup.",
   },
   events: [

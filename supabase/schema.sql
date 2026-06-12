@@ -17,8 +17,10 @@ create table if not exists public.invitations (
   paid_at timestamptz,
   groom_name text,
   groom_nickname text,
+  groom_parents text,
   bride_name text,
   bride_nickname text,
+  bride_parents text,
   quote text,
   features jsonb not null default '{}'::jsonb,
   theme_settings jsonb not null default '{}'::jsonb,
@@ -37,7 +39,9 @@ alter table public.invitations
   add column if not exists order_deadline date,
   add column if not exists concept_notes text,
   add column if not exists payment_notes text,
-  add column if not exists paid_at timestamptz;
+  add column if not exists paid_at timestamptz,
+  add column if not exists groom_parents text,
+  add column if not exists bride_parents text;
 
 create table if not exists public.invitation_events (
   id uuid primary key default gen_random_uuid(),

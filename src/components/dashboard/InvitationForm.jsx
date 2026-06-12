@@ -86,9 +86,13 @@ function invitationToForm(invitation, templateOptions = []) {
     groomName: invitation?.couple?.groomName || initialInvitationForm.groomName,
     groomNickname:
       invitation?.couple?.groomNickname || initialInvitationForm.groomNickname,
+    groomParents:
+      invitation?.couple?.groomParents || initialInvitationForm.groomParents,
     brideName: invitation?.couple?.brideName || initialInvitationForm.brideName,
     brideNickname:
       invitation?.couple?.brideNickname || initialInvitationForm.brideNickname,
+    brideParents:
+      invitation?.couple?.brideParents || initialInvitationForm.brideParents,
     quote: invitation?.couple?.quote || initialInvitationForm.quote,
     rsvp: Boolean(invitation?.features?.rsvp ?? initialInvitationForm.rsvp),
     gift: Boolean(invitation?.features?.gift ?? initialInvitationForm.gift),
@@ -512,31 +516,76 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
 
     if (activeStep === 2) {
       return (
-        <div className="grid gap-5 md:grid-cols-2">
-          <Field label="Nama Mempelai Pria">
-            <TextInput
-              value={form.groomName}
-              onChange={(event) => updateForm("groomName", event.target.value)}
-            />
-          </Field>
-          <Field label="Panggilan Pria">
-            <TextInput
-              value={form.groomNickname}
-              onChange={(event) => updateForm("groomNickname", event.target.value)}
-            />
-          </Field>
-          <Field label="Nama Mempelai Wanita">
-            <TextInput
-              value={form.brideName}
-              onChange={(event) => updateForm("brideName", event.target.value)}
-            />
-          </Field>
-          <Field label="Panggilan Wanita">
-            <TextInput
-              value={form.brideNickname}
-              onChange={(event) => updateForm("brideNickname", event.target.value)}
-            />
-          </Field>
+        <div className="grid gap-5">
+          <div className="grid gap-5 lg:grid-cols-2">
+            <section className={mutedPanelClass}>
+              <div className="mb-5 border-b border-[var(--dash-border)] pb-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
+                  Data Mempelai
+                </p>
+                <h3 className="mt-1 text-lg font-semibold text-[var(--dash-ink)]">
+                  Mempelai Pria
+                </h3>
+              </div>
+              <div className="grid gap-5">
+                <Field label="Nama Lengkap">
+                  <TextInput
+                    value={form.groomName}
+                    onChange={(event) => updateForm("groomName", event.target.value)}
+                    placeholder="Nama lengkap mempelai pria"
+                  />
+                </Field>
+                <Field label="Nama Panggilan">
+                  <TextInput
+                    value={form.groomNickname}
+                    onChange={(event) => updateForm("groomNickname", event.target.value)}
+                    placeholder="Nama panggilan"
+                  />
+                </Field>
+                <Field label="Nama Orang Tua">
+                  <TextInput
+                    value={form.groomParents}
+                    onChange={(event) => updateForm("groomParents", event.target.value)}
+                    placeholder="Bapak ... & Ibu ..."
+                  />
+                </Field>
+              </div>
+            </section>
+
+            <section className={mutedPanelClass}>
+              <div className="mb-5 border-b border-[var(--dash-border)] pb-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
+                  Data Mempelai
+                </p>
+                <h3 className="mt-1 text-lg font-semibold text-[var(--dash-ink)]">
+                  Mempelai Wanita
+                </h3>
+              </div>
+              <div className="grid gap-5">
+                <Field label="Nama Lengkap">
+                  <TextInput
+                    value={form.brideName}
+                    onChange={(event) => updateForm("brideName", event.target.value)}
+                    placeholder="Nama lengkap mempelai wanita"
+                  />
+                </Field>
+                <Field label="Nama Panggilan">
+                  <TextInput
+                    value={form.brideNickname}
+                    onChange={(event) => updateForm("brideNickname", event.target.value)}
+                    placeholder="Nama panggilan"
+                  />
+                </Field>
+                <Field label="Nama Orang Tua">
+                  <TextInput
+                    value={form.brideParents}
+                    onChange={(event) => updateForm("brideParents", event.target.value)}
+                    placeholder="Bapak ... & Ibu ..."
+                  />
+                </Field>
+              </div>
+            </section>
+          </div>
           <div className="md:col-span-2">
             <Field label="Quote / Doa Pembuka">
               <TextAreaInput

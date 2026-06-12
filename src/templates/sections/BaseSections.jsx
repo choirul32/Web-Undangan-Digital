@@ -5,8 +5,16 @@ export function CoupleSection({ designConfig, couple, coupleConfig, profileImage
   const brideImage = profileImages?.bride || profileImages?.[1] || profileImages?.[0] || "/assets/catin_wanita.jpg";
   const groomImage = profileImages?.groom || profileImages?.[2] || profileImages?.[1] || "/assets/catin_pria.jpg";
   const profiles = [
-    { name: couple.brideName, image: brideImage, role: "Mempelai Wanita" },
-    { name: couple.groomName, image: groomImage, role: "Mempelai Pria" },
+    {
+      name: couple.brideName,
+      image: brideImage,
+      parentText: couple.brideParents ? `Putri dari ${couple.brideParents}` : "",
+    },
+    {
+      name: couple.groomName,
+      image: groomImage,
+      parentText: couple.groomParents ? `Putra dari ${couple.groomParents}` : "",
+    },
   ].filter((profile) => profile.name);
 
   return (
@@ -18,7 +26,7 @@ export function CoupleSection({ designConfig, couple, coupleConfig, profileImage
             <motion.article key={profile.name} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.25 }} variants={fadeUp} className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-7 text-center shadow-xl shadow-[var(--color-primary)]/8">
               {coupleConfig.photoEnabled ? <img src={profile.image} alt={profile.name} className={profileImageClass(coupleConfig)} /> : null}
               <h3 className={profileNameClass(coupleConfig)}>{profile.name}</h3>
-              {coupleConfig.parentTextEnabled ? <p className="mt-3 text-base font-semibold text-[var(--color-text)]">{profile.role}</p> : null}
+              {coupleConfig.parentTextEnabled && profile.parentText ? <p className="mt-3 text-base font-semibold text-[var(--color-text)]">{profile.parentText}</p> : null}
               {coupleConfig.instagramEnabled ? <a className="mt-5 inline-flex rounded-2xl bg-[var(--color-accent)] px-5 py-3 text-sm font-black text-[var(--color-primary)]">Instagram</a> : null}
             </motion.article>
           ))}

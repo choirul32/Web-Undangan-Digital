@@ -17,7 +17,7 @@ export default async function PublicInvitationPage({ params }) {
 
   return (
     <div className="min-h-screen bg-[#e8edf2] lg:px-8">
-      <div className="mx-auto min-h-screen w-full overflow-hidden bg-[var(--color-bg)] lg:min-h-[915px] lg:max-w-[412px] lg:rounded-[28px] lg:border lg:border-black/10 lg:shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
+      <div className="mx-auto min-h-screen w-full overflow-hidden bg-[var(--color-bg)] lg:min-h-[915px] lg:max-w-[412px] lg:border-x lg:border-black/10 lg:shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
         <InvitationRenderer data={invitation} framedPreview />
       </div>
     </div>

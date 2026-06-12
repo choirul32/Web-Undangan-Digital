@@ -637,7 +637,7 @@ function TemplateAdminPage() {
         ? `&previewGuest=${encodeURIComponent("Bapak/Ibu Preview")}`
         : "";
 
-    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&focusSection=${encodeURIComponent(previewFocusSection)}&previewTick=${templatePreviewTick}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
+    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&embeddedEditorPreview=1&focusSection=${encodeURIComponent(previewFocusSection)}&previewTick=${templatePreviewTick}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
   }, [
     previewDataMode,
     previewFocusSection,
@@ -645,7 +645,10 @@ function TemplateAdminPage() {
     templateDraft?.id,
     templatePreviewTick,
   ]);
-  const fullTemplatePreviewSrc = `${templatePreviewSrc}&viewport=${encodeURIComponent(previewViewport)}`;
+  const fullTemplatePreviewSrc = `${templatePreviewSrc.replace(
+    "&embeddedEditorPreview=1",
+    "",
+  )}&viewport=${encodeURIComponent(previewViewport)}`;
   const ornamentCanvasPreviewSrc = `${templatePreviewSrc}&previewSectionOnly=1`;
   const imageGenerationPrompt = useMemo(() => {
     const selectedConcept =
@@ -692,7 +695,7 @@ function TemplateAdminPage() {
       previewGuestMode === "withGuest"
         ? `&previewGuest=${encodeURIComponent("Bapak/Ibu Preview")}`
         : "";
-    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&focusSection=home&previewSectionOnly=1&previewTick=${templatePreviewTick}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
+    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&embeddedEditorPreview=1&focusSection=home&previewSectionOnly=1&previewTick=${templatePreviewTick}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
   }, [previewDataMode, previewGuestMode, templateDraft?.id, templatePreviewTick]);
   const editorPreviewSnapshot = useMemo(
     () =>

@@ -16,10 +16,11 @@ export default function PreviewPageClient() {
   const slug = searchParams.get("slug");
   const templateId = searchParams.get("templateId");
   const editorPreview = searchParams.get("editorPreview") === "1";
+  const embeddedEditorPreview = searchParams.get("embeddedEditorPreview") === "1";
   const previewSectionOnly = searchParams.get("previewSectionOnly") === "1";
   const previewGuest = searchParams.get("previewGuest") || "";
   const previewDataMode = searchParams.get("previewDataMode") || "filled";
-  const framedDesktopPreview = !editorPreview && !previewSectionOnly;
+  const framedDesktopPreview = !embeddedEditorPreview && !previewSectionOnly;
   const [data, setData] = useState(() => (
     !slug && previewDataMode !== "empty" ? previewInvitation : emptyInvitation
   ));
@@ -102,8 +103,10 @@ export default function PreviewPageClient() {
             ...nextData.couple,
             groomName: "",
             groomNickname: "",
+            groomParents: "",
             brideName: "",
             brideNickname: "",
+            brideParents: "",
           },
           events: [],
           story: [],
@@ -178,7 +181,7 @@ export default function PreviewPageClient() {
       <div
         className={
           framedDesktopPreview
-            ? "mx-auto min-h-screen w-full overflow-hidden bg-[var(--color-bg)] lg:min-h-[915px] lg:max-w-[412px] lg:rounded-[28px] lg:border lg:border-black/10 lg:shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
+            ? "mx-auto min-h-screen w-full overflow-hidden bg-[var(--color-bg)] lg:min-h-[915px] lg:max-w-[412px] lg:border-x lg:border-black/10 lg:shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
             : ""
         }
       >
