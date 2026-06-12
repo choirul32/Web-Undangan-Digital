@@ -34,10 +34,22 @@ export default function PreviewPageClient() {
 
       if (slug) {
         try {
-          const response = await fetch(`/api/invitations/${encodeURIComponent(slug)}`);
-          const result = await response.json();
-          if (response.ok && result.data) {
-            draft = result.data;
+          const adminResponse = await fetch(
+            `/api/invitations/${encodeURIComponent(slug)}`,
+          );
+          const adminResult = await adminResponse.json();
+
+          if (adminResponse.ok && adminResult.data) {
+            draft = adminResult.data;
+          } else {
+            const publicResponse = await fetch(
+              `/api/public/invitations/${encodeURIComponent(slug)}`,
+            );
+            const publicResult = await publicResponse.json();
+
+            if (publicResponse.ok && publicResult.data) {
+              draft = publicResult.data;
+            }
           }
         } catch {
           // Keep the blank draft if slug preview API is unavailable.
