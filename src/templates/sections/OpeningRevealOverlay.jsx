@@ -1,7 +1,9 @@
-﻿import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import OpeningSequence, { OpeningSequenceAsset, OpeningSequenceAtmosphere } from "../components/OpeningSequence";
 import { revealExitMotion } from "../utils/templateStyling";
+import OrnamentLayer from "../components/OrnamentLayer";
+import { getSectionOrnaments } from "../designConfigs";
 
 export default function OpeningRevealOverlay({
   config,
@@ -11,8 +13,22 @@ export default function OpeningRevealOverlay({
   guestName,
   onOpen,
   framedPreview = false,
+  designConfig,
 }) {
   const [isOpening, setIsOpening] = useState(false);
+  const [isNarrowViewport, setIsNarrowViewport] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const media = window.matchMedia("(max-width: 480px)");
+    const updateViewportState = () => setIsNarrowViewport(media.matches);
+    updateViewportState();
+    media.addEventListener("change", updateViewportState);
+
+    return () => media.removeEventListener("change", updateViewportState);
+  }, []);
+
   if (!config.enabled) return null;
 
   const animation = config.animation || "fade";
@@ -26,7 +42,7 @@ export default function OpeningRevealOverlay({
   const panelImage = backgroundImage || (config.coverImageEnabled ? revealCoverImage : "");
   const ambientBackgroundImage = backgroundImage || (!isSplitAnimation && config.coverImageEnabled ? revealCoverImage : "");
   const frameClass = animation === "gate" ? "border-x-[18px] border-[var(--color-accent)]/45" : animation === "paper" ? "bg-[var(--color-surface)]/88 backdrop-blur-sm" : "";
-  const compactMode = framedPreview;
+  const compactMode = framedPreview || isNarrowViewport;
   // Opening = photo-forward "sampul": full-bleed cover with a dark scrim and light
   // text. Reserved for non-split, non-paper animations (those keep their panel /
   // card treatment so text stays readable).
@@ -97,6 +113,7 @@ export default function OpeningRevealOverlay({
           <div className="absolute inset-0 z-[1] bg-[var(--color-bg)]/70" />
         </>
       )}
+      <OrnamentLayer ornaments={getSectionOrnaments(designConfig, "opening")} />
       <OpeningSequenceAsset asset={config.asset} isOpening={isOpening} onSkip={handleOpen} />
       <OpeningSequenceAtmosphere config={config} isOpening={isOpening} />
       <OpeningSequence config={config} isOpening={isOpening} className={`relative z-10 mx-auto w-full ${contentWidthClass} ${contentLayoutClass} ${contentClass}`}>
@@ -114,4 +131,3 @@ export default function OpeningRevealOverlay({
     </motion.div>
   );
 }
-

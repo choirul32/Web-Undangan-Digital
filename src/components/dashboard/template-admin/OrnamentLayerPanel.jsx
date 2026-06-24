@@ -177,7 +177,7 @@ export default function OrnamentLayerPanel({
             onClick={() => reorderSelectedOrnament("front")}
           >
             <svg viewBox="0 0 20 20" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m6 7 4 4 4-4" /><path d="m6 11 4 4 4-4" /></svg>
-            Atur Urutan
+            Ke Depan
           </DashboardButton>
         </div>
       </div>

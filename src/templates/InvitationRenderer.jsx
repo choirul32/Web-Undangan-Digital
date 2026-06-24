@@ -11,6 +11,9 @@ export default function InvitationRenderer({
   framedPreview = false,
   previewOpening = false,
   previewMode = false,
+  previewSectionOnly = false,
+  previewFocusSection = null,
+  disableOpeningOverlay = false,
 }) {
   return (
     <UniversalTemplate
@@ -20,6 +23,9 @@ export default function InvitationRenderer({
       framedPreview={framedPreview}
       previewOpening={previewOpening}
       previewMode={previewMode}
+      previewSectionOnly={previewSectionOnly}
+      previewFocusSection={previewFocusSection}
+      disableOpeningOverlay={disableOpeningOverlay}
     />
   );
 }

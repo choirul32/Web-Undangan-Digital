@@ -22,9 +22,37 @@ function MiniInput({ label, value, onChange, type = "text", step }) {
   );
 }
 
+const ornamentLayerPresets = [
+  {
+    id: "behind",
+    label: "Belakang konten",
+    description: "Untuk tekstur, frame, atau ornamen dekoratif yang tidak boleh menutup teks.",
+    zIndex: -1,
+  },
+  {
+    id: "front",
+    label: "Depan konten",
+    description: "Untuk ornamen sudut atau aksen yang boleh tampil di atas isi section.",
+    zIndex: 1,
+  },
+  {
+    id: "top",
+    label: "Paling depan",
+    description: "Untuk aksen utama yang sengaja tampil paling atas.",
+    zIndex: 10,
+  },
+];
+
+function ornamentLayerPresetId(zIndex = 0) {
+  if (Number(zIndex) < 0) return "behind";
+  if (Number(zIndex) >= 10) return "top";
+  return "front";
+}
+
 export default function OrnamentPropertiesPanel({
   selectedOrnament,
   updateOrnament,
+  reorderSelectedOrnament,
   updateSelectedOrnamentFile,
   dynamicOrnamentAssets,
   applyOrnamentAsset,
@@ -54,6 +82,8 @@ export default function OrnamentPropertiesPanel({
   const displayedAssets = showAllAssets
     ? dynamicOrnamentAssets
     : dynamicOrnamentAssets.slice(0, 6);
+  const activeLayerPreset = ornamentLayerPresetId(selectedOrnament.zIndex ?? 0);
+  const activeLayer = ornamentLayerPresets.find((preset) => preset.id === activeLayerPreset);
 
   return (
     <div className="rounded-[10px] border border-[var(--color-accent-pale)] bg-white p-3 xl:sticky xl:top-4 xl:max-h-[calc(100vh-6.5rem)] xl:overflow-y-auto">
@@ -127,12 +157,65 @@ export default function OrnamentPropertiesPanel({
           value={selectedOrnament.rotate || 0}
           onChange={(v) => updateOrnament("rotate", v)}
         />
-        <MiniInput
-          label="Z-index"
-          type="number"
-          value={selectedOrnament.zIndex ?? 0}
-          onChange={(v) => updateOrnament("zIndex", v)}
-        />
+      </div>
+
+      <div className="mt-3 rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)]/55 p-2.5">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
+              Layer Tampilan
+            </p>
+            <p className="mt-1 text-[11px] font-semibold leading-4 text-[var(--color-text)]/65">
+              {activeLayer?.description}
+            </p>
+          </div>
+          <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-black text-[var(--color-text)]/70">
+            {activeLayer?.label}
+          </span>
+        </div>
+        <div className="mt-2 grid gap-1.5">
+          {ornamentLayerPresets.map((preset) => (
+            <button
+              key={preset.id}
+              type="button"
+              onClick={() => updateOrnament("zIndex", preset.zIndex)}
+              className={`flex items-center justify-between gap-2 rounded-md border px-2.5 py-2 text-left transition-colors ${
+                activeLayerPreset === preset.id
+                  ? "border-[var(--color-accent)] bg-white text-[var(--color-primary)]"
+                  : "border-transparent bg-white/55 text-[var(--color-text)] hover:bg-white"
+              }`}
+            >
+              <span className="min-w-0">
+                <span className="block text-xs font-black">{preset.label}</span>
+                <span className="mt-0.5 block text-[10px] font-semibold leading-4 text-[var(--color-text)]/58">
+                  {preset.description}
+                </span>
+              </span>
+              <span className={`h-3 w-3 shrink-0 rounded-full border ${
+                activeLayerPreset === preset.id
+                  ? "border-[var(--color-accent)] bg-[var(--color-accent)]"
+                  : "border-[var(--color-accent-pale)] bg-white"
+              }`} />
+            </button>
+          ))}
+        </div>
+        <div className="mt-2 grid grid-cols-4 gap-1.5">
+          {[
+            ["back", "Ke belakang"],
+            ["down", "Mundur"],
+            ["up", "Maju"],
+            ["front", "Ke depan"],
+          ].map(([mode, label]) => (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => reorderSelectedOrnament?.(mode)}
+              className="min-h-8 rounded-md border border-[var(--color-accent-pale)] bg-white px-2 text-[10px] font-black text-[var(--color-text)] hover:bg-[var(--color-bg)]"
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="mt-2.5">

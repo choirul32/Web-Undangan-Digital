@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 412 732" role="img" aria-label="Nusantara songket pattern">
+  <defs>
+    <pattern id="songket" width="82" height="82" patternUnits="userSpaceOnUse">
+      <path d="M41 4l14 23 23 14-23 14-14 23-14-23L4 41l23-14Z" fill="none" stroke="#b7793f" stroke-width="2.4" opacity=".55"/>
+      <path d="M41 20l7 14 14 7-14 7-7 14-7-14-14-7 14-7Z" fill="#b7793f" opacity=".22"/>
+      <circle cx="0" cy="0" r="5" fill="#3b2417" opacity=".18"/>
+      <circle cx="82" cy="0" r="5" fill="#3b2417" opacity=".18"/>
+      <circle cx="0" cy="82" r="5" fill="#3b2417" opacity=".18"/>
+      <circle cx="82" cy="82" r="5" fill="#3b2417" opacity=".18"/>
+    </pattern>
+    <linearGradient id="edge" x1="0" x2="1">
+      <stop offset="0" stop-color="#3b2417" stop-opacity=".36"/>
+      <stop offset=".18" stop-color="#b7793f" stop-opacity=".16"/>
+      <stop offset=".5" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset=".82" stop-color="#b7793f" stop-opacity=".16"/>
+      <stop offset="1" stop-color="#3b2417" stop-opacity=".36"/>
+    </linearGradient>
+  </defs>
+  <rect width="412" height="732" fill="url(#songket)"/>
+  <rect width="412" height="732" fill="url(#edge)"/>
+  <path d="M26 0v732M386 0v732" stroke="#b7793f" stroke-width="3" opacity=".42"/>
+  <path d="M0 26h412M0 706h412" stroke="#b7793f" stroke-width="3" opacity=".42"/>
+</svg>

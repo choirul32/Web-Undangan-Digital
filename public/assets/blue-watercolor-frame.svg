@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Watercolor corner ornament">
+  <defs>
+    <linearGradient id="leaf" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#2d5f87"/>
+      <stop offset="1" stop-color="#7fb0c9"/>
+    </linearGradient>
+    <radialGradient id="wash" cx="32%" cy="28%" r="72%">
+      <stop offset="0" stop-color="#9ec8dc" stop-opacity=".65"/>
+      <stop offset=".58" stop-color="#d7ebf1" stop-opacity=".28"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <path d="M0 0h240v240H0z" fill="none"/>
+  <path d="M9 13c46 2 86 14 118 39 32 25 52 61 64 107" fill="none" stroke="#22506f" stroke-width="5" stroke-linecap="round" opacity=".38"/>
+  <path d="M17 25c56 4 102 25 137 62" fill="none" stroke="#d8a44d" stroke-width="3" stroke-linecap="round" opacity=".62"/>
+  <circle cx="56" cy="60" r="58" fill="url(#wash)"/>
+  <g fill="url(#leaf)" opacity=".78">
+    <ellipse cx="42" cy="28" rx="12" ry="29" transform="rotate(-54 42 28)"/>
+    <ellipse cx="77" cy="38" rx="10" ry="27" transform="rotate(-34 77 38)"/>
+    <ellipse cx="108" cy="59" rx="9" ry="25" transform="rotate(-16 108 59)"/>
+    <ellipse cx="135" cy="88" rx="8" ry="23" transform="rotate(10 135 88)"/>
+    <ellipse cx="157" cy="122" rx="8" ry="22" transform="rotate(26 157 122)"/>
+  </g>
+  <g fill="#d8a44d" opacity=".8">
+    <circle cx="32" cy="80" r="4"/>
+    <circle cx="63" cy="91" r="3"/>
+    <circle cx="96" cy="105" r="3.5"/>
+    <circle cx="126" cy="135" r="3"/>
+  </g>
+  <path d="M0 0h74c-24 13-43 31-58 55C8 69 4 84 0 103V0Z" fill="#dcecf4" opacity=".42"/>
+</svg>

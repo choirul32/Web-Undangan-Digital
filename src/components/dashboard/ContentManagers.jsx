@@ -674,6 +674,10 @@ function StoryManager({ invitationSlug = "" }) {
 function BankAccountManager({ invitationSlug = "" }) {
   const [accounts, setAccounts] = useState([]);
   const [bankOptions, setBankOptions] = useState([]);
+  const [qrisItem, setQrisItem] = useState(null);
+  const [qrisFile, setQrisFile] = useState(null);
+  const [qrisMessage, setQrisMessage] = useState("");
+  const [qrisInputKey, setQrisInputKey] = useState(0);
   const [form, setForm] = useState({
     bank: "",
     logoUrl: "",
@@ -685,6 +689,7 @@ function BankAccountManager({ invitationSlug = "" }) {
   const [validationWarnings, setValidationWarnings] = useState([]);
   const [editingId, setEditingId] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmDeleteQris, setConfirmDeleteQris] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -717,6 +722,7 @@ function BankAccountManager({ invitationSlug = "" }) {
   useEffect(() => {
     if (!invitationSlug) {
       setAccounts([]);
+      setQrisItem(null);
       return undefined;
     }
 
@@ -732,6 +738,19 @@ function BankAccountManager({ invitationSlug = "" }) {
       .catch(() => {
         if (isMounted) {
           setAccounts([]);
+        }
+      });
+
+    fetch(`/api/media?invitationSlug=${encodeURIComponent(invitationSlug)}`)
+      .then((response) => response.json())
+      .then((result) => {
+        if (isMounted && Array.isArray(result.data)) {
+          setQrisItem(result.data.find((item) => item.mediaType === "qris") || null);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setQrisItem(null);
         }
       });
 
@@ -875,6 +894,80 @@ function BankAccountManager({ invitationSlug = "" }) {
     }
   };
 
+  const uploadQris = async () => {
+    if (!qrisFile) {
+      setQrisMessage("Pilih gambar QRIS dulu.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("invitationSlug", invitationSlug);
+    formData.append("mediaType", "qris");
+    formData.append("title", "QRIS Amplop Digital");
+    if (qrisItem?.id) {
+      formData.append("replaceId", qrisItem.id);
+    }
+    formData.append("file", qrisFile);
+
+    setQrisMessage(qrisItem ? "Mengganti QRIS..." : "Mengupload QRIS...");
+
+    try {
+      const response = await fetch("/api/media", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Upload QRIS gagal");
+      }
+
+      setQrisItem(result.data || null);
+      setQrisFile(null);
+      setQrisInputKey((current) => current + 1);
+      setQrisMessage(
+        result.source === "supabase"
+          ? "QRIS berhasil tersimpan dan akan tampil di section Amplop Digital."
+          : "QRIS berhasil tersimpan.",
+      );
+    } catch (error) {
+      setQrisMessage(error.message || "Upload QRIS gagal.");
+    }
+  };
+
+  const deleteQris = async () => {
+    if (!qrisItem?.id) {
+      setConfirmDeleteQris(false);
+      return;
+    }
+
+    const previous = qrisItem;
+    setQrisItem(null);
+    setQrisMessage("Menghapus QRIS...");
+
+    try {
+      const response = await fetch("/api/media", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invitationSlug, id: previous.id }),
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Gagal menghapus QRIS");
+      }
+
+      setQrisFile(null);
+      setQrisInputKey((current) => current + 1);
+      setQrisMessage("QRIS berhasil dihapus dari Amplop Digital.");
+    } catch (error) {
+      setQrisItem(previous);
+      setQrisMessage(error.message || "Hapus QRIS dibatalkan.");
+    } finally {
+      setConfirmDeleteQris(false);
+    }
+  };
+
   return (
     <motion.section
       variants={fadeUp}
@@ -888,8 +981,63 @@ function BankAccountManager({ invitationSlug = "" }) {
           Amplop digital
         </h2>
         <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
-          Perubahan rekening langsung berdampak ke widget Amplop.
+          Upload QRIS dan rekening di sini. Perubahan langsung berdampak ke widget Amplop.
         </p>
+      </div>
+      <div className="grid gap-5 border-b border-[var(--dash-border)] p-5 lg:grid-cols-[280px_minmax(0,1fr)]">
+        <div className="overflow-hidden rounded-[14px] border border-[var(--dash-border)] bg-white">
+          {qrisItem?.url ? (
+            <img
+              src={qrisItem.url}
+              alt="QRIS Amplop Digital"
+              className="aspect-square w-full bg-[var(--dash-fog)] object-contain p-4"
+            />
+          ) : (
+            <div className="flex aspect-square w-full items-center justify-center bg-[var(--dash-fog)] p-6 text-center">
+              <p className="text-sm font-semibold leading-6 text-[var(--dash-muted)]">
+                Belum ada QRIS. Upload gambar QRIS agar tamu bisa scan langsung di undangan.
+              </p>
+            </div>
+          )}
+        </div>
+        <div className="flex min-w-0 flex-col justify-center">
+          <p className={panelEyebrowClass}>QRIS</p>
+          <h3 className="mt-1 text-xl font-semibold text-[var(--dash-ink)]">
+            QRIS Amplop Digital
+          </h3>
+          <p className="mt-2 text-sm font-medium leading-6 text-[var(--dash-muted)]">
+            Gunakan screenshot atau file ekspor QRIS dari bank/e-wallet. Satu QRIS per undangan; upload baru otomatis mengganti QRIS lama.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+            <input
+              key={qrisInputKey}
+              type="file"
+              accept="image/*"
+              onChange={(event) => {
+                setQrisFile(event.target.files?.[0] || null);
+                setQrisMessage("");
+              }}
+              className="rounded-lg border border-[var(--dash-border)] bg-white px-3 py-2.5 text-sm font-medium text-[var(--dash-muted)]"
+            />
+            <DashboardButton type="button" onClick={uploadQris}>
+              {qrisItem ? "Ganti QRIS" : "Upload QRIS"}
+            </DashboardButton>
+            {qrisItem ? (
+              <DashboardButton
+                type="button"
+                variant="danger"
+                onClick={() => setConfirmDeleteQris(true)}
+              >
+                Hapus
+              </DashboardButton>
+            ) : null}
+          </div>
+          {qrisMessage ? (
+            <p className="mt-3 text-sm font-medium text-[var(--dash-muted)]">
+              {qrisMessage}
+            </p>
+          ) : null}
+        </div>
       </div>
       <div className={`${formGridClass} md:grid-cols-[220px_1fr_1fr_auto]`}>
         <div className="space-y-2">
@@ -986,6 +1134,14 @@ function BankAccountManager({ invitationSlug = "" }) {
         confirmLabel="Ya, Hapus"
         onConfirm={() => { deleteAccount(confirmDelete); setConfirmDelete(null); }}
         onCancel={() => setConfirmDelete(null)}
+      />
+      <ConfirmDialog
+        open={confirmDeleteQris}
+        title="Hapus QRIS?"
+        message="QRIS akan dihapus dari Amplop Digital. Tamu tidak lagi melihat opsi scan QRIS."
+        confirmLabel="Ya, Hapus"
+        onConfirm={deleteQris}
+        onCancel={() => setConfirmDeleteQris(false)}
       />
     </motion.section>
   );

@@ -328,6 +328,7 @@ function TemplateAdminPage() {
   const designSectionNames = useMemo(() => {
     const names = Array.from(
       new Set([
+        "opening",
         ...Object.keys(parsedDesignConfig?.ornaments || {}),
         ...Object.keys(parsedDesignConfig?.sections || {}),
       ]),
@@ -659,7 +660,18 @@ function TemplateAdminPage() {
     "&embeddedEditorPreview=1",
     "",
   )}&viewport=${encodeURIComponent(previewViewport)}`;
-  const ornamentCanvasPreviewSrc = `${templatePreviewSrc}&previewSectionOnly=1`;
+  const openingSectionPreviewSrc = useMemo(() => {
+    const previewTemplateId = templateDraft?.id || "standard";
+    const guestQuery =
+      previewGuestMode === "withGuest"
+        ? `&previewGuest=${encodeURIComponent("Bapak/Ibu Preview")}`
+        : "";
+    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&embeddedEditorPreview=1&previewOpening=1&focusSection=home&previewSectionOnly=1&previewTick=${templatePreviewTick}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
+  }, [previewDataMode, previewGuestMode, templateDraft?.id, templatePreviewTick]);
+  const ornamentCanvasPreviewSrc =
+    activeDesignSection === "opening"
+      ? openingSectionPreviewSrc
+      : `${templatePreviewSrc}&previewSectionOnly=1&disableOpeningOverlay=1`;
   const imageGenerationPrompt = useMemo(() => {
     const selectedConcept =
       smartThemeConcepts.find((concept) => concept.id === selectedThemeConcept) ||
@@ -699,14 +711,6 @@ function TemplateAdminPage() {
 
     setManagerMessage("Clipboard browser tidak tersedia. Silakan copy manual dari textarea prompt.");
   };
-  const openingSectionPreviewSrc = useMemo(() => {
-    const previewTemplateId = templateDraft?.id || "standard";
-    const guestQuery =
-      previewGuestMode === "withGuest"
-        ? `&previewGuest=${encodeURIComponent("Bapak/Ibu Preview")}`
-        : "";
-    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&embeddedEditorPreview=1&previewOpening=1&focusSection=home&previewSectionOnly=1&previewTick=${templatePreviewTick}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
-  }, [previewDataMode, previewGuestMode, templateDraft?.id, templatePreviewTick]);
   const editorPreviewSnapshot = useMemo(
     () =>
       templateDraft
@@ -1406,41 +1410,58 @@ function TemplateAdminPage() {
       return;
     }
 
-    let nextIndex = currentIndex;
-    if (mode === "up") {
-      nextIndex = Math.min(activeOrnaments.length - 1, currentIndex + 1);
-    }
-    if (mode === "down") {
-      nextIndex = Math.max(0, currentIndex - 1);
-    }
-    if (mode === "front") {
-      nextIndex = activeOrnaments.length - 1;
-    }
-    if (mode === "back") {
-      nextIndex = 0;
-    }
+    const isBackgroundLayer = (activeOrnaments[currentIndex].zIndex ?? 0) < 0;
+    const sameLayerIndexes = activeOrnaments
+      .map((ornament, index) => ({ ornament, index }))
+      .filter(({ ornament }) => ((ornament.zIndex ?? 0) < 0) === isBackgroundLayer)
+      .map(({ index }) => index);
+    const currentLayerIndex = sameLayerIndexes.indexOf(currentIndex);
 
-    if (nextIndex === currentIndex) {
+    if (currentLayerIndex < 0 || sameLayerIndexes.length < 2) {
       return;
     }
 
-    const nextOrnaments = [...activeOrnaments];
-    const [movedOrnament] = nextOrnaments.splice(currentIndex, 1);
-    nextOrnaments.splice(nextIndex, 0, movedOrnament);
+    let nextLayerIndex = currentLayerIndex;
+    if (mode === "up") {
+      nextLayerIndex = Math.min(sameLayerIndexes.length - 1, currentLayerIndex + 1);
+    }
+    if (mode === "down") {
+      nextLayerIndex = Math.max(0, currentLayerIndex - 1);
+    }
+    if (mode === "front") {
+      nextLayerIndex = sameLayerIndexes.length - 1;
+    }
+    if (mode === "back") {
+      nextLayerIndex = 0;
+    }
 
-    const normalizedOrnaments = nextOrnaments.map((ornament, index) => ({
-      ...ornament,
-      zIndex: index + 1,
-    }));
+    if (nextLayerIndex === currentLayerIndex) {
+      return;
+    }
+
+    const sameLayerOrnaments = sameLayerIndexes.map((index) => activeOrnaments[index]);
+    const [movedOrnament] = sameLayerOrnaments.splice(currentLayerIndex, 1);
+    sameLayerOrnaments.splice(nextLayerIndex, 0, movedOrnament);
+
+    const nextOrnaments = [...activeOrnaments];
+    sameLayerIndexes.forEach((ornamentIndex, orderIndex) => {
+      const zIndex = isBackgroundLayer
+        ? -(sameLayerIndexes.length - orderIndex)
+        : orderIndex + 1;
+      nextOrnaments[ornamentIndex] = {
+        ...sameLayerOrnaments[orderIndex],
+        zIndex,
+      };
+    });
 
     writeDesignConfig({
       ...parsedDesignConfig,
       ornaments: {
         ...(parsedDesignConfig.ornaments || {}),
-        [activeDesignSection]: normalizedOrnaments,
+        [activeDesignSection]: nextOrnaments,
       },
     });
-    setSelectedOrnamentIndex(nextIndex);
+    setSelectedOrnamentIndex(sameLayerIndexes[nextLayerIndex]);
   };
 
   const duplicateOrnament = () => {
@@ -2238,6 +2259,7 @@ function TemplateAdminPage() {
                             <OrnamentPropertiesPanel
                               selectedOrnament={selectedOrnament}
                               updateOrnament={updateOrnament}
+                              reorderSelectedOrnament={reorderSelectedOrnament}
                               updateSelectedOrnamentFile={updateSelectedOrnamentFile}
                               dynamicOrnamentAssets={dynamicOrnamentAssets}
                               applyOrnamentAsset={applyOrnamentAsset}

@@ -331,9 +331,27 @@ body {
   padding-bottom: 4rem !important;
 }
 
+.section-only-preview-mobile [data-preview-section] {
+  min-height: 100svh !important;
+  padding-left: 1.25rem !important;
+  padding-right: 1.25rem !important;
+  padding-top: 3rem !important;
+  padding-bottom: 3rem !important;
+}
+
+.section-only-preview-mobile [data-preview-section] > .relative.z-10 {
+  width: 100% !important;
+  max-width: 22rem !important;
+}
+
 .framed-preview-mobile .template-section-title-heading {
   font-size: 1.75rem !important;
   line-height: 1.1 !important;
+}
+
+.section-only-preview-mobile .template-section-title-heading {
+  font-size: 1.55rem !important;
+  line-height: 1.12 !important;
 }
 
 .framed-preview-mobile .template-section-title p,
@@ -342,10 +360,22 @@ body {
   letter-spacing: 0.14em !important;
 }
 
+.section-only-preview-mobile .template-section-title p,
+.section-only-preview-mobile #section-rsvp > div > p {
+  font-size: 0.66rem !important;
+  letter-spacing: 0.12em !important;
+}
+
 .framed-preview-mobile .template-section-title + *,
 .framed-preview-mobile .template-section-title ~ .mt-10,
 .framed-preview-mobile .template-section-title ~ .mt-12 {
   margin-top: 1.75rem !important;
+}
+
+.section-only-preview-mobile .template-section-title + *,
+.section-only-preview-mobile .template-section-title ~ .mt-10,
+.section-only-preview-mobile .template-section-title ~ .mt-12 {
+  margin-top: 1.35rem !important;
 }
 
 .framed-preview-mobile #section-couple article,
@@ -356,8 +386,20 @@ body {
   padding: 1.25rem !important;
 }
 
+.section-only-preview-mobile #section-couple article,
+.section-only-preview-mobile #section-gift [class*="shadow-lg"],
+.section-only-preview-mobile #section-doa-ucapan [class*="shadow-lg"],
+.section-only-preview-mobile #section-story [class*="shadow-lg"],
+.section-only-preview-mobile #section-acara article {
+  padding: 1rem !important;
+}
+
 .framed-preview-mobile #section-couple article img {
   width: 8.5rem !important;
+}
+
+.section-only-preview-mobile #section-couple article img {
+  width: 7rem !important;
 }
 
 .framed-preview-mobile #section-couple h3,
@@ -365,6 +407,14 @@ body {
 .framed-preview-mobile #section-story h3,
 .framed-preview-mobile #section-gift .gift-account-number {
   font-size: 1.45rem !important;
+  line-height: 1.15 !important;
+}
+
+.section-only-preview-mobile #section-couple h3,
+.section-only-preview-mobile #section-acara h3,
+.section-only-preview-mobile #section-story h3,
+.section-only-preview-mobile #section-gift .gift-account-number {
+  font-size: 1.25rem !important;
   line-height: 1.15 !important;
 }
 
@@ -378,27 +428,60 @@ body {
   line-height: 1.55 !important;
 }
 
+.section-only-preview-mobile #section-couple article p,
+.section-only-preview-mobile #section-acara article p,
+.section-only-preview-mobile #section-story article p,
+.section-only-preview-mobile #section-gift p,
+.section-only-preview-mobile #section-doa-ucapan p,
+.section-only-preview-mobile .template-section-title-desc {
+  font-size: 0.8rem !important;
+  line-height: 1.45 !important;
+}
+
 .framed-preview-mobile #section-acara article a,
 .framed-preview-mobile #section-rsvp button {
   font-size: 0.9rem !important;
   padding: 0.75rem 1rem !important;
 }
 
+.section-only-preview-mobile #section-acara article a,
+.section-only-preview-mobile #section-rsvp button {
+  font-size: 0.78rem !important;
+  padding: 0.65rem 0.85rem !important;
+}
+
 .framed-preview-mobile #section-countdown .grid {
   gap: 0.5rem !important;
+}
+
+.section-only-preview-mobile #section-countdown .grid {
+  gap: 0.4rem !important;
 }
 
 .framed-preview-mobile #section-countdown .grid > * {
   padding: 0.85rem 0.45rem !important;
 }
 
+.section-only-preview-mobile #section-countdown .grid > * {
+  padding: 0.7rem 0.35rem !important;
+}
+
 .framed-preview-mobile #section-countdown .grid p:first-child {
   font-size: 1.35rem !important;
+}
+
+.section-only-preview-mobile #section-countdown .grid p:first-child {
+  font-size: 1.12rem !important;
 }
 
 .framed-preview-mobile #section-countdown .grid p:last-child {
   font-size: 0.62rem !important;
   letter-spacing: 0.08em !important;
+}
+
+.section-only-preview-mobile #section-countdown .grid p:last-child {
+  font-size: 0.56rem !important;
+  letter-spacing: 0.06em !important;
 }
 
 .framed-preview-mobile #section-couple .grid,
@@ -409,13 +492,31 @@ body {
   grid-template-columns: minmax(0, 1fr) !important;
 }
 
+.section-only-preview-mobile #section-couple .grid,
+.section-only-preview-mobile #section-acara .grid,
+.section-only-preview-mobile #section-story .grid,
+.section-only-preview-mobile #section-gift .grid,
+.section-only-preview-mobile #section-doa-ucapan .grid {
+  grid-template-columns: minmax(0, 1fr) !important;
+  gap: 0.9rem !important;
+}
+
 /* Gallery keeps a real multi-column layout in the mobile frame so each style
    (grid vs masonry) stays visually distinct, matching how it renders on a phone. */
 .framed-preview-mobile #section-gallery .grid {
   grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
 }
 
+.section-only-preview-mobile #section-gallery .grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 0.45rem !important;
+}
+
 .framed-preview-mobile #section-gallery [class*="columns-"] {
+  column-count: 2 !important;
+}
+
+.section-only-preview-mobile #section-gallery [class*="columns-"] {
   column-count: 2 !important;
 }
 

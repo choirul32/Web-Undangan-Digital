@@ -1,5 +1,11 @@
 import React, { useEffect, useRef } from "react";
 
+const previewViewport = {
+  width: 412,
+  height: 732,
+  scale: 284 / 412,
+};
+
 export default function OrnamentCanvasPanel({
   activeDesignSection,
   activeOrnaments,
@@ -97,13 +103,20 @@ export default function OrnamentCanvasPanel({
               <div className="absolute left-1/2 top-0 z-20 h-4 w-20 -translate-x-1/2 rounded-b-2xl bg-[var(--color-primary)]/70" />
               <div className="relative aspect-[9/16] overflow-hidden rounded-[23px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)]">
                 <iframe
-	                  ref={iframeRef}
-	                  src={templatePreviewSrc}
-	                  title={`Ornament ${activeDesignSection} preview`}
-                    tabIndex={-1}
-	                  className="h-full w-full border-0"
-	                  onLoad={postPreviewSnapshot}
-	                />
+                  key={templatePreviewSrc}
+                  ref={iframeRef}
+                  src={templatePreviewSrc}
+                  title={`Ornament ${activeDesignSection} preview`}
+                  tabIndex={-1}
+                  className="absolute left-0 top-0 border-0"
+                  style={{
+                    width: `${previewViewport.width}px`,
+                    height: `${previewViewport.height}px`,
+                    transform: `scale(${previewViewport.scale})`,
+                    transformOrigin: "top left",
+                  }}
+                  onLoad={postPreviewSnapshot}
+                />
                 <div className="pointer-events-none absolute inset-0 border border-dashed border-[var(--color-accent)]/45" />
               </div>
               <div className="mx-auto mt-1 h-1 w-12 rounded-full bg-[var(--color-primary)]/35" />

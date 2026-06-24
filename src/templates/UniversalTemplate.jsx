@@ -29,6 +29,9 @@ export default function UniversalTemplate({
   framedPreview = false,
   previewOpening = false,
   previewMode = false,
+  previewSectionOnly: initialPreviewSectionOnly = false,
+  previewFocusSection: initialPreviewFocusSection = null,
+  disableOpeningOverlay = false,
 }) {
   const musicRef = useRef(null);
   const musicFadeRef = useRef(null);
@@ -45,9 +48,15 @@ export default function UniversalTemplate({
   const coverConfig = getCoverSectionConfig(designConfig);
   const openingRevealConfig = getOpeningRevealConfig(designConfig);
   const openingSequenceConfig = getOpeningSequenceConfig(designConfig);
+  const { previewFocusSection, previewSectionOnly, shouldRenderSection } = usePreviewSectionFilter(
+    invitation.templateId,
+    initialPreviewSectionOnly,
+    initialPreviewFocusSection,
+  );
+  const shouldDisableOpeningOverlay = disableOpeningOverlay || previewSectionOnly;
   const openingOverlayConfig = {
     ...openingRevealConfig,
-    enabled: previewOpening ? true : openingRevealConfig.enabled,
+    enabled: previewOpening ? true : shouldDisableOpeningOverlay ? false : openingRevealConfig.enabled,
     sequencePreset: openingSequenceConfig.preset,
     asset: openingSequenceConfig.asset,
   };
@@ -67,10 +76,10 @@ export default function UniversalTemplate({
     groom: groomPhoto,
   };
 
-  const { previewFocusSection, previewSectionOnly, shouldRenderSection } = usePreviewSectionFilter(invitation.templateId);
   const isCompactHomePreview =
     framedPreview || (previewSectionOnly && previewFocusSection === "home") || isNarrowViewport;
   const shouldDelayInvitationContent = openingOverlayConfig.enabled && !isRevealOpen;
+  const showHomeGuestGreeting = !openingRevealConfig.enabled && !shouldDisableOpeningOverlay;
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -183,9 +192,10 @@ export default function UniversalTemplate({
             couple={couple}
             coverImage={invitation.coverImage}
             guestName={personalizedGuestName}
-            onOpen={openInvitation}
-            framedPreview={framedPreview}
-          />
+          onOpen={openInvitation}
+          framedPreview={framedPreview}
+          designConfig={designConfig}
+        />
         ) : null}
       </AnimatePresence>
 
@@ -198,7 +208,7 @@ export default function UniversalTemplate({
           personalizedGuestName={personalizedGuestName}
           profileImages={profileImages}
           isCompactHomePreview={isCompactHomePreview}
-          showGuestGreeting={!openingOverlayConfig.enabled}
+          showGuestGreeting={showHomeGuestGreeting}
         />
       ) : null}
 
@@ -222,4 +232,3 @@ export default function UniversalTemplate({
     </main>
   );
 }
-

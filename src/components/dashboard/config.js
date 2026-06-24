@@ -710,6 +710,7 @@ export const smartThemeConcepts = [
 
 // ===== TEMPLATE SECTIONS =====
 export const standardTemplateSections = [
+  "opening",
   "home",
   "couple",
   "acara",

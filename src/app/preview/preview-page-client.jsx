@@ -72,6 +72,38 @@ async function preloadInvitationImages(invitation) {
   await Promise.race([preload, timeout]);
 }
 
+function readEditorPreviewSnapshot(templateId) {
+  if (typeof window === "undefined" || !templateId) {
+    return null;
+  }
+
+  try {
+    const rawSnapshot = window.sessionStorage.getItem("nusa-invite:editor-preview-template");
+    const snapshot = rawSnapshot ? JSON.parse(rawSnapshot) : null;
+
+    if (snapshot?.id === templateId) {
+      return snapshot;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function applyEditorPreviewSnapshot(invitation, snapshot, templateId) {
+  if (!snapshot) {
+    return invitation;
+  }
+
+  return {
+    ...invitation,
+    templateId: snapshot.id || templateId || invitation.templateId,
+    coverImage: snapshot.image || invitation.coverImage,
+    designConfig: snapshot.designConfig || invitation.designConfig,
+  };
+}
+
 export default function PreviewPageClient() {
   const searchParams = useSearchParams();
   const slug = searchParams.get("slug");
@@ -79,14 +111,18 @@ export default function PreviewPageClient() {
   const editorPreview = searchParams.get("editorPreview") === "1";
   const embeddedEditorPreview = searchParams.get("embeddedEditorPreview") === "1";
   const previewSectionOnly = searchParams.get("previewSectionOnly") === "1";
+  const previewFocusSection = searchParams.get("focusSection") || null;
+  const disableOpeningOverlay =
+    searchParams.get("disableOpeningOverlay") === "1" || previewSectionOnly;
   const previewOpening = searchParams.get("previewOpening") === "1";
   const previewGuest = searchParams.get("previewGuest") || "";
   const previewDataMode = searchParams.get("previewDataMode") || "filled";
   const framedDesktopPreview = !embeddedEditorPreview && !previewSectionOnly;
+  const shouldLoadBeforeRender = Boolean(slug || (editorPreview && templateId));
   const [data, setData] = useState(() => (
     !slug && previewDataMode !== "empty" ? previewInvitation : emptyInvitation
   ));
-  const [isLoading, setIsLoading] = useState(Boolean(slug));
+  const [isLoading, setIsLoading] = useState(shouldLoadBeforeRender);
   const [loadError, setLoadError] = useState("");
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [replayKey, setReplayKey] = useState(0);
@@ -95,7 +131,7 @@ export default function PreviewPageClient() {
     let isMounted = true;
 
     const loadPreviewData = async () => {
-      if (slug) {
+      if (shouldLoadBeforeRender) {
         setIsLoading(true);
         setLoadError("");
       }
@@ -175,20 +211,11 @@ export default function PreviewPageClient() {
       }
 
       if (editorPreview && templateId) {
-        try {
-          const rawSnapshot = window.sessionStorage.getItem("nusa-invite:editor-preview-template");
-          const snapshot = rawSnapshot ? JSON.parse(rawSnapshot) : null;
-          if (snapshot?.id === templateId) {
-            nextData = {
-              ...nextData,
-              templateId,
-              coverImage: snapshot.image || nextData.coverImage,
-              designConfig: snapshot.designConfig || nextData.designConfig,
-            };
-          }
-        } catch {
-          // ignore session parse errors and use saved preview data
-        }
+        nextData = applyEditorPreviewSnapshot(
+          nextData,
+          readEditorPreviewSnapshot(templateId),
+          templateId,
+        );
       }
 
       if (previewDataMode === "empty") {
@@ -231,7 +258,7 @@ export default function PreviewPageClient() {
     return () => {
       isMounted = false;
     };
-  }, [editorPreview, loadAttempt, previewDataMode, slug, templateId]);
+  }, [editorPreview, loadAttempt, previewDataMode, shouldLoadBeforeRender, slug, templateId]);
 
   useEffect(() => {
     const handleMessage = (event) => {
@@ -301,6 +328,8 @@ export default function PreviewPageClient() {
         className={
           framedDesktopPreview
             ? "mx-auto min-h-screen w-full overflow-hidden bg-[var(--color-bg)] lg:min-h-[915px] lg:max-w-[412px] lg:border-x lg:border-black/10 lg:shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
+            : previewSectionOnly
+              ? "section-only-preview-mobile"
             : ""
         }
       >
@@ -312,6 +341,9 @@ export default function PreviewPageClient() {
           framedPreview={framedDesktopPreview || previewOpening}
           previewOpening={previewOpening}
           previewMode={!slug && previewDataMode !== "empty"}
+          previewSectionOnly={previewSectionOnly}
+          previewFocusSection={previewFocusSection}
+          disableOpeningOverlay={disableOpeningOverlay}
         />
       </div>
     </div>

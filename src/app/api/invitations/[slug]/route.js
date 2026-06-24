@@ -38,8 +38,8 @@ function getPublishGuardErrors(invitation) {
     errors.push("Minimal satu acara wajib diisi.");
   }
 
-  if (features.gift && (invitation?.bankAccounts || []).length === 0) {
-    errors.push("Amplop digital aktif, minimal satu rekening wajib diisi.");
+  if (features.gift && (invitation?.bankAccounts || []).length === 0 && !invitation?.qrisImage) {
+    errors.push("Amplop digital aktif, minimal satu rekening atau QRIS wajib diisi.");
   }
 
   if (features.music && !invitation?.musicUrl) {

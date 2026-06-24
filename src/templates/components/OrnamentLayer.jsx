@@ -90,8 +90,7 @@ function OrnamentImage({ ornament, animation, animationDelay, loopMode = "infini
   if (hasError || !ornament.src) {
     return (
       <div
-        className="flex h-full w-full items-center justify-center bg-[var(--color-muted)]/30"
-        style={{ objectFit: ornament.objectFit || "contain" }}
+        className="flex h-full w-full items-center justify-center rounded-[8px] border border-dashed border-[var(--color-accent)]/35 bg-[var(--color-muted)]/18"
       >
         <span className="text-[10px] font-black uppercase tracking-wider text-[var(--color-text)]/40">
           No Image
@@ -105,7 +104,7 @@ function OrnamentImage({ ornament, animation, animationDelay, loopMode = "infini
   return (
     <>
       {isLoading && (
-        <div className="absolute inset-0 animate-pulse rounded-full bg-[var(--color-muted)]/20" />
+        <div className="absolute inset-0 animate-pulse rounded-[8px] bg-[var(--color-muted)]/16" />
       )}
       <img
         src={ornament.src}
