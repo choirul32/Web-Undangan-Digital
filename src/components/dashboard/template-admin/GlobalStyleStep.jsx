@@ -1,6 +1,143 @@
 import React from "react";
 import ColorPalettePicker from "./ColorPalettePicker";
+import FontPicker from "./FontPicker";
 import { CoupleSectionPreview } from "../WidgetPreviews";
+import {
+  DashboardCard,
+  Field,
+  SelectInput,
+  ToggleField,
+} from "../FormControls";
+
+const spacingLabels = {
+  compact: "Rapat",
+  normal: "Normal",
+  roomy: "Lega",
+};
+
+const spacingDescriptions = {
+  compact: "Padding kecil, konten lebih rapat.",
+  normal: "Padding standar, tampilan seimbang.",
+  roomy: "Padding besar, terasa lega dan premium.",
+};
+
+const animationLabels = {
+  "fade-up": "Muncul dari bawah",
+  "zoom-in": "Membesar halus",
+  "pop-up": "Pop up lembut",
+  "slide-left": "Geser dari kanan",
+  "slide-right": "Geser dari kiri",
+  fade: "Fade sederhana",
+  none: "Tanpa animasi",
+};
+
+const cardStyleLabels = {
+  rounded: "Sudut membulat",
+  sharp: "Tegas / kotak",
+  pill: "Sangat bulat",
+};
+
+const contentSizeOptions = ["small", "normal", "large", "xlarge"];
+
+const contentSizeLabels = {
+  small: "Kecil",
+  normal: "Normal",
+  large: "Besar",
+  xlarge: "Sangat besar",
+};
+
+const contentSizeDescriptions = {
+  small: "Teks & konten lebih ringkas (92%).",
+  normal: "Ukuran standar (100%).",
+  large: "Teks & konten lebih besar (108%).",
+  xlarge: "Paling besar, mudah dibaca (116%).",
+};
+
+const contentSizeZoom = {
+  small: 0.92,
+  normal: 1,
+  large: 1.08,
+  xlarge: 1.16,
+};
+
+const cardStyleDescriptions = {
+  sharp: "Sudut tajam, cocok untuk tema formal.",
+  pill: "Sudut sangat bulat, terasa lebih playful.",
+  rounded: "Sudut rounded, modern dan aman untuk banyak tema.",
+};
+
+const photoStyleLabels = {
+  arch: "Lengkung atas",
+  circle: "Lingkaran",
+  square: "Kotak rounded",
+};
+
+const coupleFontLabels = {
+  serif: "Elegan serif",
+  sans: "Modern sans",
+  script: "Script romantis",
+};
+
+function getSelectedFont(fonts, selectedId) {
+  return fonts.find((font) => font.id === selectedId);
+}
+
+function StylePreviewCard({
+  config,
+  headingFontOptions,
+  bodyFontOptions,
+}) {
+  const headingFont = getSelectedFont(headingFontOptions, config.headingFont);
+  const bodyFont = getSelectedFont(bodyFontOptions, config.bodyFont);
+  const cardRadius =
+    config.cardStyle === "sharp"
+      ? "rounded-none"
+      : config.cardStyle === "pill"
+        ? "rounded-[28px]"
+        : "rounded-2xl";
+  const spacingClass =
+    config.spacingPreset === "compact"
+      ? "p-3"
+      : config.spacingPreset === "roomy"
+        ? "p-6"
+        : "p-4";
+
+  return (
+    <div className="rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-fog)] p-4">
+      <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dash-muted)]">
+        Preview Ringkas
+      </p>
+      <div
+        className={`mt-3 border border-[var(--dash-border)] bg-white shadow-sm ${cardRadius} ${spacingClass}`}
+        style={{ zoom: contentSizeZoom[config.contentSize] || 1 }}
+      >
+        <p
+          className="text-2xl font-semibold text-[var(--color-primary)]"
+          style={{ fontFamily: headingFont?.family }}
+        >
+          Wulan & Irul
+        </p>
+        <p
+          className="mt-2 text-sm font-medium leading-6 text-[var(--dash-muted)]"
+          style={{ fontFamily: bodyFont?.family }}
+        >
+          Dengan penuh rasa hormat, kami mengundang Bapak/Ibu/Saudara/i untuk hadir.
+        </p>
+        <button
+          type="button"
+          className="mt-4 rounded-full bg-[var(--dash-ink)] px-4 py-2 text-xs font-semibold text-white"
+        >
+          Buka Undangan
+        </button>
+      </div>
+      <p className="mt-3 text-xs font-medium text-[var(--dash-muted)]">
+        {spacingLabels[config.spacingPreset] || "Normal"} ·{" "}
+        {cardStyleLabels[config.cardStyle] || "Sudut membulat"} ·{" "}
+        {animationLabels[config.entranceAnimation] || config.entranceAnimation || "Muncul dari bawah"}
+      </p>
+    </div>
+  );
+}
 
 export default function GlobalStyleStep({
   visible,
@@ -25,68 +162,38 @@ export default function GlobalStyleStep({
   return (
     <>
       <div className="scroll-mt-24 md:col-span-2">
-        <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
+        <DashboardCard>
           <ColorPalettePicker
             palettes={colorPalettePresets}
             activePaletteId={parsedDesignConfig?.palette || ""}
             onApplyPalette={applyColorPalette}
           />
-        </div>
+        </DashboardCard>
       </div>
       <div className="scroll-mt-24 md:col-span-2">
-        <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
-          <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
-            Typography
+        <DashboardCard>
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--dash-muted)]">
+            Font Undangan
           </p>
-          <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
+          <p className="mt-1 text-base font-semibold text-[var(--dash-ink)]">
             Pilih font heading (nama, judul) dan body (paragraf, deskripsi).
           </p>
           <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <label className="block">
-              <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                Heading Font
-              </span>
-              <select
+            <Field label="Font Judul">
+              <FontPicker
                 value={globalSectionStyleConfig.headingFont || ""}
-                onChange={(event) => updateGlobalSectionStyle("headingFont", event.target.value)}
-                className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-              >
-                <option value="">Default</option>
-                {headingFontOptions.map((font) => (
-                  <option key={font.id} value={font.id}>
-                    {font.label} - {font.vibe}
-                  </option>
-                ))}
-              </select>
-              {globalSectionStyleConfig.headingFont ? (
-                <p
-                  className="mt-2 text-lg text-[var(--color-primary)]"
-                  style={{
-                    fontFamily: headingFontOptions.find(
-                      (f) => f.id === globalSectionStyleConfig.headingFont,
-                    )?.family,
-                  }}
-                >
-                  Dimas & Salsa
-                </p>
-              ) : null}
-            </label>
-            <label className="block">
-              <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                Body Font
-              </span>
-              <select
+                options={headingFontOptions}
+                onChange={(id) => updateGlobalSectionStyle("headingFont", id)}
+                sampleText="Dimas & Salsa"
+              />
+            </Field>
+            <Field label="Font Isi">
+              <FontPicker
                 value={globalSectionStyleConfig.bodyFont || ""}
-                onChange={(event) => updateGlobalSectionStyle("bodyFont", event.target.value)}
-                className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-              >
-                <option value="">Default</option>
-                {bodyFontOptions.map((font) => (
-                  <option key={font.id} value={font.id}>
-                    {font.label} - {font.vibe}
-                  </option>
-                ))}
-              </select>
+                options={bodyFontOptions}
+                onChange={(id) => updateGlobalSectionStyle("bodyFont", id)}
+                sampleText="Dan di antara tanda-tanda kekuasaan-Nya"
+              />
               {globalSectionStyleConfig.bodyFont ? (
                 <p
                   className="mt-2 text-sm text-[var(--color-text)]"
@@ -98,179 +205,160 @@ export default function GlobalStyleStep({
                   Dan di antara tanda-tanda kekuasaan-Nya ialah Dia menciptakan untukmu pasangan hidup.
                 </p>
               ) : null}
-            </label>
+            </Field>
           </div>
-        </div>
+        </DashboardCard>
       </div>
       <div className="scroll-mt-24 md:col-span-2">
-        <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
-          <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
-            Layout & Animation
+        <DashboardCard>
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--dash-muted)]">
+            Tampilan Section
           </p>
-          <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
+          <p className="mt-1 text-base font-semibold text-[var(--dash-ink)]">
             Atur spacing, animasi masuk, dan style card untuk seluruh undangan.
           </p>
-          <div className="mt-4 grid gap-4 md:grid-cols-3">
-            <label className="block">
-              <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                Spacing
-              </span>
-              <select
-                value={globalSectionStyleConfig.spacingPreset || "normal"}
-                onChange={(event) => updateGlobalSectionStyle("spacingPreset", event.target.value)}
-                className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-              >
-                {sectionSpacingPresetOptions.map((preset) => (
-                  <option key={preset} value={preset}>
-                    {preset}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1.5 text-[10px] font-semibold text-[var(--color-text)]/60">
-                {globalSectionStyleConfig.spacingPreset === "compact"
-                  ? "Padding kecil, konten rapat"
-                  : globalSectionStyleConfig.spacingPreset === "roomy"
-                    ? "Padding besar, lega dan premium"
-                    : "Padding standar, seimbang"}
-              </p>
-            </label>
-            <label className="block">
-              <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                Entrance Animation
-              </span>
-              <select
-                value={globalSectionStyleConfig.entranceAnimation || "fade-up"}
-                onChange={(event) => updateGlobalSectionStyle("entranceAnimation", event.target.value)}
-                className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-              >
-                {sectionEntranceOptions.map((anim) => (
-                  <option key={anim} value={anim}>
-                    {anim}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1.5 text-[10px] font-semibold text-[var(--color-text)]/60">
-                Animasi saat section muncul di viewport
-              </p>
-            </label>
-            <label className="block">
-              <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                Card Style
-              </span>
-              <select
-                value={globalSectionStyleConfig.cardStyle || "rounded"}
-                onChange={(event) => updateGlobalSectionStyle("cardStyle", event.target.value)}
-                className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
-              >
-                <option value="rounded">Rounded</option>
-                <option value="sharp">Sharp</option>
-                <option value="pill">Pill</option>
-              </select>
-              <p className="mt-1.5 text-[10px] font-semibold text-[var(--color-text)]/60">
-                {globalSectionStyleConfig.cardStyle === "sharp"
-                  ? "Sudut tajam, formal"
-                  : globalSectionStyleConfig.cardStyle === "pill"
-                    ? "Sangat bulat, playful"
-                    : "Sudut rounded, modern"}
-              </p>
-            </label>
+          <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_320px]">
+            <div className="grid gap-4 md:grid-cols-3">
+              <Field label="Jarak Section">
+                <SelectInput
+                  value={globalSectionStyleConfig.spacingPreset || "normal"}
+                  onChange={(event) => updateGlobalSectionStyle("spacingPreset", event.target.value)}
+                >
+                  {sectionSpacingPresetOptions.map((preset) => (
+                    <option key={preset} value={preset}>
+                      {spacingLabels[preset] || preset}
+                    </option>
+                  ))}
+                </SelectInput>
+                <p className="mt-1.5 text-[10px] font-semibold text-[var(--color-text)]/60">
+                  {spacingDescriptions[globalSectionStyleConfig.spacingPreset] ||
+                    spacingDescriptions.normal}
+                </p>
+              </Field>
+              <Field label="Gaya Card">
+                <SelectInput
+                  value={globalSectionStyleConfig.cardStyle || "rounded"}
+                  onChange={(event) => updateGlobalSectionStyle("cardStyle", event.target.value)}
+                >
+                  <option value="rounded">{cardStyleLabels.rounded}</option>
+                  <option value="sharp">{cardStyleLabels.sharp}</option>
+                  <option value="pill">{cardStyleLabels.pill}</option>
+                </SelectInput>
+                <p className="mt-1.5 text-[10px] font-semibold text-[var(--color-text)]/60">
+                  {cardStyleDescriptions[globalSectionStyleConfig.cardStyle] ||
+                    cardStyleDescriptions.rounded}
+                </p>
+              </Field>
+              <Field label="Animasi Masuk">
+                <SelectInput
+                  value={globalSectionStyleConfig.entranceAnimation || "fade-up"}
+                  onChange={(event) => updateGlobalSectionStyle("entranceAnimation", event.target.value)}
+                >
+                  {sectionEntranceOptions.map((anim) => (
+                    <option key={anim} value={anim}>
+                      {animationLabels[anim] || anim}
+                    </option>
+                  ))}
+                </SelectInput>
+                <p className="mt-1.5 text-[10px] font-semibold text-[var(--color-text)]/60">
+                  Cara section muncul saat tamu scroll undangan.
+                </p>
+              </Field>
+              <Field label="Ukuran Konten">
+                <SelectInput
+                  value={globalSectionStyleConfig.contentSize || "normal"}
+                  onChange={(event) => updateGlobalSectionStyle("contentSize", event.target.value)}
+                >
+                  {contentSizeOptions.map((size) => (
+                    <option key={size} value={size}>
+                      {contentSizeLabels[size] || size}
+                    </option>
+                  ))}
+                </SelectInput>
+                <p className="mt-1.5 text-[10px] font-semibold text-[var(--color-text)]/60">
+                  {contentSizeDescriptions[globalSectionStyleConfig.contentSize] ||
+                    contentSizeDescriptions.normal}
+                </p>
+              </Field>
+            </div>
+            <StylePreviewCard
+              config={globalSectionStyleConfig}
+              headingFontOptions={headingFontOptions}
+              bodyFontOptions={bodyFontOptions}
+            />
           </div>
-        </div>
+        </DashboardCard>
       </div>
       <div id="template-couple" className="scroll-mt-24 md:col-span-2">
-        <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-5">
-          <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent)]">
-            Couple Section
+        <DashboardCard>
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--dash-muted)]">
+            Section Mempelai
           </p>
-          <p className="mt-1 text-base font-semibold text-[var(--color-text)]">
+          <p className="mt-1 text-base font-semibold text-[var(--dash-ink)]">
             Atur foto mempelai, border foto, font, teks orang tua, dan tombol Instagram.
           </p>
           <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start">
             <div className="grid gap-4 md:grid-cols-3">
-              <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
-                <input
-                  type="checkbox"
-                  checked={Boolean(coupleSectionConfig.photoEnabled)}
-                  onChange={(event) =>
-                    updateTemplateSectionConfig("couple", "photoEnabled", event.target.checked)
-                  }
-                  className="h-4 w-4"
-                />
-                <span className="text-sm font-black text-[var(--color-primary)]">Foto aktif</span>
-              </label>
-              <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
-                <input
-                  type="checkbox"
-                  checked={Boolean(coupleSectionConfig.borderEnabled)}
-                  onChange={(event) =>
-                    updateTemplateSectionConfig("couple", "borderEnabled", event.target.checked)
-                  }
-                  className="h-4 w-4"
-                />
-                <span className="text-sm font-black text-[var(--color-primary)]">Border foto</span>
-              </label>
-              <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
-                <input
-                  type="checkbox"
-                  checked={Boolean(coupleSectionConfig.parentTextEnabled)}
-                  onChange={(event) =>
-                    updateTemplateSectionConfig("couple", "parentTextEnabled", event.target.checked)
-                  }
-                  className="h-4 w-4"
-                />
-                <span className="text-sm font-black text-[var(--color-primary)]">Teks orang tua</span>
-              </label>
-              <label className="flex items-center gap-3 rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2">
-                <input
-                  type="checkbox"
-                  checked={Boolean(coupleSectionConfig.instagramEnabled)}
-                  onChange={(event) =>
-                    updateTemplateSectionConfig("couple", "instagramEnabled", event.target.checked)
-                  }
-                  className="h-4 w-4"
-                />
-                <span className="text-sm font-black text-[var(--color-primary)]">Instagram</span>
-              </label>
-              <label className="block">
-                <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                  Photo Style
-                </span>
-                <select
+              <ToggleField
+                checked={Boolean(coupleSectionConfig.photoEnabled)}
+                label="Tampilkan Foto"
+                onChange={(checked) =>
+                  updateTemplateSectionConfig("couple", "photoEnabled", checked)
+                }
+              />
+              <ToggleField
+                checked={Boolean(coupleSectionConfig.borderEnabled)}
+                label="Border foto"
+                onChange={(checked) =>
+                  updateTemplateSectionConfig("couple", "borderEnabled", checked)
+                }
+              />
+              <ToggleField
+                checked={Boolean(coupleSectionConfig.parentTextEnabled)}
+                label="Tampilkan Orang Tua"
+                onChange={(checked) =>
+                  updateTemplateSectionConfig("couple", "parentTextEnabled", checked)
+                }
+              />
+              <ToggleField
+                checked={Boolean(coupleSectionConfig.instagramEnabled)}
+                label="Tampilkan Instagram"
+                onChange={(checked) =>
+                  updateTemplateSectionConfig("couple", "instagramEnabled", checked)
+                }
+              />
+              <Field label="Bentuk Foto">
+                <SelectInput
                   value={coupleSectionConfig.photoStyle}
                   onChange={(event) =>
                     updateTemplateSectionConfig("couple", "photoStyle", event.target.value)
                   }
-                  className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
                 >
                   {couplePhotoStyleOptions.map((style) => (
                     <option key={style} value={style}>
-                      {style}
+                      {photoStyleLabels[style] || style}
                     </option>
                   ))}
-                </select>
-              </label>
-              <label className="block">
-                <span className="text-xs font-black uppercase tracking-[0.1em] text-[var(--color-text)]">
-                  Font Preset
-                </span>
-                <select
+                </SelectInput>
+              </Field>
+              <Field label="Gaya Font Nama">
+                <SelectInput
                   value={coupleSectionConfig.fontPreset}
                   onChange={(event) =>
                     updateTemplateSectionConfig("couple", "fontPreset", event.target.value)
                   }
-                  className="mt-2 w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-sm font-black text-[var(--color-primary)] outline-none focus:border-[var(--color-accent)]"
                 >
                   {coupleFontPresetOptions.map((preset) => (
                     <option key={preset} value={preset}>
-                      {preset}
+                      {coupleFontLabels[preset] || preset}
                     </option>
                   ))}
-                </select>
-              </label>
+                </SelectInput>
+              </Field>
             </div>
             <CoupleSectionPreview config={coupleSectionConfig} />
           </div>
-        </div>
+        </DashboardCard>
       </div>
     </>
   );

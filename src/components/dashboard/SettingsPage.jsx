@@ -2,7 +2,16 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { fadeUp, templates } from "./config";
+import { fadeUp } from "./config";
+import BankCatalogManager from "./BankCatalogManager";
+import {
+  DashboardButton,
+  Field,
+  SelectInput,
+  TextAreaInput,
+  TextInput,
+} from "./FormControls";
+import { readFileAsDataUrl } from "./widget-previews/shared";
 
 const storageKey = "nusa-invite:platform-settings";
 
@@ -13,6 +22,9 @@ const defaultSettings = {
   domain: "nustainvite.com",
   defaultPackage: "Premium",
   defaultTemplate: "standard",
+  defaultTemplateThumbnail: "/assets/CoverPasangan.png",
+  defaultGroomPhoto: "/assets/catin_pria.jpg",
+  defaultBridePhoto: "/assets/catin_wanita.jpg",
   paymentInstructions:
     "Pembayaran manual via transfer bank. Admin memverifikasi bukti bayar dari WhatsApp sebelum order diproses.",
   orderMessage:
@@ -27,6 +39,11 @@ const defaultSettings = {
     emailGateway: "active",
     whatsappApi: "active",
   },
+  packagePrices: {
+    basic: "Rp 45.000",
+    premium: "Rp 90.000",
+    exclusive: "Rp 149.000",
+  },
 };
 
 const dashboardPalettes = [
@@ -37,40 +54,41 @@ const dashboardPalettes = [
   { id: "mono-slate", name: "Slate Neutral", colors: ["#2f3542", "#7d8793", "#f3f5f7"] },
 ];
 
-function Field({ label, children }) {
+function ImageUploadControl({ field, uploadingField, onUpload, showReset, onReset }) {
+  const isUploading = uploadingField === field;
   return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-bold text-[var(--color-text)]">{label}</span>
-      {children}
-    </label>
-  );
-}
-
-function TextInput(props) {
-  return (
-    <input
-      {...props}
-      className="w-full rounded-lg border border-[var(--color-accent-pale)] bg-white px-3 py-2.5 text-sm font-semibold text-[var(--color-text)] outline-none transition-shadow focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20"
-    />
-  );
-}
-
-function SelectInput(props) {
-  return (
-    <select
-      {...props}
-      className="w-full appearance-none rounded-lg border border-[var(--color-accent-pale)] bg-white px-3 py-2.5 text-sm font-semibold text-[var(--color-text)] outline-none transition-shadow focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20"
-    />
-  );
-}
-
-function TextAreaInput({ rows = 4, ...props }) {
-  return (
-    <textarea
-      {...props}
-      rows={rows}
-      className="w-full rounded-lg border border-[var(--color-accent-pale)] bg-white px-3 py-2.5 text-sm font-semibold leading-6 text-[var(--color-text)] outline-none transition-shadow focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20"
-    />
+    <div className="space-y-3">
+      <label
+        className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--color-accent-pale)] bg-white px-4 py-2 text-sm font-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-bg)] ${
+          isUploading ? "pointer-events-none opacity-60" : ""
+        }`}
+      >
+        <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+          <path d="M17 8l-5-5-5 5" />
+          <path d="M12 3v12" />
+        </svg>
+        {isUploading ? "Mengunggah..." : "Upload Gambar"}
+        <input
+          type="file"
+          accept="image/*"
+          className="hidden"
+          disabled={isUploading}
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) {
+              onUpload(field, file);
+            }
+            event.target.value = "";
+          }}
+        />
+      </label>
+      {showReset ? (
+        <DashboardButton type="button" variant="secondary" size="sm" onClick={onReset}>
+          Hapus & pakai default
+        </DashboardButton>
+      ) : null}
+    </div>
   );
 }
 
@@ -83,13 +101,14 @@ function SectionCard({ title, desc, onReset, children }) {
           <p className="mt-1 text-sm font-semibold text-[var(--color-text)]/70">{desc}</p>
         </div>
         {onReset ? (
-          <button
+          <DashboardButton
             type="button"
             onClick={onReset}
-            className="rounded-lg border border-[var(--color-accent-pale)] bg-white px-3 py-1.5 text-xs font-bold text-[var(--color-text)]/75 hover:bg-[var(--color-bg)]"
+            variant="secondary"
+            size="sm"
           >
             Reset
-          </button>
+          </DashboardButton>
         ) : null}
       </div>
       {children}
@@ -101,22 +120,75 @@ export default function SettingsPage() {
   const [settings, setSettings] = useState(defaultSettings);
   const [message, setMessage] = useState("");
   const [isDirty, setIsDirty] = useState(false);
+  const [uploadingField, setUploadingField] = useState("");
 
   useEffect(() => {
-    try {
-      const storedSettings = window.localStorage.getItem(storageKey);
-      if (storedSettings) {
-        setSettings({ ...defaultSettings, ...JSON.parse(storedSettings) });
-      }
-    } catch {
-      setSettings(defaultSettings);
-    }
+    let isMounted = true;
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((res) => {
+        if (!isMounted) return;
+        if (res.data) {
+          setSettings({ ...defaultSettings, ...res.data });
+        } else {
+          const stored = window.localStorage.getItem(storageKey);
+          if (stored) {
+            setSettings({ ...defaultSettings, ...JSON.parse(stored) });
+          }
+        }
+      })
+      .catch(() => {
+        if (!isMounted) return;
+        const stored = window.localStorage.getItem(storageKey);
+        if (stored) {
+          setSettings({ ...defaultSettings, ...JSON.parse(stored) });
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const updateSetting = (field, value) => {
     setSettings((current) => ({ ...current, [field]: value }));
     setMessage("");
     setIsDirty(true);
+  };
+
+  const uploadSettingImage = async (field, file) => {
+    if (!file) {
+      return;
+    }
+
+    // Instant local preview (and the value used in dev/sample mode).
+    const dataUrl = await readFileAsDataUrl(file);
+    updateSetting(field, dataUrl);
+
+    setUploadingField(field);
+    setMessage("Mengunggah gambar...");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/settings/thumbnail", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Gagal mengunggah gambar.");
+      }
+      if (result?.data?.url) {
+        updateSetting(field, result.data.url);
+        setMessage("Gambar terunggah. Jangan lupa Simpan Perubahan.");
+      } else {
+        setMessage("Gambar aktif secara lokal. Jangan lupa Simpan Perubahan.");
+      }
+    } catch (err) {
+      setMessage(`Gambar dipakai lokal (server offline: ${err.message}).`);
+    } finally {
+      setUploadingField("");
+    }
   };
 
   const updateIntegration = (field, value) => {
@@ -131,27 +203,70 @@ export default function SettingsPage() {
     setIsDirty(true);
   };
 
-  const saveSettings = () => {
-    window.localStorage.setItem(storageKey, JSON.stringify(settings));
-    window.dispatchEvent(
-      new CustomEvent("nusa-invite:settings-updated", {
-        detail: { settings },
-      }),
-    );
-    setMessage("Pengaturan berhasil disimpan.");
-    setIsDirty(false);
+  const saveSettings = async () => {
+    setMessage("Menyimpan pengaturan...");
+    try {
+      const response = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings }),
+      });
+      const res = await response.json();
+      if (!response.ok) {
+        throw new Error(res.error || "Gagal menyimpan ke server.");
+      }
+
+      window.localStorage.setItem(storageKey, JSON.stringify(settings));
+      window.dispatchEvent(
+        new CustomEvent("nusa-invite:settings-updated", {
+          detail: { settings },
+        }),
+      );
+      setMessage("Pengaturan berhasil disimpan.");
+      setIsDirty(false);
+    } catch (err) {
+      window.localStorage.setItem(storageKey, JSON.stringify(settings));
+      window.dispatchEvent(
+        new CustomEvent("nusa-invite:settings-updated", {
+          detail: { settings },
+        }),
+      );
+      setMessage(`Tersimpan lokal (server offline: ${err.message})`);
+      setIsDirty(false);
+    }
   };
 
-  const resetSettings = () => {
-    window.localStorage.removeItem(storageKey);
-    setSettings(defaultSettings);
-    window.dispatchEvent(
-      new CustomEvent("nusa-invite:settings-updated", {
-        detail: { settings: defaultSettings },
-      }),
-    );
-    setMessage("Pengaturan dikembalikan ke default.");
-    setIsDirty(true);
+  const resetSettings = async () => {
+    setMessage("Mengembalikan ke default...");
+    try {
+      const response = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ settings: defaultSettings }),
+      });
+      if (!response.ok) {
+        throw new Error("Gagal mereset di server.");
+      }
+      setSettings(defaultSettings);
+      window.localStorage.removeItem(storageKey);
+      window.dispatchEvent(
+        new CustomEvent("nusa-invite:settings-updated", {
+          detail: { settings: defaultSettings },
+        }),
+      );
+      setMessage("Pengaturan dikembalikan ke default.");
+      setIsDirty(false);
+    } catch (err) {
+      setSettings(defaultSettings);
+      window.localStorage.removeItem(storageKey);
+      window.dispatchEvent(
+        new CustomEvent("nusa-invite:settings-updated", {
+          detail: { settings: defaultSettings },
+        }),
+      );
+      setMessage("Pengaturan dikembalikan ke default secara lokal.");
+      setIsDirty(true);
+    }
   };
 
   const orderWhatsappLink = useMemo(
@@ -238,6 +353,85 @@ export default function SettingsPage() {
             />
           </Field>
         </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Thumbnail Template Default"
+        desc="Gambar cadangan yang dipakai saat sebuah template belum punya thumbnail sendiri. Tampil di katalog dashboard dan landing page."
+        onReset={() =>
+          updateSetting("defaultTemplateThumbnail", defaultSettings.defaultTemplateThumbnail)
+        }
+      >
+        <div className="flex flex-wrap items-start gap-5">
+          <div className="shrink-0">
+            <img
+              src={settings.defaultTemplateThumbnail || defaultSettings.defaultTemplateThumbnail}
+              alt="Pratinjau thumbnail default"
+              className="aspect-[4/5] w-28 rounded-lg border border-[var(--color-accent-pale)] bg-[var(--color-muted)] object-cover"
+            />
+          </div>
+          <div className="min-w-[220px] flex-1 space-y-3">
+            <ImageUploadControl
+              field="defaultTemplateThumbnail"
+              uploadingField={uploadingField}
+              onUpload={uploadSettingImage}
+              showReset={
+                settings.defaultTemplateThumbnail &&
+                settings.defaultTemplateThumbnail !== defaultSettings.defaultTemplateThumbnail
+              }
+              onReset={() =>
+                updateSetting("defaultTemplateThumbnail", defaultSettings.defaultTemplateThumbnail)
+              }
+            />
+            <p className="text-xs font-medium text-[var(--color-text)]/60">
+              Format gambar (PNG/JPG/SVG). Rekomendasi rasio potret 4:5. Klik Simpan Perubahan setelah upload.
+            </p>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Foto Mempelai Default"
+        desc="Pas foto cadangan untuk section Mempelai (di atas nama). Dipakai saat undangan belum upload foto mempelai sendiri."
+        onReset={() => {
+          updateSetting("defaultGroomPhoto", defaultSettings.defaultGroomPhoto);
+          updateSetting("defaultBridePhoto", defaultSettings.defaultBridePhoto);
+        }}
+      >
+        <div className="grid gap-6 sm:grid-cols-2">
+          {[
+            { field: "defaultGroomPhoto", label: "Foto Mempelai Pria" },
+            { field: "defaultBridePhoto", label: "Foto Mempelai Wanita" },
+          ].map(({ field, label }) => (
+            <div key={field} className="flex items-start gap-4">
+              <img
+                src={settings[field] || defaultSettings[field]}
+                alt={`Pratinjau ${label}`}
+                className="aspect-[3/4] w-24 shrink-0 rounded-lg border border-[var(--color-accent-pale)] bg-[var(--color-muted)] object-cover"
+              />
+              <div className="min-w-[160px] flex-1 space-y-2">
+                <p className="text-sm font-bold text-[var(--color-text)]">{label}</p>
+                <ImageUploadControl
+                  field={field}
+                  uploadingField={uploadingField}
+                  onUpload={uploadSettingImage}
+                  showReset={settings[field] && settings[field] !== defaultSettings[field]}
+                  onReset={() => updateSetting(field, defaultSettings[field])}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-xs font-medium text-[var(--color-text)]/60">
+          Rekomendasi rasio potret 3:4. Klik Simpan Perubahan setelah upload.
+        </p>
+      </SectionCard>
+
+      <SectionCard
+        title="Katalog Bank"
+        desc="Daftar nama dan logo bank yang dapat dipilih saat mengisi Amplop Digital."
+      >
+        <BankCatalogManager />
       </SectionCard>
 
       <SectionCard title="Preferensi Sistem" desc="Konfigurasi zona waktu, format tanggal, tema, dan perilaku preview.">
@@ -433,26 +627,81 @@ export default function SettingsPage() {
         </div>
       </SectionCard>
 
+      <SectionCard
+        title="Paket & Harga"
+        desc="Harga yang ditampilkan di landing page. Ubah sesuai promo atau update tarif terbaru."
+        onReset={() => {
+          setSettings((current) => ({
+            ...current,
+            packagePrices: defaultSettings.packagePrices,
+          }));
+          setIsDirty(true);
+        }}
+      >
+        <div className="grid gap-4 md:grid-cols-3">
+          <Field label="Harga Paket Basic">
+            <TextInput
+              value={settings.packagePrices?.basic ?? defaultSettings.packagePrices.basic}
+              onChange={(event) =>
+                setSettings((current) => ({
+                  ...current,
+                  packagePrices: { ...(current.packagePrices || {}), basic: event.target.value },
+                }))
+              }
+              placeholder="Rp 45.000"
+            />
+          </Field>
+          <Field label="Harga Paket Premium">
+            <TextInput
+              value={settings.packagePrices?.premium ?? defaultSettings.packagePrices.premium}
+              onChange={(event) =>
+                setSettings((current) => ({
+                  ...current,
+                  packagePrices: { ...(current.packagePrices || {}), premium: event.target.value },
+                }))
+              }
+              placeholder="Rp 90.000"
+            />
+          </Field>
+          <Field label="Harga Paket Exclusive">
+            <TextInput
+              value={settings.packagePrices?.exclusive ?? defaultSettings.packagePrices.exclusive}
+              onChange={(event) =>
+                setSettings((current) => ({
+                  ...current,
+                  packagePrices: { ...(current.packagePrices || {}), exclusive: event.target.value },
+                }))
+              }
+              placeholder="Rp 149.000"
+            />
+          </Field>
+        </div>
+        <p className="mt-3 text-xs font-medium text-[var(--color-text)]/60">
+          Harga ini akan langsung tampil di landing page setelah disimpan.
+        </p>
+      </SectionCard>
+
       <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--color-accent-pale)] bg-white/95 px-4 py-3 backdrop-blur md:left-64">
         <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-4">
           <p className="hidden text-sm font-semibold text-[var(--color-text)]/70 sm:block">
             {isDirty ? "Anda memiliki perubahan yang belum disimpan." : "Semua perubahan sudah tersimpan."}
           </p>
           <div className="flex w-full gap-3 sm:w-auto">
-            <button
+            <DashboardButton
               type="button"
               onClick={resetSettings}
-              className="flex-1 rounded-lg border border-[var(--color-accent-pale)] bg-white px-5 py-2.5 text-sm font-bold text-[var(--color-primary)] hover:bg-[var(--color-bg)] sm:flex-none"
+              variant="secondary"
+              className="flex-1 sm:flex-none"
             >
               Batal
-            </button>
-            <button
+            </DashboardButton>
+            <DashboardButton
               type="button"
               onClick={saveSettings}
-              className="flex-1 rounded-lg bg-[var(--color-accent)] px-5 py-2.5 text-sm font-bold text-[var(--color-primary)] hover:brightness-95 sm:flex-none"
+              className="flex-1 sm:flex-none"
             >
               Simpan Perubahan
-            </button>
+            </DashboardButton>
           </div>
         </div>
         {message ? (

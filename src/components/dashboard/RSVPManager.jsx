@@ -11,11 +11,16 @@ export default function RSVPManager({ invitationSlug = "" }) {
   const [attendanceFilter, setAttendanceFilter] = useState("all");
   const [groupFilter, setGroupFilter] = useState("all");
   const [dateFilter, setDateFilter] = useState("");
+  const [invitationId, setInvitationId] = useState("");
+  const [isLive, setIsLive] = useState(false);
+  const [recentIds, setRecentIds] = useState(() => new Set());
 
   useEffect(() => {
     if (!invitationSlug) {
       setRsvps([]);
       setGuests([]);
+      setInvitationId("");
+      setIsLive(false);
       return undefined;
     }
 
@@ -32,6 +37,10 @@ export default function RSVPManager({ invitationSlug = "" }) {
       .then(([rsvpResult, guestResult]) => {
         if (!isMounted) {
           return;
+        }
+
+        if (rsvpResult.invitationId) {
+          setInvitationId(rsvpResult.invitationId);
         }
 
         if (Array.isArray(rsvpResult.data)) {
@@ -53,6 +62,80 @@ export default function RSVPManager({ invitationSlug = "" }) {
       isMounted = false;
     };
   }, [invitationSlug]);
+
+  useEffect(() => {
+    if (!invitationId) {
+      setIsLive(false);
+      return undefined;
+    }
+
+    let supabase;
+    try {
+      const { createBrowserSupabaseClient } = require("../../lib/supabase/client");
+      supabase = createBrowserSupabaseClient();
+    } catch (e) {
+      console.warn("Supabase client couldn't be initialized for real-time: ", e);
+      setIsLive(false);
+      return undefined;
+    }
+
+    if (!supabase) {
+      setIsLive(false);
+      return undefined;
+    }
+
+    const channel = supabase
+      .channel(`realtime-rsvps-${invitationId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "rsvps",
+          filter: `invitation_id=eq.${invitationId}`,
+        },
+        (payload) => {
+          const newRsvp = {
+            id: payload.new.id,
+            guestId: payload.new.guest_id,
+            guestName: payload.new.guest_name,
+            attendance: payload.new.attendance,
+            pax: payload.new.pax,
+            message: payload.new.message,
+            hidden: payload.new.hidden || false,
+            createdAt: payload.new.created_at,
+          };
+          setRsvps((prev) => {
+            if (prev.some((r) => r.id === newRsvp.id)) return prev;
+            return [newRsvp, ...prev];
+          });
+          setRecentIds((prev) => {
+            const next = new Set(prev);
+            next.add(newRsvp.id);
+            return next;
+          });
+          setTimeout(() => {
+            setRecentIds((prev) => {
+              if (!prev.has(newRsvp.id)) return prev;
+              const next = new Set(prev);
+              next.delete(newRsvp.id);
+              return next;
+            });
+          }, 6000);
+        }
+      )
+      .subscribe((status) => {
+        if (status === "SUBSCRIBED") {
+          setIsLive(true);
+        } else {
+          setIsLive(false);
+        }
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [invitationId]);
 
   const guestGroupMap = useMemo(() => {
     const map = new Map();
@@ -166,6 +249,49 @@ export default function RSVPManager({ invitationSlug = "" }) {
     .filter(Boolean)
     .join(" / ");
 
+  const toggleHidden = async (item) => {
+    const nextHidden = !item.hidden;
+    setRsvps((prev) =>
+      prev.map((r) => (r.id === item.id ? { ...r, hidden: nextHidden } : r)),
+    );
+
+    try {
+      const response = await fetch("/api/rsvps", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: item.id, hidden: nextHidden }),
+      });
+      if (!response.ok) throw new Error("failed");
+    } catch {
+      // revert on failure
+      setRsvps((prev) =>
+        prev.map((r) => (r.id === item.id ? { ...r, hidden: item.hidden } : r)),
+      );
+    }
+  };
+
+  const deleteRsvp = async (item) => {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(`Hapus RSVP dari ${item.guestName}? Tindakan ini tidak bisa dibatalkan.`)
+    ) {
+      return;
+    }
+
+    const snapshot = rsvps;
+    setRsvps((prev) => prev.filter((r) => r.id !== item.id));
+
+    try {
+      const response = await fetch(
+        `/api/rsvps?id=${encodeURIComponent(item.id)}`,
+        { method: "DELETE" },
+      );
+      if (!response.ok) throw new Error("failed");
+    } catch {
+      setRsvps(snapshot);
+    }
+  };
+
   const exportCsv = () => {
     const headers = ["Nama", "Group", "Status", "Pax", "Ucapan", "Waktu"];
     const rows = filteredRsvps.map((item) => [
@@ -218,8 +344,14 @@ export default function RSVPManager({ invitationSlug = "" }) {
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
             RSVP Manager
           </p>
-          <h2 className="mt-1 text-2xl font-semibold text-[var(--dash-ink)]">
+          <h2 className="mt-1 text-2xl font-semibold text-[var(--dash-ink)] flex items-center gap-2">
             Konfirmasi kehadiran
+            {isLive ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 border border-emerald-200 animate-pulse">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Live
+              </span>
+            ) : null}
           </h2>
           <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
             Data RSVP untuk order aktif: /u/{invitationSlug}
@@ -363,11 +495,21 @@ export default function RSVPManager({ invitationSlug = "" }) {
               <th className="px-5 py-3">Pax</th>
               <th className="px-5 py-3">Ucapan</th>
               <th className="px-5 py-3">Waktu</th>
+              <th className="px-5 py-3 text-right">Aksi</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--dash-border)]">
             {filteredRsvps.map((item, index) => (
-              <tr key={`${item.guestName}-${index}`} className="hover:bg-[var(--dash-fog)]/60">
+              <tr
+                key={`${item.guestName}-${index}`}
+                className={`transition-colors duration-1000 ${
+                  recentIds.has(item.id)
+                    ? "bg-emerald-50"
+                    : item.hidden
+                      ? "bg-[var(--dash-fog)]/40"
+                      : "hover:bg-[var(--dash-fog)]/60"
+                }`}
+              >
                 <td className="px-5 py-4 text-sm font-semibold text-[var(--dash-ink)]">
                   {item.guestName}
                 </td>
@@ -383,12 +525,41 @@ export default function RSVPManager({ invitationSlug = "" }) {
                   {item.pax}
                 </td>
                 <td className="max-w-sm px-5 py-4 text-sm font-medium leading-6 text-[var(--dash-muted)]">
-                  {item.message || "-"}
+                  <span className={item.hidden ? "line-through opacity-60" : undefined}>
+                    {item.message || "-"}
+                  </span>
+                  {item.hidden && item.message ? (
+                    <span className="ml-2 inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                      Disembunyikan
+                    </span>
+                  ) : null}
                 </td>
                 <td className="px-5 py-4 text-sm font-medium text-[var(--dash-muted)]">
                   {item.createdAt
                     ? new Date(item.createdAt).toLocaleString("id-ID")
                     : "-"}
+                </td>
+                <td className="px-5 py-4">
+                  <div className="flex items-center justify-end gap-2">
+                    {item.message ? (
+                      <button
+                        type="button"
+                        onClick={() => toggleHidden(item)}
+                        className="rounded-md border border-[var(--dash-border)] px-2.5 py-1 text-xs font-semibold text-[var(--dash-ink)] transition-colors hover:bg-[var(--dash-fog)]"
+                        title={item.hidden ? "Tampilkan ucapan di undangan" : "Sembunyikan ucapan dari undangan"}
+                      >
+                        {item.hidden ? "Tampilkan" : "Sembunyikan"}
+                      </button>
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => deleteRsvp(item)}
+                      className="rounded-md border border-rose-200 px-2.5 py-1 text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+                      title="Hapus RSVP"
+                    >
+                      Hapus
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

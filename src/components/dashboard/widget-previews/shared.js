@@ -52,15 +52,69 @@
   };
 }
 
+const previewTitleLabels = {
+  "Live Preview": "Pratinjau",
+  "Gift Preview": "Pratinjau Amplop",
+  "RSVP Preview": "Pratinjau RSVP",
+  "Music Preview": "Pratinjau Musik",
+};
+
+const previewLabelLabels = {
+  cards: "Kartu",
+  minimal: "Minimal",
+  stacked: "Bertumpuk",
+  timeline: "Timeline",
+  grid: "Grid",
+  carousel: "Carousel",
+  masonry: "Masonry",
+  slider: "Slider",
+  floating: "Melayang",
+  compact: "Ringkas",
+  form: "Formulir",
+  card: "Kartu",
+  circle: "Lingkaran",
+  "flip-clock": "Flip clock",
+  ring: "Cincin",
+  "neon-glow": "Cahaya neon",
+  bar: "Bar bawah",
+  "fade-up": "Muncul dari bawah",
+  "slide-left": "Geser ke kiri",
+  "slide-right": "Geser ke kanan",
+  "zoom-in": "Membesar halus",
+  "pop-up": "Pop up lembut",
+  centered: "Tengah",
+  split: "Terpisah",
+  plain: "Polos",
+  "separator-dot": "Titik pemisah",
+  "separator-line": "Garis pemisah",
+  badge: "Badge",
+  columns: "Kolom",
+  "full-day": "Hari lengkap",
+  block: "Blok tanggal",
+  arch: "Lengkung",
+  square: "Kotak",
+  "missing account": "Rekening belum lengkap",
+  "missing invitation": "Slug belum lengkap",
+};
+
+export function readablePreviewLabel(label) {
+  if (typeof label !== "string") return label;
+
+  return label
+    .split(" · ")
+    .map((item) => previewLabelLabels[item] || item)
+    .join(" · ");
+}
+
 export function WidgetPreviewShell({ title, label, enabled = true, children }) {
   return (
     <div className={`rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-section-soft)] p-4 ${enabled ? "" : "opacity-55"}`}>
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-          {title}
+          {previewTitleLabels[title] || title}
         </p>
         <p className="text-xs font-black text-[var(--color-accent)]">
-          {enabled ? label : "disabled"}
+          {enabled ? readablePreviewLabel(label) : "Nonaktif"}
         </p>
       </div>
       <div className="mt-4">{children}</div>
@@ -138,4 +192,14 @@ export function slugifyTemplateId(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
+}
+
+// Live variant for the ID input while typing: keeps a trailing dash so that a
+// typed space immediately shows as "-" instead of silently vanishing. The value
+// is fully normalized (trailing dash trimmed) on save.
+export function slugifyTemplateIdLive(value) {
+  return (value || "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+/, "");
 }

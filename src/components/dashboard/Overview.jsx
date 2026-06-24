@@ -3,6 +3,11 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { templates, fadeUp, statusStyles, activities } from "./config";
+import {
+  ConfirmationModal,
+  DashboardButton,
+  DashboardCard,
+} from "./FormControls";
 
 function Icon({ name, className = "h-4 w-4" }) {
   const common = { className, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", strokeLinecap: "round", strokeLinejoin: "round" };
@@ -17,24 +22,51 @@ function Icon({ name, className = "h-4 w-4" }) {
   if (name === "archive") return <svg {...common}><rect x="3" y="4" width="18" height="4" rx="1" /><path d="M5 8h14v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V8Z" /><path d="M10 12h4" /></svg>;
   if (name === "trash") return <svg {...common}><path d="M3 6h18" /><path d="M8 6V4h8v2" /><path d="m19 6-1 14H6L5 6" /><path d="M10 11v5" /><path d="M14 11v5" /></svg>;
   if (name === "template") return <svg {...common}><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M9 21V9" /></svg>;
+  if (name === "whatsapp") return (
+    <svg {...common} fill="currentColor" stroke="none" viewBox="0 0 24 24">
+      <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.717-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.864-9.864.002-2.637-1.03-5.115-2.906-6.99C16.255 1.875 13.784 .843 11.15.843 5.718.843 1.294 5.26 1.29 10.7c-.001 1.692.443 3.344 1.287 4.847l-1.077 3.93 4.025-1.056z" />
+    </svg>
+  );
   return <svg {...common}><circle cx="12" cy="12" r="9" /></svg>;
+}
+
+const statusLabels = {
+  published: "Terpublikasi",
+  archived: "Arsip",
+  review: "Review",
+  revision: "Revisi",
+  draft: "Draft",
+  inquiry: "Inquiry",
+  waiting_payment: "Menunggu Pembayaran",
+  unpaid: "Belum Bayar",
+  waiting_confirmation: "Menunggu Konfirmasi",
+  paid: "Lunas",
+  in_progress: "Dikerjakan",
+  approved: "Disetujui",
+  completed: "Selesai",
+  cancelled: "Batal",
+  refunded: "Refund",
+};
+
+function statusLabel(value) {
+  return statusLabels[value] || value || "-";
 }
 
 export function MetricCard({ label, value, detail, icon }) {
   return (
     <motion.div
       variants={fadeUp}
-      className="relative h-32 overflow-hidden rounded-xl border border-[var(--color-accent-pale)] bg-white p-4 shadow-lg shadow-[var(--color-primary)]/8"
+      className="relative h-32 overflow-hidden rounded-[14px] border border-[var(--dash-border)] bg-white p-4 shadow-[var(--dash-shadow)]"
     >
-      <div className="absolute -right-5 -top-5 h-24 w-24 rounded-full bg-[var(--color-accent)]/10" />
+      <div className="absolute -right-5 -top-5 h-24 w-24 rounded-full bg-[var(--dash-fog)]" />
       <div className="relative flex items-start justify-between gap-2">
-        <p className="text-xs font-black uppercase tracking-[0.08em] text-[var(--color-text)]/70">{label}</p>
-        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-bg)] text-[var(--color-primary)]">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">{label}</p>
+        <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[var(--dash-fog)] text-[var(--dash-ink)]">
           <Icon name={icon} className="h-4 w-4" />
         </span>
       </div>
-      <p className="relative mt-2 text-4xl font-black text-[var(--color-primary)]">{value}</p>
-      <p className="relative mt-1 text-xs font-semibold text-[var(--color-text)]/80">{detail}</p>
+      <p className="relative mt-2 text-4xl font-semibold text-[var(--dash-ink)]">{value}</p>
+      <p className="relative mt-1 text-xs font-medium text-[var(--dash-muted)]">{detail}</p>
     </motion.div>
   );
 }
@@ -116,7 +148,7 @@ export function InvitationTable({ variant = "full" }) {
   }, []);
 
   const updateInvitationStatus = async (item, action) => {
-    setActionMessage(`${action === "publish" ? "Publish" : "Archive"} ${item.slug}...`);
+    setActionMessage(`${action === "publish" ? "Mempublikasikan" : "Mengarsipkan"} ${item.slug}...`);
 
     try {
       const response = await fetch(`/api/invitations/${encodeURIComponent(item.slug)}`, {
@@ -147,13 +179,14 @@ export function InvitationTable({ variant = "full" }) {
             : currentItem,
         ),
       );
+      const nextStatusLabel = nextStatus === "published" ? "terpublikasi" : "diarsipkan";
       setActionMessage(
         result.source === "supabase"
-          ? `${item.slug} berhasil ${nextStatus}.`
-          : `Mode sample: ${item.slug} dianggap ${nextStatus}.`,
+          ? `${item.slug} berhasil ${nextStatusLabel}.`
+          : `Mode sample: ${item.slug} dianggap ${nextStatusLabel}.`,
       );
     } catch (error) {
-      setActionMessage(error.message || "Action gagal.");
+      setActionMessage(error.message || "Aksi gagal.");
     }
   };
 
@@ -190,28 +223,61 @@ export function InvitationTable({ variant = "full" }) {
     }
   };
 
+  const sendWaNotification = (item) => {
+    const wa = item.customerWhatsapp || "";
+    if (!wa) {
+      setActionMessage(`Nomor WhatsApp customer untuk ${item.slug} belum diisi.`);
+      return;
+    }
+
+    const publicUrl = item.slug ? `${window.location.origin}/u/${item.slug}` : "";
+    let groomName = "Mempelai Pria";
+    let brideName = "Mempelai Wanita";
+
+    if (item.couple && item.couple.includes(" & ")) {
+      const parts = item.couple.split(" & ");
+      groomName = parts[0] || groomName;
+      brideName = parts[1] || brideName;
+    } else if (item.couple) {
+      groomName = item.couple;
+      brideName = "";
+    }
+
+    const customerName = item.customerName || "Bapak/Ibu";
+    const statusLower = String(item.status).toLowerCase();
+    const isPublished = statusLower === "published";
+
+    const message = isPublished
+      ? `Halo ${customerName} 🎉\n\nUndangan digital ${groomName}${brideName ? ` & ${brideName}` : ""} sudah LIVE dan siap disebar!\n\nLink undangan: ${publicUrl}\n\nSelamat ya, semoga acaranya lancar dan penuh berkah! 🥰`
+      : `Halo ${customerName} 😊\n\nUndangan digital ${groomName}${brideName ? ` & ${brideName}` : ""} sudah siap untuk direview!\n\nSilakan cek preview di sini: ${publicUrl}\n\nJika ada yang perlu direvisi, mohon beritahu kami ya. Terima kasih! 🙏`;
+
+    const text = encodeURIComponent(message);
+    const cleanWa = wa.replace(/[^0-9]/g, "");
+    window.open(`https://wa.me/${cleanWa}?text=${text}`, "_blank", "noreferrer");
+  };
+
   return (
     <>
       <motion.section
         variants={fadeUp}
-        className="overflow-hidden rounded-xl border border-[var(--color-accent-pale)] bg-white shadow-lg shadow-[var(--color-primary)]/8"
+        className="overflow-hidden rounded-[14px] border border-[var(--dash-border)] bg-white shadow-[var(--dash-shadow)]"
       >
-      <div className="flex items-center justify-between border-b border-[var(--color-accent-pale)] px-6 py-4">
-        <h2 className="text-xl font-black text-[var(--color-primary)]">Undangan Terbaru</h2>
-        <a href="/dashboard/invitations" className="text-sm font-black text-[var(--color-primary)] hover:underline">
+      <div className="flex items-center justify-between border-b border-[var(--dash-border)] px-6 py-4">
+        <h2 className="text-xl font-semibold text-[var(--dash-ink)]">Undangan Terbaru</h2>
+        <a href="/dashboard/invitations" className="text-sm font-semibold text-[var(--dash-muted)] hover:text-[var(--dash-ink)]">
           Lihat Semua
         </a>
       </div>
 
       {actionMessage ? (
-        <p className="border-b border-[var(--color-accent-pale)] px-6 py-3 text-sm font-bold text-[var(--color-text)]">
+        <p className="border-b border-[var(--dash-border)] px-6 py-3 text-sm font-medium text-[var(--dash-muted)]">
           {actionMessage}
         </p>
       ) : null}
 
       <div className="overflow-x-auto">
         <table className={`w-full text-left ${isOverviewVariant ? "min-w-[720px]" : isInvitationsVariant ? "min-w-[1220px]" : "min-w-[1040px]"}`}>
-          <thead className="bg-[var(--color-muted)] text-xs uppercase tracking-[0.12em] text-[var(--color-text)]">
+          <thead className="bg-[var(--dash-fog)] text-xs uppercase tracking-[0.12em] text-[var(--dash-muted)]">
             <tr>
               <th className="px-6 py-4">Pasangan</th>
               {isInvitationsVariant ? <th className="px-6 py-4">Slug</th> : <th className="px-6 py-4">Template</th>}
@@ -223,6 +289,7 @@ export function InvitationTable({ variant = "full" }) {
               {!isOverviewVariant && !isInvitationsVariant ? (
                 <>
                   <th className="px-6 py-4">Pemesan</th>
+                  <th className="px-6 py-4">Views</th>
                   <th className="px-6 py-4">RSVP</th>
                   <th className="px-6 py-4">Payment</th>
                 </>
@@ -230,12 +297,12 @@ export function InvitationTable({ variant = "full" }) {
               <th className="px-6 py-4 text-right">Aksi</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[var(--color-accent-pale)]/65">
+          <tbody className="divide-y divide-[var(--dash-border)]">
             {isLoadingInvitations ? (
               <tr>
                 <td
                   colSpan={isOverviewVariant ? 5 : isInvitationsVariant ? 8 : 8}
-                  className="px-6 py-8 text-center text-base font-semibold text-[var(--color-text)]"
+                  className="px-6 py-8 text-center text-base font-semibold text-[var(--dash-muted)]"
                 >
                   Memuat undangan...
                 </td>
@@ -244,71 +311,79 @@ export function InvitationTable({ variant = "full" }) {
               <tr>
                 <td
                   colSpan={isOverviewVariant ? 5 : isInvitationsVariant ? 8 : 8}
-                  className="px-6 py-8 text-center text-base font-semibold text-[var(--color-text)]"
+                  className="px-6 py-8 text-center text-base font-semibold text-[var(--dash-muted)]"
                 >
                   Belum ada data undangan.
                 </td>
               </tr>
             ) : items.map((item) => (
-              <tr key={item.id} className="transition-colors hover:bg-[var(--color-bg)]">
+              <tr key={item.id} className="transition-colors hover:bg-[var(--dash-fog)]/60">
                 <td className="px-6 py-4">
-                  <p className="text-lg font-black text-[var(--color-primary)]">{item.couple}</p>
-                  <p className="mt-1 text-xs font-semibold text-[var(--color-text)]/70">
+                  <p className="text-lg font-semibold text-[var(--dash-ink)]">{item.couple}</p>
+                  <p className="mt-1 text-xs font-medium text-[var(--dash-muted)]">
                     {isInvitationsVariant ? (item.package || "-") : (item.customerName || item.slug)}
                   </p>
                 </td>
                 <td className="px-6 py-4">
                   {isInvitationsVariant ? (
-                    <p className="font-black text-[var(--color-text)]/80">{item.slug}</p>
+                    <p className="font-semibold text-[var(--dash-ink)]">{item.slug}</p>
                   ) : (
-                    <p className="font-black text-[var(--color-primary)]">{item.template}</p>
+                    <p className="font-semibold text-[var(--dash-ink)]">{item.template}</p>
                   )}
                   {!isOverviewVariant && !isInvitationsVariant ? (
-                    <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">
+                    <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
                       {item.category} | {item.package}
                     </p>
                   ) : null}
                 </td>
                 {isInvitationsVariant ? (
                   <td className="px-6 py-4">
-                    <p className="font-black text-[var(--color-primary)]">{item.template || "-"}</p>
-                    <p className="mt-1 text-xs font-semibold text-[var(--color-text)]/70">
+                    <p className="font-semibold text-[var(--dash-ink)]">{item.template || "-"}</p>
+                    <p className="mt-1 text-xs font-medium text-[var(--dash-muted)]">
                       {item.category || "-"}
                     </p>
                   </td>
                 ) : null}
-                <td className="px-6 py-4 font-bold text-[var(--color-text)]">
+                <td className="px-6 py-4 font-medium text-[var(--dash-muted)]">
                   {item.date || formatDateLabel(item.eventDate)}
                 </td>
                 {isInvitationsVariant ? (
                   <td className="px-6 py-4">
                     <span className={`rounded-full px-3 py-1.5 text-xs font-black ${statusStyles[item.paymentStatus] || statusStyles.draft}`}>
-                      {item.paymentStatus || "unpaid"}
+                      {statusLabel(item.paymentStatus || "unpaid")}
                     </span>
                   </td>
                 ) : null}
                 {isInvitationsVariant ? (
                   <td className="px-6 py-4">
-                    <p className="font-bold text-[var(--color-text)]">
+                    <p className="font-medium text-[var(--dash-muted)]">
                       {formatDateLabel(item.updatedAt || item.updated_at || item.createdAt || item.created_at)}
                     </p>
                   </td>
                 ) : null}
                 <td className="px-6 py-4">
                   <span className={`rounded-full px-3 py-1.5 text-xs font-black ${statusStyles[item.orderStatus] || statusStyles[item.status] || statusStyles.draft}`}>
-                    {item.orderStatus || item.status}
+                    {statusLabel(item.orderStatus || item.status)}
                   </span>
                 </td>
-                {!isOverviewVariant && !isInvitationsVariant ? (
+                 {!isOverviewVariant && !isInvitationsVariant ? (
                   <>
                     <td className="px-6 py-4">
-                      <p className="font-black text-[var(--color-primary)]">{item.customerName || "-"}</p>
-                      <p className="mt-1 text-sm font-semibold text-[var(--color-text)]">{item.customerWhatsapp || "-"}</p>
+                      <p className="font-semibold text-[var(--dash-ink)]">{item.customerName || "-"}</p>
+                      <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">{item.customerWhatsapp || "-"}</p>
                     </td>
-                    <td className="px-6 py-4 font-black text-[var(--color-primary)]">{item.rsvp}</td>
+                    <td className="px-6 py-4">
+                      <p className="font-semibold text-[var(--dash-ink)]">{item.viewCount}</p>
+                      {item.lastViewedAt ? (
+                        <p className="mt-1 text-xs text-[var(--dash-muted)]">
+                          {formatDateLabel(item.lastViewedAt)}
+                        </p>
+                      ) : null}
+                    </td>
+                    <td className="px-6 py-4 font-semibold text-[var(--dash-ink)]">{item.rsvp}</td>
                     <td className="px-6 py-4">
                       <span className={`rounded-full px-3 py-1.5 text-sm font-black ${statusStyles[item.paymentStatus] || statusStyles.draft}`}>
-                        {item.paymentStatus || "unpaid"}
+                        {statusLabel(item.paymentStatus || "unpaid")}
                       </span>
                     </td>
                   </>
@@ -317,7 +392,7 @@ export function InvitationTable({ variant = "full" }) {
                   <div className="flex justify-end gap-1">
                     <a
                       href={`/dashboard/invitations/${item.slug}`}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] text-[var(--color-text)] hover:bg-[var(--color-bg)]"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--dash-border)] text-[var(--dash-muted)] hover:bg-[var(--dash-fog)] hover:text-[var(--dash-ink)]"
                       title="Edit"
                     >
                       <Icon name="edit" className="h-4 w-4" />
@@ -326,43 +401,60 @@ export function InvitationTable({ variant = "full" }) {
                       href={`/preview?slug=${encodeURIComponent(item.slug)}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] text-[var(--color-text)] hover:bg-[var(--color-bg)]"
-                      title="Preview"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--dash-border)] text-[var(--dash-muted)] hover:bg-[var(--dash-fog)] hover:text-[var(--dash-ink)]"
+                      title="Pratinjau"
                     >
                       <Icon name="preview" className="h-4 w-4" />
                     </a>
-                    {String(item.status).toLowerCase() === "published" ? (
-                      <button
+                    {(String(item.status).toLowerCase() === "review" || String(item.status).toLowerCase() === "published") ? (
+                      <DashboardButton
                         type="button"
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => sendWaNotification(item)}
+                        className="h-8 w-8 !p-0 !text-emerald-600 hover:!bg-emerald-50 hover:border-emerald-200"
+                        title="Kirim WA"
+                      >
+                        <Icon name="whatsapp" className="h-4 w-4" />
+                      </DashboardButton>
+                    ) : null}
+                    {String(item.status).toLowerCase() === "published" ? (
+                      <DashboardButton
+                        type="button"
+                        size="sm"
+                        variant="secondary"
                         onClick={() => updateInvitationStatus(item, "archive")}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] text-[var(--color-text)] hover:bg-[var(--color-bg)]"
-                        title="Archive"
+                        className="h-8 w-8 !p-0"
+                        title="Arsipkan"
                       >
                         <Icon name="archive" className="h-4 w-4" />
-                      </button>
+                      </DashboardButton>
                     ) : String(item.status).toLowerCase() === "archived" ? (
-                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] text-[var(--color-text)]">
+                      <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--dash-border)] text-[var(--dash-muted)]">
                         <Icon name="archive" className="h-4 w-4" />
                       </span>
                     ) : (
-                      <button
+                      <DashboardButton
                         type="button"
+                        size="sm"
                         onClick={() => updateInvitationStatus(item, "publish")}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--color-accent-pale)] text-[var(--color-text)] hover:bg-[var(--color-bg)]"
-                        title="Publish"
+                        className="h-8 w-8 !p-0"
+                        title="Publikasikan"
                       >
                         <Icon name="publish" className="h-4 w-4" />
-                      </button>
+                      </DashboardButton>
                     )}
                     {isInvitationsVariant ? (
-                      <button
+                      <DashboardButton
                         type="button"
+                        size="sm"
+                        variant="danger"
                         onClick={() => setDeleteTarget(item)}
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 text-red-600 hover:bg-red-50"
+                        className="h-8 w-8 !p-0"
                         title="Hapus"
                       >
                         <Icon name="trash" className="h-4 w-4" />
-                      </button>
+                      </DashboardButton>
                     ) : null}
                   </div>
                 </td>
@@ -373,45 +465,31 @@ export function InvitationTable({ variant = "full" }) {
       </div>
       </motion.section>
 
-      {deleteTarget ? (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/45 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-xl border border-red-100 bg-white p-6 shadow-2xl shadow-slate-950/20">
-            <div className="flex items-start gap-3">
-              <span className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-50 text-red-600">
-                <Icon name="warning" className="h-5 w-5" />
-              </span>
-              <div>
-                <p className="text-xs font-black uppercase tracking-[0.12em] text-red-600">Peringatan Hapus</p>
-                <h3 className="mt-2 text-xl font-black text-[var(--color-primary)]">
-                  Hapus undangan ini?
-                </h3>
-                <p className="mt-3 text-sm font-semibold leading-6 text-[var(--color-text)]">
-                  Undangan <span className="font-black">{deleteTarget.couple || deleteTarget.slug}</span> dengan slug <span className="font-black">{deleteTarget.slug}</span> akan dihapus permanen beserta acara, tamu, RSVP, story, rekening, dan media terkait.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={closeDeleteModal}
-                disabled={isDeletingInvitation}
-                className="rounded-lg border border-[var(--color-accent-pale)] px-4 py-2 text-sm font-black text-[var(--color-text)] hover:bg-[var(--color-bg)] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={deleteInvitation}
-                disabled={isDeletingInvitation}
-                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-black text-white shadow-lg shadow-red-600/20 hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isDeletingInvitation ? "Menghapus..." : "Ya, Hapus"}
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : null}
+      <ConfirmationModal
+        show={Boolean(deleteTarget)}
+        title="Hapus undangan ini?"
+        description={
+          deleteTarget ? (
+            <p>
+              Undangan{" "}
+              <span className="font-black text-slate-900">
+                {deleteTarget.couple || deleteTarget.slug}
+              </span>{" "}
+              dengan slug{" "}
+              <span className="font-black text-slate-900">
+                {deleteTarget.slug}
+              </span>{" "}
+              akan dihapus permanen beserta acara, tamu, RSVP, story, rekening,
+              dan media terkait.
+            </p>
+          ) : null
+        }
+        confirmLabel="Ya, Hapus"
+        loading={isDeletingInvitation}
+        danger
+        onClose={closeDeleteModal}
+        onConfirm={deleteInvitation}
+      />
     </>
   );
 }
@@ -424,7 +502,8 @@ export function RSVPSnapshotCard({ stats }) {
   const hadirPercent = total > 0 ? Math.round((hadir / total) * 100) : 0;
 
   return (
-    <motion.section variants={fadeUp} className="rounded-xl border border-[var(--color-accent-pale)] bg-white p-4 shadow-lg shadow-[var(--color-primary)]/8">
+    <motion.section variants={fadeUp}>
+      <DashboardCard>
       <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[var(--color-text)]/80">RSVP Snapshot</h3>
       <div className="mt-4 flex items-center justify-center">
         <div className="flex h-28 w-28 items-center justify-center rounded-full border-[12px] border-[var(--color-muted)]">
@@ -439,6 +518,7 @@ export function RSVPSnapshotCard({ stats }) {
         <div className="flex items-center justify-between"><span>Tidak Hadir</span><span>{tidakHadir}</span></div>
         <div className="flex items-center justify-between"><span>Belum RSVP</span><span>{belum}</span></div>
       </div>
+      </DashboardCard>
     </motion.section>
   );
 }
@@ -451,14 +531,15 @@ export function QuickActionsCard() {
   ];
 
   return (
-    <motion.section variants={fadeUp} className="rounded-xl border border-[var(--color-accent-pale)] bg-white p-4 shadow-lg shadow-[var(--color-primary)]/8">
+    <motion.section variants={fadeUp}>
+      <DashboardCard>
       <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[var(--color-text)]/80">Aksi Cepat</h3>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {actions.map((action) => (
           <a
             key={action.label}
             href={action.href}
-            className={`rounded-lg border border-[var(--color-accent-pale)] px-3 py-3 text-center text-xs font-black text-[var(--color-primary)] hover:bg-[var(--color-bg)] ${
+            className={`rounded-lg border border-[var(--dash-border)] px-3 py-3 text-center text-xs font-semibold text-[var(--dash-ink)] hover:bg-[var(--dash-fog)] ${
               action.label === "Cek Status RSVP" ? "col-span-2" : ""
             }`}
           >
@@ -469,6 +550,7 @@ export function QuickActionsCard() {
           </a>
         ))}
       </div>
+      </DashboardCard>
     </motion.section>
   );
 }

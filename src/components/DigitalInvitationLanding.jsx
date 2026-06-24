@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { mergeTemplateOverrides } from "../data/templateAdminDefaults";
+import { readDefaultTemplateThumbnail } from "../lib/templateThumbnail";
 
 const whatsappUrl =
   "https://wa.me/6282226551246?text=Halo%20admin,%20saya%20mau%20lihat%20katalog%20undangan%20digital";
@@ -51,16 +52,18 @@ const heroSlides = [];
 const catalogItems = [];
 const catalogTabs = [];
 
-const plans = [
+const defaultPlans = [
   {
     name: "Basic",
-    price: "Rp 45.000",
+    priceKey: "basic",
+    defaultPrice: "Rp 45.000",
     desc: "Untuk undangan simpel yang tetap rapi dan siap dibagikan.",
     features: ["Detail acara", "Profil mempelai", "Google Maps", "Gallery foto", "Masa aktif 3 bulan"],
   },
   {
     name: "Premium",
-    price: "Rp 90.000",
+    priceKey: "premium",
+    defaultPrice: "Rp 90.000",
     desc: "Paket paling pas untuk undangan lengkap dan interaktif.",
     featured: true,
     features: [
@@ -74,7 +77,8 @@ const plans = [
   },
   {
     name: "Exclusive",
-    price: "Rp 149.000",
+    priceKey: "exclusive",
+    defaultPrice: "Rp 149.000",
     desc: "Untuk tampilan lebih personal dengan layanan prioritas.",
     features: [
       "Semua fitur Premium",
@@ -184,11 +188,12 @@ function HeroCarousel() {
           return;
         }
 
+        const defaultThumbnail = readDefaultTemplateThumbnail();
         const mappedSlides = mergeTemplateOverrides(result.data)
           .map((template) => ({
             title: template.name,
             desc: template.description || `Template kategori ${template.category || "Custom"}.`,
-            image: template.image || "/assets/nusantara-premium.svg",
+            image: template.image || defaultThumbnail,
           }));
 
         if (mappedSlides.length > 0) {
@@ -565,6 +570,7 @@ function CatalogSection() {
           return;
         }
 
+        const defaultThumbnail = readDefaultTemplateThumbnail();
         const mappedItems = mergeTemplateOverrides(result.data)
           .map((template) => ({
             title: template.name,
@@ -573,7 +579,7 @@ function CatalogSection() {
             badge: template.badge || "Ready",
             price: template.price || "Rp 99.000",
             oldPrice: "",
-            image: template.image || "/assets/nusantara-premium.svg",
+            image: template.image || defaultThumbnail,
             previewUrl: template.previewUrl || "/preview",
           }));
 
@@ -670,6 +676,25 @@ function CatalogSection() {
 }
 
 function PricingSection() {
+  const [plans, setPlans] = React.useState(defaultPlans);
+
+  React.useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem("nusa-invite:platform-settings");
+      if (!stored) return;
+      const parsed = JSON.parse(stored);
+      const prices = parsed?.packagePrices;
+      if (!prices) return;
+
+      setPlans(defaultPlans.map((plan) => ({
+        ...plan,
+        price: prices[plan.priceKey] || plan.defaultPrice,
+      })));
+    } catch {
+      // fallback ke default
+    }
+  }, []);
+
   return (
     <section id="harga" className="bg-[var(--color-surface)] px-6 py-24 sm:px-8 lg:px-10">
       <div className="mx-auto max-w-7xl">
@@ -709,7 +734,7 @@ function PricingSection() {
               >
                 {plan.desc}
               </p>
-              <p className="mt-7 text-4xl font-black">{plan.price}</p>
+              <p className="mt-7 text-4xl font-black">{plan.price || plan.defaultPrice}</p>
               <ul className="mt-7 space-y-3">
                 {plan.features.map((feature) => (
                   <li
@@ -729,11 +754,7 @@ function PricingSection() {
                 rel="noreferrer"
                 whileHover={{ scale: 1.04 }}
                 whileTap={{ scale: 0.98 }}
-                className={`mt-8 block rounded-2xl px-5 py-4 text-center text-base font-black transition-colors ${
-                  plan.featured
-                    ? "bg-[var(--color-accent)] text-[var(--color-primary)] hover:bg-[var(--color-accent-soft)]"
-                    : "bg-[var(--color-accent)] text-[var(--color-primary)] hover:bg-[var(--color-accent-soft)]"
-                }`}
+                className="mt-8 block rounded-2xl bg-[var(--color-accent)] px-5 py-4 text-center text-base font-black text-[var(--color-primary)] transition-colors hover:bg-[var(--color-accent-soft)]"
               >
                 Pesan Paket
               </motion.a>

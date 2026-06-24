@@ -1,5 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { DashboardButton, DashboardCard } from "../FormControls";
+import {
+  FALLBACK_TEMPLATE_THUMBNAIL,
+  readDefaultTemplateThumbnail,
+} from "../../../lib/templateThumbnail";
+
 function TemplateStatusPill({ status }) {
   const isActive = status === "active";
   return (
@@ -20,21 +27,28 @@ export default function TemplateCatalogGrid({
   filteredTemplates,
   isLoadingTemplates,
   startEditTemplate,
+  duplicateTemplate,
   toggleTemplateStatus,
   deleteTemplate,
 }) {
+  const [defaultThumbnail, setDefaultThumbnail] = useState(FALLBACK_TEMPLATE_THUMBNAIL);
+
+  useEffect(() => {
+    setDefaultThumbnail(readDefaultTemplateThumbnail());
+  }, []);
+
   if (!visible) return null;
 
   return (
     <div className="mt-6">
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {filteredTemplates.map((template) => (
-          <article
+          <DashboardCard
             key={template.id}
-            className="group overflow-hidden rounded-xl border border-[var(--dash-border)] bg-[var(--dash-canvas)] shadow-[var(--dash-shadow)]"
+            className="group overflow-hidden bg-[var(--dash-canvas)] p-0 shadow-[var(--dash-shadow)]"
           >
             <img
-              src={template.image}
+              src={template.image || defaultThumbnail}
               alt={`Preview ${template.name}`}
               className="aspect-[4/5] w-full bg-[var(--dash-fog)] object-cover transition-transform duration-300 group-hover:scale-[1.02]"
             />
@@ -70,21 +84,38 @@ export default function TemplateCatalogGrid({
                     <circle cx="12" cy="12" r="3" />
                   </svg>
                 </a>
-                <button
+                <DashboardButton
                   type="button"
+                  size="sm"
+                  variant="secondary"
                   onClick={() => startEditTemplate(template)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--dash-border)] text-[var(--dash-ink)] transition-colors hover:bg-[var(--dash-fog)]"
+                  className="h-9 w-9 !rounded-full !p-0"
                   title="Edit"
                 >
                   <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M12 20h9" />
                     <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
                   </svg>
-                </button>
-                <button
+                </DashboardButton>
+                <DashboardButton
                   type="button"
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => duplicateTemplate(template)}
+                  className="h-9 w-9 !rounded-full !p-0"
+                  title="Duplikat"
+                >
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+                  </svg>
+                </DashboardButton>
+                <DashboardButton
+                  type="button"
+                  size="sm"
+                  variant="secondary"
                   onClick={() => toggleTemplateStatus(template.id)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--dash-border)] text-[var(--dash-ink)] transition-colors hover:bg-[var(--dash-fog)]"
+                  className="h-9 w-9 !rounded-full !p-0"
                   title={template.status === "active" ? "Sembunyikan" : "Aktifkan"}
                 >
                   {template.status === "active" ? (
@@ -99,11 +130,13 @@ export default function TemplateCatalogGrid({
                       <path d="M20 6 9 17l-5-5" />
                     </svg>
                   )}
-                </button>
-                <button
+                </DashboardButton>
+                <DashboardButton
                   type="button"
+                  size="sm"
+                  variant="danger"
                   onClick={() => deleteTemplate(template)}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-red-200 bg-red-50 text-red-700 transition-colors hover:bg-red-100"
+                  className="h-9 w-9 !rounded-full !p-0"
                   title="Hapus"
                 >
                   <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -113,10 +146,10 @@ export default function TemplateCatalogGrid({
                     <path d="M10 11v6" />
                     <path d="M14 11v6" />
                   </svg>
-                </button>
+                </DashboardButton>
               </div>
             </div>
-          </article>
+          </DashboardCard>
         ))}
 
         {isLoadingTemplates ? (
@@ -135,4 +168,3 @@ export default function TemplateCatalogGrid({
     </div>
   );
 }
-

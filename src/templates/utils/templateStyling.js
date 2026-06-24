@@ -44,12 +44,24 @@ export function fontClass(preset = "default") {
   return "";
 }
 
+export const CONTENT_SCALE_MAP = {
+  small: 0.92,
+  normal: 1,
+  large: 1.08,
+  xlarge: 1.16,
+};
+
+export function contentScaleValue(contentSize) {
+  return CONTENT_SCALE_MAP[contentSize];
+}
+
 export function cssVars(styleConfig = {}) {
   const headingFamily = FONT_FAMILIES[styleConfig.headingFont] || undefined;
   const bodyFamily = FONT_FAMILIES[styleConfig.bodyFont] || undefined;
   const cardRadius = styleConfig.cardStyle === "sharp" ? "0px" : styleConfig.cardStyle === "pill" ? "24px" : "8px";
   const primaryColor = styleConfig.primaryColor || styleConfig.textColor || undefined;
   const textColor = styleConfig.textColor || styleConfig.primaryColor || undefined;
+  const contentScale = contentScaleValue(styleConfig.contentSize);
 
   return {
     backgroundColor: styleConfig.backgroundColor || undefined,
@@ -61,6 +73,9 @@ export function cssVars(styleConfig = {}) {
     "--color-accent": styleConfig.accentColor || undefined,
     "--font-heading": headingFamily || "inherit",
     "--card-radius": cardRadius,
+    // Only emit when explicitly set so per-section frames don't reset the
+    // global value inherited from the template root.
+    "--content-scale": contentScale ? String(contentScale) : undefined,
   };
 }
 
@@ -109,8 +124,8 @@ export function normalizeEventExamples(events = []) {
 export function SectionTitle({ eyebrow, title, desc }) {
   return (
     <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.28 }} variants={fadeUp} className="template-section-title relative z-10 mx-auto max-w-3xl text-center">
-      <p className="text-sm font-black uppercase tracking-[0.18em] text-[var(--color-accent)]">{eyebrow}</p>
-      <h2 className="template-section-title-heading mt-3 text-4xl font-black leading-tight text-[var(--color-primary)] sm:text-5xl" style={{ fontFamily: "var(--font-heading)" }}>{title}</h2>
+      {eyebrow ? <p className="text-sm font-black uppercase tracking-[0.18em] text-[var(--color-accent)]">{eyebrow}</p> : null}
+      <h2 className={`template-section-title-heading text-4xl font-black leading-tight text-[var(--color-primary)] sm:text-5xl ${eyebrow ? "mt-3" : ""}`} style={{ fontFamily: "var(--font-heading)" }}>{title}</h2>
       {desc ? <p className="template-section-title-desc mt-4 text-lg font-semibold leading-8 text-[var(--color-text)]">{desc}</p> : null}
     </motion.div>
   );

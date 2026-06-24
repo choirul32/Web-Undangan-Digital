@@ -3,7 +3,14 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { fadeUp } from "./config";
-import { TextInput, SelectInput, TextAreaInput } from "./FormControls";
+import ConfirmDialog from "./ConfirmDialog";
+import {
+  DashboardButton,
+  DashboardPanel,
+  SelectInput,
+  TextAreaInput,
+  TextInput,
+} from "./FormControls";
 
 const defaultBroadcastTemplate =
   "Assalamualaikum Wr. Wb.\n\nYth. {guest_name},\nKami mengundang Bapak/Ibu/Saudara/i untuk hadir di acara pernikahan kami.\n\nBuka undangan personal:\n{guest_link}\n\nTerima kasih.";
@@ -20,6 +27,7 @@ export default function GuestManager({ invitationSlug = "" }) {
   const [saveMessage, setSaveMessage] = useState("");
   const [broadcastTemplate, setBroadcastTemplate] = useState(defaultBroadcastTemplate);
   const [bulkImportText, setBulkImportText] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(null); // guest object to delete
 
   useEffect(() => {
     if (!invitationSlug) {
@@ -226,6 +234,17 @@ export default function GuestManager({ invitationSlug = "" }) {
     }
   };
 
+  const handleDeleteClick = (guest) => {
+    setConfirmDelete(guest);
+  };
+
+  const handleConfirmDelete = () => {
+    if (confirmDelete) {
+      deleteGuest(confirmDelete);
+    }
+    setConfirmDelete(null);
+  };
+
   const copyGuestLink = async (guest) => {
     const link = getGuestLink(guest);
 
@@ -374,20 +393,13 @@ export default function GuestManager({ invitationSlug = "" }) {
 
   if (!invitationSlug) {
     return (
-      <motion.section
-        variants={fadeUp}
-        className="overflow-hidden rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-5 shadow-[var(--dash-shadow)]"
-      >
-        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
-          Guest Manager
-        </p>
-        <h2 className="mt-1 text-2xl font-semibold text-[var(--dash-ink)]">
-          Pilih order aktif dulu
-        </h2>
-        <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
-          Panel tamu hanya berjalan untuk satu invitation yang sedang dibuka.
-        </p>
-      </motion.section>
+      <motion.div variants={fadeUp}>
+        <DashboardPanel
+          eyebrow="Guest Manager"
+          title="Pilih order aktif dulu"
+          description="Panel tamu hanya berjalan untuk satu invitation yang sedang dibuka."
+        />
+      </motion.div>
     );
   }
 
@@ -428,21 +440,20 @@ export default function GuestManager({ invitationSlug = "" }) {
           onChange={(event) => setGuestPhone(event.target.value)}
           placeholder="WA tamu"
         />
-        <button
+        <DashboardButton
           type="button"
           onClick={saveGuest}
-          className="rounded-md bg-[var(--dash-ink)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--dash-dark)]"
         >
           {editingSlug ? "Update Tamu" : "Tambah Tamu"}
-        </button>
+        </DashboardButton>
         {editingSlug ? (
-          <button
+          <DashboardButton
             type="button"
             onClick={resetForm}
-            className="rounded-md border border-[var(--dash-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--dash-ink)] hover:bg-[var(--dash-fog)]"
+            variant="secondary"
           >
             Batal
-          </button>
+          </DashboardButton>
         ) : null}
       </div>
 
@@ -467,27 +478,29 @@ export default function GuestManager({ invitationSlug = "" }) {
             Bulk Manual Broadcast
           </p>
           <div className="mt-4 space-y-2">
-            <button
+            <DashboardButton
               type="button"
               onClick={copyBulkLinks}
-              className="w-full rounded-md border border-[var(--dash-border)] bg-white px-3 py-2.5 text-left text-sm font-semibold text-[var(--dash-ink)] hover:bg-[var(--dash-fog)]"
+              variant="secondary"
+              className="w-full justify-start"
             >
               Copy daftar nama + personal link
-            </button>
-            <button
+            </DashboardButton>
+            <DashboardButton
               type="button"
               onClick={copyBulkWhatsappMessages}
-              className="w-full rounded-md border border-[var(--dash-border)] bg-white px-3 py-2.5 text-left text-sm font-semibold text-[var(--dash-ink)] hover:bg-[var(--dash-fog)]"
+              variant="secondary"
+              className="w-full justify-start"
             >
               Copy semua teks WhatsApp
-            </button>
-            <button
+            </DashboardButton>
+            <DashboardButton
               type="button"
               onClick={exportGuestLinksCsv}
-              className="w-full rounded-md bg-[var(--dash-ink)] px-3 py-2.5 text-left text-sm font-semibold text-white hover:bg-[var(--dash-dark)]"
+              className="w-full justify-start"
             >
               Export CSV guest links
-            </button>
+            </DashboardButton>
           </div>
         </div>
       </div>
@@ -529,13 +542,12 @@ export default function GuestManager({ invitationSlug = "" }) {
                 </option>
               ))}
             </SelectInput>
-            <button
+            <DashboardButton
               type="button"
               onClick={importBulkGuests}
-              className="rounded-md bg-[var(--dash-ink)] px-3 py-2.5 text-sm font-semibold text-white hover:bg-[var(--dash-dark)]"
             >
               Import Tamu
-            </button>
+            </DashboardButton>
           </div>
         </div>
       </div>
@@ -590,41 +602,45 @@ export default function GuestManager({ invitationSlug = "" }) {
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex flex-wrap gap-2">
-                    <button
+                    <DashboardButton
                       type="button"
+                      size="sm"
                       onClick={() => copyGuestLink(guest)}
-                      className="rounded-md bg-[var(--dash-ink)] px-3 py-2 text-sm font-semibold text-white hover:bg-[var(--dash-dark)]"
                     >
                       Copy Link
-                    </button>
-                    <button
+                    </DashboardButton>
+                    <DashboardButton
                       type="button"
+                      size="sm"
+                      variant="secondary"
                       onClick={() => copyWhatsappMessage(guest)}
-                      className="rounded-md border border-[var(--dash-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--dash-ink)] hover:bg-[var(--dash-fog)]"
                     >
                       Copy WA
-                    </button>
-                    <button
+                    </DashboardButton>
+                    <DashboardButton
                       type="button"
+                      size="sm"
+                      variant="secondary"
                       onClick={() => openWhatsappMessage(guest)}
-                      className="rounded-md border border-[var(--dash-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--dash-ink)] hover:bg-[var(--dash-fog)]"
                     >
                       Open WA
-                    </button>
-                    <button
+                    </DashboardButton>
+                    <DashboardButton
                       type="button"
+                      size="sm"
+                      variant="secondary"
                       onClick={() => editGuest(guest)}
-                      className="rounded-md border border-[var(--dash-border)] px-3 py-2 text-sm font-semibold text-[var(--dash-ink)] hover:bg-white"
                     >
                       Edit
-                    </button>
-                    <button
+                    </DashboardButton>
+                    <DashboardButton
                       type="button"
-                      onClick={() => deleteGuest(guest)}
-                      className="rounded-md border border-[var(--dash-border)] px-3 py-2 text-sm font-semibold text-[var(--dash-ink)] hover:bg-white"
+                      size="sm"
+                      variant="danger"
+                      onClick={() => handleDeleteClick(guest)}
                     >
                       Delete
-                    </button>
+                    </DashboardButton>
                   </div>
                 </td>
               </tr>
@@ -632,6 +648,15 @@ export default function GuestManager({ invitationSlug = "" }) {
           </tbody>
         </table>
       </div>
+
+      <ConfirmDialog
+        open={Boolean(confirmDelete)}
+        title="Hapus Tamu?"
+        message={`"${confirmDelete?.name}" akan dihapus dari daftar tamu. Tindakan ini tidak bisa dibatalkan.`}
+        confirmLabel="Ya, Hapus"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setConfirmDelete(null)}
+      />
     </motion.section>
   );
 }

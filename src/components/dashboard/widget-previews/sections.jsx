@@ -198,11 +198,15 @@ export function CoverSectionPreview({ config = {} }) {
         <div
           className={`relative z-10 mx-auto grid max-w-[250px] gap-2 ${layout === "split" ? "grid-cols-[0.8fr_1fr] items-center text-left" : "text-center"}`}
         >
-          {config.photoEnabled && layout !== "minimal" ? (
+          {config.photoEnabled ? (
             <img
               src="/assets/CoverPasangan.png"
               alt=""
-              className="mx-auto aspect-[3/4] w-14 rounded-t-full rounded-b-md object-cover shadow-sm"
+              className={`mx-auto object-cover shadow-sm ${
+                layout === "stacked"
+                  ? "aspect-[4/3] w-24 rounded-md"
+                  : "aspect-[3/4] w-14 rounded-t-full rounded-b-md"
+              }`}
             />
           ) : null}
           <div className={layout === "split" && config.photoEnabled ? "" : "col-span-full"}>
@@ -226,26 +230,46 @@ export function CoverSectionPreview({ config = {} }) {
 
 export function CoupleSectionPreview({ config = {} }) {
   const profiles = [
-    ["Salsa Kirana", "/assets/catin_wanita.jpg", "Mempelai Wanita"],
-    ["Dimas Pratama", "/assets/catin_pria.jpg", "Mempelai Pria"],
+    {
+      name: "Salsa Kirana",
+      image: "/assets/catin_wanita.jpg",
+      role: "Mempelai Wanita",
+      parentLabel: "Putri dari",
+      parents: "Bapak Hasan & Ibu Wulan",
+    },
+    {
+      name: "Dimas Pratama",
+      image: "/assets/catin_pria.jpg",
+      role: "Mempelai Pria",
+      parentLabel: "Putra dari",
+      parents: "Bapak Anwar & Ibu Lestari",
+    },
   ];
 
   return (
     <WidgetPreviewShell title="Live Preview" label={config.photoStyle || "arch"} enabled>
-      <div className="grid grid-cols-2 gap-2">
-        {profiles.map(([name, image, role]) => (
-          <div key={name} className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3 text-center shadow-sm">
+      <div className="grid grid-cols-2 gap-3">
+        {profiles.map((profile) => (
+          <div key={profile.name} className="rounded-[12px] border border-[var(--color-accent-pale)] bg-white p-3 text-center shadow-sm">
+            <p className="mb-2 text-[8px] font-black uppercase tracking-[0.16em] text-[var(--color-accent)]">
+              {profile.role}
+            </p>
             {config.photoEnabled ? (
-              <img src={image} alt="" className={couplePreviewImageClass(config)} />
+              <img src={profile.image} alt="" className={couplePreviewImageClass(config)} />
             ) : null}
-            <p className={couplePreviewNameClass(config)}>{name}</p>
+            <p className={couplePreviewNameClass(config)}>{profile.name}</p>
             {config.parentTextEnabled ? (
-              <p className="mt-1 text-[10px] font-semibold text-[var(--color-text)]">
-                {role}
-              </p>
+              <div className="mx-auto mt-2 max-w-[130px] border-t border-[var(--color-accent-pale)] pt-2">
+                <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-[var(--color-accent)]">
+                  {profile.parentLabel}
+                </p>
+                <p className="mt-1 text-[10px] font-semibold leading-4 text-[var(--color-text)]">
+                  {profile.parents}
+                </p>
+              </div>
             ) : null}
             {config.instagramEnabled ? (
-              <span className="mt-2 inline-flex rounded-lg bg-[var(--color-accent)] px-2 py-1 text-[9px] font-black text-[var(--color-primary)]">
+              <span className="mt-3 inline-flex rounded-lg bg-[var(--color-accent)] px-2 py-1 text-[9px] font-black text-[var(--color-primary)]">
                 Instagram
               </span>
             ) : null}

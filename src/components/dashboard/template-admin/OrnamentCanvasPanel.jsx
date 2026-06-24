@@ -69,7 +69,7 @@ export default function OrnamentCanvasPanel({
           <div>
             <div className="flex items-center gap-2">
               <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-                Canvas Preview
+                Pratinjau Canvas
               </p>
               <button
                 type="button"
@@ -80,11 +80,11 @@ export default function OrnamentCanvasPanel({
                 <svg viewBox="0 0 20 20" className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                   <path d="m7 5 8 5-8 5z" />
                 </svg>
-                Replay Animasi
+                Putar ulang animasi
               </button>
             </div>
             <p className="mt-1 text-xs font-semibold text-[var(--color-text)]">
-              {activeDesignSection} section, {activeOrnaments.length} ornament
+              Section {activeDesignSection}, {activeOrnaments.length} ornamen
             </p>
           </div>
           <span className="rounded-full bg-[var(--color-bg)] px-2.5 py-1 text-[11px] font-black text-[var(--color-primary)]">

@@ -9,7 +9,68 @@ import {
   defaultTemplateMetadata,
   mergeTemplateOverrides,
 } from "../../data/templateAdminDefaults";
+import {
+  InvitationErrorState,
+  InvitationLoadingState,
+} from "../../components/InvitationLoadingState";
 import InvitationRenderer from "../../templates/InvitationRenderer";
+
+const IMAGE_URL_PATTERN = /\.(avif|gif|jpe?g|png|svg|webp)(\?.*)?$/i;
+const PRELOAD_TIMEOUT_MS = 8000;
+
+function collectImageUrls(value, urls = new Set()) {
+  if (typeof value === "string") {
+    if (value.startsWith("data:image/") || IMAGE_URL_PATTERN.test(value)) {
+      urls.add(value);
+    }
+    return urls;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => collectImageUrls(item, urls));
+    return urls;
+  }
+
+  if (value && typeof value === "object") {
+    Object.values(value).forEach((item) => collectImageUrls(item, urls));
+  }
+
+  return urls;
+}
+
+async function preloadInvitationImages(invitation) {
+  const urls = collectImageUrls({
+    coverImage: invitation.coverImage,
+    gallery: invitation.gallery,
+    designConfig: invitation.designConfig,
+    profileImages: [
+      "/assets/CoverPasangan.png",
+      "/assets/catin_wanita.jpg",
+      "/assets/catin_pria.jpg",
+    ],
+  });
+
+  if (urls.size === 0) {
+    return;
+  }
+
+  const preload = Promise.allSettled(
+    [...urls].map(
+      (url) =>
+        new Promise((resolve) => {
+          const image = new window.Image();
+          image.onload = resolve;
+          image.onerror = resolve;
+          image.src = url;
+        }),
+    ),
+  );
+  const timeout = new Promise((resolve) => {
+    window.setTimeout(resolve, PRELOAD_TIMEOUT_MS);
+  });
+
+  await Promise.race([preload, timeout]);
+}
 
 export default function PreviewPageClient() {
   const searchParams = useSearchParams();
@@ -18,19 +79,29 @@ export default function PreviewPageClient() {
   const editorPreview = searchParams.get("editorPreview") === "1";
   const embeddedEditorPreview = searchParams.get("embeddedEditorPreview") === "1";
   const previewSectionOnly = searchParams.get("previewSectionOnly") === "1";
+  const previewOpening = searchParams.get("previewOpening") === "1";
   const previewGuest = searchParams.get("previewGuest") || "";
   const previewDataMode = searchParams.get("previewDataMode") || "filled";
   const framedDesktopPreview = !embeddedEditorPreview && !previewSectionOnly;
   const [data, setData] = useState(() => (
     !slug && previewDataMode !== "empty" ? previewInvitation : emptyInvitation
   ));
+  const [isLoading, setIsLoading] = useState(Boolean(slug));
+  const [loadError, setLoadError] = useState("");
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [replayKey, setReplayKey] = useState(0);
 
   useEffect(() => {
     let isMounted = true;
 
     const loadPreviewData = async () => {
+      if (slug) {
+        setIsLoading(true);
+        setLoadError("");
+      }
+
       let draft = slug ? emptyInvitation : previewInvitation;
+      let foundSlugData = !slug;
 
       if (slug) {
         try {
@@ -41,6 +112,7 @@ export default function PreviewPageClient() {
 
           if (adminResponse.ok && adminResult.data) {
             draft = adminResult.data;
+            foundSlugData = true;
           } else {
             const publicResponse = await fetch(
               `/api/public/invitations/${encodeURIComponent(slug)}`,
@@ -49,11 +121,22 @@ export default function PreviewPageClient() {
 
             if (publicResponse.ok && publicResult.data) {
               draft = publicResult.data;
+              foundSlugData = true;
             }
           }
-        } catch {
-          // Keep the blank draft if slug preview API is unavailable.
+        } catch (error) {
+          if (isMounted) {
+            setLoadError(error.message || "Gagal memuat data undangan.");
+          }
         }
+      }
+
+      if (slug && !foundSlugData) {
+        if (isMounted) {
+          setLoadError("Data undangan tidak ditemukan atau belum dapat dimuat.");
+          setIsLoading(false);
+        }
+        return;
       }
 
       const previewData = templateId
@@ -132,7 +215,14 @@ export default function PreviewPageClient() {
       }
 
       if (isMounted) {
+        if (slug) {
+          await preloadInvitationImages(nextData);
+        }
+      }
+
+      if (isMounted) {
         setData(nextData);
+        setIsLoading(false);
       }
     };
 
@@ -141,7 +231,7 @@ export default function PreviewPageClient() {
     return () => {
       isMounted = false;
     };
-  }, [editorPreview, previewDataMode, slug, templateId]);
+  }, [editorPreview, loadAttempt, previewDataMode, slug, templateId]);
 
   useEffect(() => {
     const handleMessage = (event) => {
@@ -182,6 +272,23 @@ export default function PreviewPageClient() {
     return () => window.removeEventListener("message", handleMessage);
   }, [templateId]);
 
+  if (isLoading) {
+    return (
+      <InvitationLoadingState description="Memuat data, desain, dan gambar undangan." />
+    );
+  }
+
+  if (loadError) {
+    return (
+      <InvitationErrorState
+        title="Preview belum bisa dimuat"
+        description={loadError}
+        actionLabel="Coba Lagi"
+        onAction={() => setLoadAttempt((current) => current + 1)}
+      />
+    );
+  }
+
   return (
     <div
       className={
@@ -202,7 +309,9 @@ export default function PreviewPageClient() {
           data={data}
           guestName={previewGuest || undefined}
           guestSlug={previewGuest ? "preview-guest" : undefined}
-          framedPreview={framedDesktopPreview}
+          framedPreview={framedDesktopPreview || previewOpening}
+          previewOpening={previewOpening}
+          previewMode={!slug && previewDataMode !== "empty"}
         />
       </div>
     </div>

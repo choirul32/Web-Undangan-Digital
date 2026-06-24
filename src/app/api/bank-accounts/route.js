@@ -22,12 +22,31 @@ function mapAccount(account) {
   return {
     id: account.id,
     bank: account.bank,
+    logoUrl: account.bank_logo_url || "",
     accountName: account.account_name,
     accountNumber: account.account_number,
     name: account.account_name,
     number: account.account_number,
     sortOrder: account.sort_order,
   };
+}
+
+function normalizeBankName(name = "") {
+  return String(name).trim().toLocaleLowerCase("id-ID");
+}
+
+async function getBankLogoLookup(supabase) {
+  const { data } = await supabase
+    .from("bank_catalog")
+    .select("name, logo_url")
+    .eq("is_active", true);
+
+  return new Map(
+    (data || []).map((bank) => [
+      normalizeBankName(bank.name),
+      bank.logo_url || "",
+    ]),
+  );
 }
 
 export async function GET(request) {
@@ -67,7 +86,17 @@ export async function GET(request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ source: "supabase", data: data.map(mapAccount) });
+  const bankLogoLookup = await getBankLogoLookup(supabase);
+  return NextResponse.json({
+    source: "supabase",
+    data: data.map((account) => ({
+      ...mapAccount(account),
+      logoUrl:
+        account.bank_logo_url ||
+        bankLogoLookup.get(normalizeBankName(account.bank)) ||
+        "",
+    })),
+  });
 }
 
 export async function POST(request) {
@@ -104,6 +133,7 @@ export async function POST(request) {
     .insert({
       invitation_id: invitation.id,
       bank: payload.bank,
+      bank_logo_url: payload.logoUrl || null,
       account_name: payload.accountName,
       account_number: payload.accountNumber,
       sort_order: payload.sortOrder || Math.floor(Date.now() / 1000),
@@ -151,6 +181,7 @@ export async function PUT(request) {
     .from("bank_accounts")
     .update({
       bank: payload.bank,
+      bank_logo_url: payload.logoUrl || null,
       account_name: payload.accountName,
       account_number: payload.accountNumber,
       sort_order: payload.sortOrder || 0,

@@ -7,7 +7,49 @@ function sortByOrder(items = []) {
   return [...items].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 }
 
-export function mapSupabaseInvitation(row, templateRow = null) {
+function findMediaUrl(mediaList = [], type) {
+  const match = sortByOrder(mediaList).find((media) => media.media_type === type);
+  return match?.url || null;
+}
+
+export async function getPlatformSettings(supabase) {
+  try {
+    const { data } = await supabase
+      .from("platform_settings")
+      .select("value")
+      .eq("key", "platform")
+      .maybeSingle();
+    return data?.value || {};
+  } catch {
+    return {};
+  }
+}
+
+function normalizeBankName(name = "") {
+  return String(name).trim().toLocaleLowerCase("id-ID");
+}
+
+export async function getBankLogoLookup(supabase) {
+  const { data, error } = await supabase
+    .from("bank_catalog")
+    .select("name, logo_url")
+    .eq("is_active", true);
+
+  if (error || !Array.isArray(data)) {
+    return new Map();
+  }
+
+  return new Map(
+    data.map((bank) => [normalizeBankName(bank.name), bank.logo_url || ""]),
+  );
+}
+
+export function mapSupabaseInvitation(
+  row,
+  templateRow = null,
+  bankLogoLookup = new Map(),
+  defaults = {},
+) {
   if (!row) {
     return null;
   }
@@ -38,6 +80,10 @@ export function mapSupabaseInvitation(row, templateRow = null) {
       brideNickname: row.bride_nickname,
       brideParents: row.bride_parents,
       quote: row.quote,
+      groomPhoto:
+        findMediaUrl(row.invitation_media, "groom") || defaults.groomPhoto || null,
+      bridePhoto:
+        findMediaUrl(row.invitation_media, "bride") || defaults.bridePhoto || null,
     },
     events: sortByOrder(row.invitation_events || []).map((event) => ({
       title: event.title,
@@ -61,8 +107,13 @@ export function mapSupabaseInvitation(row, templateRow = null) {
     musicUrl:
       sortByOrder(row.invitation_media || []).find((media) => media.media_type === "music")
         ?.url || null,
+    qrisImage: findMediaUrl(row.invitation_media, "qris"),
     bankAccounts: sortByOrder(row.bank_accounts || []).map((account) => ({
       bank: account.bank,
+      logoUrl:
+        account.bank_logo_url ||
+        bankLogoLookup.get(normalizeBankName(account.bank)) ||
+        "",
       name: account.account_name,
       number: account.account_number,
     })),
@@ -139,8 +190,14 @@ export async function getInvitationBySlug(slug) {
   }
 
   const templateRow = await getTemplateRowById(supabase, data.template_id);
+  const bankLogoLookup = await getBankLogoLookup(supabase);
+  const settings = await getPlatformSettings(supabase);
+  const defaults = {
+    groomPhoto: settings.defaultGroomPhoto,
+    bridePhoto: settings.defaultBridePhoto,
+  };
 
-  return mapSupabaseInvitation(data, templateRow);
+  return mapSupabaseInvitation(data, templateRow, bankLogoLookup, defaults);
 }
 
 export async function getInvitationAndGuest(slug, guestSlug) {
@@ -175,6 +232,8 @@ export function mapInvitationListItem(row, templateLookup = new Map()) {
     date: row.created_at ? new Date(row.created_at).toLocaleDateString("id-ID") : "-",
     rsvp: 0,
     package: row.package,
+    viewCount: row.view_count || 0,
+    lastViewedAt: row.last_viewed_at || null,
   };
 }
 

@@ -26,6 +26,8 @@ create table if not exists public.invitations (
   theme_settings jsonb not null default '{}'::jsonb,
   published_at timestamptz,
   expires_at timestamptz,
+  view_count integer not null default 0,
+  last_viewed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

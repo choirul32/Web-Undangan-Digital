@@ -67,7 +67,7 @@ export const storyAnimationOptions = ["fade-up", "zoom-in", "slide-left", "stagg
 export const galleryVariantOptions = ["grid", "carousel", "masonry", "cinematic-slideshow"];
 
 // ===== COVER & OPENING OPTIONS =====
-export const coverLayoutOptions = ["centered", "split", "minimal"];
+export const coverLayoutOptions = ["centered", "split", "stacked"];
 export const coverDateVariantOptions = ["plain", "separator-dot", "separator-line", "stacked", "badge", "columns", "full-day", "block"];
 export const coverOpeningAnimationOptions = ["none", "fade-up", "zoom-in", "slide-left", "pop-up"];
 export const openingRevealAnimationOptions = ["fade", "zoom", "slide-up", "curtain", "gate", "paper"];
@@ -791,6 +791,7 @@ export const activities = [
 // ===== STATUS STYLES =====
 export const statusStyles = {
   Published: "bg-[var(--color-wa)] text-white",
+  Terpublikasi: "bg-[var(--color-wa)] text-white",
   published: "bg-[var(--color-wa)] text-white",
   archived: "bg-[var(--color-primary)] text-white",
   Review: "bg-[var(--color-accent)] text-[var(--color-primary)]",
@@ -869,7 +870,7 @@ export function buildDashboardMetrics(stats) {
       detail: `${formatNumber(stats.rsvpPax)} total pax tercatat`,
     },
     {
-      label: "Published",
+      label: "Terpublikasi",
       value: formatNumber(stats.published),
       detail: "Siap dibagikan ke tamu",
     },

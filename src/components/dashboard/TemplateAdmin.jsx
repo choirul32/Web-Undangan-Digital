@@ -65,11 +65,19 @@ import {
   musicPositionOptions,
   musicPulseIntensityOptions,
 } from "./config";
-import { Field, TextInput, SelectInput, ToggleField } from "./FormControls";
+import {
+  ConfirmationModal,
+  DashboardButton,
+  Field,
+  SelectInput,
+  TextInput,
+  ToggleField,
+} from "./FormControls";
 import {
   readFileAsDataUrl,
   parseOrnamentSize,
   slugifyTemplateId,
+  slugifyTemplateIdLive,
 } from "./WidgetPreviews";
 import OrnamentLayerPanel from "./template-admin/OrnamentLayerPanel";
 import OrnamentPropertiesPanel from "./template-admin/OrnamentPropertiesPanel";
@@ -147,13 +155,13 @@ export default
 function TemplateAdminPage() {
   const editorSteps = [
     { id: 1, label: "Metadata" },
-    { id: 3, label: "Global Style" },
+    { id: 3, label: "Gaya Global" },
     { id: 4, label: "Cover" },
-    { id: 5, label: "Opening" },
-    { id: 6, label: "Widgets" },
-    { id: 7, label: "Ornaments" },
-    { id: 8, label: "Preview" },
-    { id: 9, label: "Publish" },
+    { id: 5, label: "Pembuka" },
+    { id: 6, label: "Widget" },
+    { id: 7, label: "Ornamen" },
+    { id: 8, label: "Pratinjau" },
+    { id: 9, label: "Publikasi" },
   ];
   const [items, setItems] = useState([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
@@ -168,6 +176,8 @@ function TemplateAdminPage() {
   const [managerMessage, setManagerMessage] = useState("");
   const [templateSource, setTemplateSource] = useState("registry");
   const [isSavingTemplate, setIsSavingTemplate] = useState(false);
+  const [deleteTemplateTarget, setDeleteTemplateTarget] = useState(null);
+  const [isDeletingTemplate, setIsDeletingTemplate] = useState(false);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
   const [isUploadingOrnament, setIsUploadingOrnament] = useState(false);
   const [dynamicOrnamentAssets, setDynamicOrnamentAssets] = useState([]);
@@ -695,7 +705,7 @@ function TemplateAdminPage() {
       previewGuestMode === "withGuest"
         ? `&previewGuest=${encodeURIComponent("Bapak/Ibu Preview")}`
         : "";
-    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&embeddedEditorPreview=1&focusSection=home&previewSectionOnly=1&previewTick=${templatePreviewTick}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
+    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&embeddedEditorPreview=1&previewOpening=1&focusSection=home&previewSectionOnly=1&previewTick=${templatePreviewTick}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
   }, [previewDataMode, previewGuestMode, templateDraft?.id, templatePreviewTick]);
   const editorPreviewSnapshot = useMemo(
     () =>
@@ -808,7 +818,7 @@ function TemplateAdminPage() {
           ...sections,
           [section]: currentSections[section] || {},
         }),
-        {},
+        { ...currentSections },
       ),
     };
   };
@@ -1620,18 +1630,23 @@ function TemplateAdminPage() {
     return result;
   };
 
-  const deleteTemplate = async (template) => {
+  const deleteTemplate = (template) => {
     if (!template?.id) {
       return;
     }
 
-    const confirmed = window.confirm(`Hapus template "${template.name}" dari katalog?`);
-    if (!confirmed) {
+    setDeleteTemplateTarget(template);
+  };
+
+  const confirmDeleteTemplate = async () => {
+    const template = deleteTemplateTarget;
+    if (!template?.id) {
       return;
     }
 
     const previousItems = items;
 
+    setIsDeletingTemplate(true);
     setItems((currentItems) => currentItems.filter((item) => item.id !== template.id));
     if (editingTemplateId === template.id) {
       cancelEditTemplate();
@@ -1663,6 +1678,9 @@ function TemplateAdminPage() {
     } catch (error) {
       setItems(previousItems);
       setManagerMessage(error.message || "Gagal menghapus template.");
+    } finally {
+      setIsDeletingTemplate(false);
+      setDeleteTemplateTarget(null);
     }
   };
 
@@ -1693,6 +1711,71 @@ function TemplateAdminPage() {
       );
     } catch (error) {
       setManagerMessage(error.message);
+    }
+  };
+
+  const duplicateTemplate = async (template) => {
+    if (!template?.id) {
+      return;
+    }
+
+    const reservedIds = new Set([
+      ...items.map((item) => item.id),
+      ...getStoredTemplateOverrides().map((item) => item.id),
+      ...getStoredDeletedTemplateIds(),
+    ]);
+    const baseId = `${template.id}-copy`;
+    let nextId = baseId;
+    let counter = 2;
+    while (reservedIds.has(nextId)) {
+      nextId = `${baseId}-${counter}`;
+      counter += 1;
+    }
+
+    let clonedConfig = {};
+    try {
+      clonedConfig = JSON.parse(JSON.stringify(template.designConfig || {}));
+    } catch {
+      clonedConfig = {};
+    }
+    const designConfig = ensurePresetSections(nextId, clonedConfig);
+
+    const duplicated = {
+      ...template,
+      id: nextId,
+      name: `${template.name} (Salinan)`,
+      status: "hidden",
+      previewUrl: `/preview?templateId=${encodeURIComponent(nextId)}`,
+      designConfig,
+      sortOrder: items.length + 1,
+    };
+
+    setItems((currentItems) => [
+      duplicated,
+      ...currentItems.filter((item) => item.id !== duplicated.id),
+    ]);
+    setManagerMessage("Menyalin template...");
+
+    try {
+      const result = await persistTemplate(duplicated);
+      if (result.source !== "supabase") {
+        upsertStoredTemplateOverride(duplicated);
+      }
+      const nextTemplate = { ...duplicated, ...result.data };
+      setItems((currentItems) => [
+        nextTemplate,
+        ...currentItems.filter((item) => item.id !== nextTemplate.id),
+      ]);
+      setTemplateSource(result.source || templateSource);
+      startEditTemplate(nextTemplate);
+      setManagerMessage(
+        result.source === "supabase"
+          ? "Template berhasil diduplikat. Salinan dibuka untuk diedit."
+          : "Template diduplikat ke katalog lokal. Supabase belum dikonfigurasi.",
+      );
+    } catch (error) {
+      setItems((currentItems) => currentItems.filter((item) => item.id !== duplicated.id));
+      setManagerMessage(error.message || "Gagal menduplikat template.");
     }
   };
 
@@ -1772,7 +1855,7 @@ function TemplateAdminPage() {
       }
 
       if (field === "id") {
-        const nextId = slugifyTemplateId(value);
+        const nextId = slugifyTemplateIdLive(value);
         return {
           ...current,
           id: nextId,
@@ -1846,16 +1929,18 @@ function TemplateAdminPage() {
       return;
     }
 
-    if (!templateDraft.id || !templateDraft.name || !templateDraft.category) {
+    const normalizedId = slugifyTemplateId(templateDraft.id);
+
+    if (!normalizedId || !templateDraft.name || !templateDraft.category) {
       setManagerMessage("Template ID, nama, dan kategori wajib diisi.");
       return;
     }
 
     const duplicateTemplate = items.find(
-      (template) => template.id === templateDraft.id && template.id !== editingTemplateId,
+      (template) => template.id === normalizedId && template.id !== editingTemplateId,
     );
     if (duplicateTemplate) {
-      setManagerMessage(`Template ID "${templateDraft.id}" sudah dipakai.`);
+      setManagerMessage(`Template ID "${normalizedId}" sudah dipakai.`);
       return;
     }
 
@@ -1871,9 +1956,8 @@ function TemplateAdminPage() {
 
     const draftToSave = {
       ...templateDraft,
-      previewUrl:
-        templateDraft.previewUrl ||
-        `/preview?templateId=${encodeURIComponent(templateDraft.id)}`,
+      id: normalizedId,
+      previewUrl: `/preview?templateId=${encodeURIComponent(normalizedId)}`,
       designConfig: parsedDesignConfig,
     };
 
@@ -1959,13 +2043,12 @@ function TemplateAdminPage() {
             ) : null}
           </div>
           {templateDraft ? null : (
-            <button
+            <DashboardButton
               type="button"
               onClick={startCreateTemplate}
-              className="rounded-2xl bg-[var(--color-accent)] px-5 py-3 text-base font-black text-[var(--color-primary)]"
             >
               Tambah Template
-            </button>
+            </DashboardButton>
           )}
         </div>
 
@@ -2196,23 +2279,24 @@ function TemplateAdminPage() {
                 <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-primary)] p-4 shadow-xl shadow-[var(--color-primary)]/12">
                   <div className="mb-3 flex flex-col gap-1 text-white sm:flex-row sm:items-center sm:justify-between">
                     <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--color-accent-soft)]">
-                      Live Template Preview
+                      Pratinjau Template
                     </p>
                     <div className="flex flex-wrap gap-2">
-                      <button
+                      <DashboardButton
                         type="button"
+                        size="sm"
+                        variant="ghost"
                         onClick={() => setTemplatePreviewTick((current) => current + 1)}
-                        className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-black text-white/72 transition-colors hover:bg-white/18 hover:text-white"
                       >
-                        Replay Opening
-                      </button>
+                        Putar ulang pembuka
+                      </DashboardButton>
                       <a
                         href={fullTemplatePreviewSrc}
                         target="_blank"
                         rel="noreferrer"
                         className="rounded-lg bg-white/10 px-3 py-1.5 text-xs font-black text-white/72 transition-colors hover:bg-white/18 hover:text-white"
                       >
-                        Open Full Preview
+                        Buka pratinjau penuh
                       </a>
                       {Object.entries(templatePreviewViewports).map(([key, viewport]) => (
                         <button
@@ -2232,8 +2316,8 @@ function TemplateAdminPage() {
                   </div>
                   <div className="mb-3 flex flex-wrap gap-2">
                     {[
-                      { id: "withGuest", label: "With guest name" },
-                      { id: "noGuest", label: "No guest name" },
+                      { id: "withGuest", label: "Dengan nama tamu" },
+                      { id: "noGuest", label: "Tanpa nama tamu" },
                     ].map((mode) => (
                       <button
                         key={mode.id}
@@ -2249,8 +2333,8 @@ function TemplateAdminPage() {
                       </button>
                     ))}
                     {[
-                      { id: "filled", label: "Filled data" },
-                      { id: "empty", label: "Empty fallback" },
+                      { id: "filled", label: "Data terisi" },
+                      { id: "empty", label: "Data kosong" },
                     ].map((mode) => (
                       <button
                         key={mode.id}
@@ -2267,21 +2351,21 @@ function TemplateAdminPage() {
                     ))}
                   </div>
                   <p className="mb-3 text-sm font-bold text-white/70">
-                    {activeDesignSection} section draft (focus: {previewFocusSection}) - {activePreviewViewport.label}{" "}
+                    Draft section {activeDesignSection} (fokus: {previewFocusSection}) - {activePreviewViewport.label}{" "}
                     {activePreviewViewport.viewportWidth}x{activePreviewViewport.viewportHeight}
-                    {activePreviewViewport.scale !== 1 ? ` scaled ${activePreviewViewport.scale}x` : ""}
+                    {activePreviewViewport.scale !== 1 ? ` skala ${activePreviewViewport.scale}x` : ""}
                   </p>
                   <div className="mb-4 rounded-[8px] border border-white/20 bg-white/10 p-3">
                     <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                       <p className="text-xs font-black uppercase tracking-[0.12em] text-white/72">
-                        Prompt ChatGPT Image
+                        Prompt Gambar
                       </p>
                       <button
                         type="button"
                         onClick={copyImageGenerationPrompt}
                         className="rounded-lg bg-white/14 px-3 py-1.5 text-[11px] font-black text-white transition-colors hover:bg-white/22"
                       >
-                        Copy Prompt
+                        Salin prompt
                       </button>
                     </div>
                     <textarea
@@ -2341,8 +2425,33 @@ function TemplateAdminPage() {
           filteredTemplates={filteredTemplates}
           isLoadingTemplates={isLoadingTemplates}
           startEditTemplate={startEditTemplate}
+          duplicateTemplate={duplicateTemplate}
           toggleTemplateStatus={toggleTemplateStatus}
           deleteTemplate={deleteTemplate}
+        />
+        <ConfirmationModal
+          show={Boolean(deleteTemplateTarget)}
+          title="Hapus template ini?"
+          description={
+            deleteTemplateTarget ? (
+              <p>
+                Template{" "}
+                <span className="font-black text-slate-900">
+                  {deleteTemplateTarget.name}
+                </span>{" "}
+                dengan ID{" "}
+                <span className="font-black text-slate-900">
+                  {deleteTemplateTarget.id}
+                </span>{" "}
+                akan dihapus dari katalog. Tindakan ini tidak dapat dibatalkan.
+              </p>
+            ) : null
+          }
+          confirmLabel="Ya, Hapus"
+          loading={isDeletingTemplate}
+          danger
+          onClose={() => setDeleteTemplateTarget(null)}
+          onConfirm={confirmDeleteTemplate}
         />
       </motion.section>
   );

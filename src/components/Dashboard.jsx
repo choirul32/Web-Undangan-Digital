@@ -21,6 +21,8 @@ import ContentManagers from "./dashboard/ContentManagers";
 import InvitationFormPanel from "./dashboard/InvitationForm";
 import TemplateAdminPage from "./dashboard/TemplateAdmin";
 import SettingsPage from "./dashboard/SettingsPage";
+import RsvpNotifications from "./dashboard/RsvpNotifications";
+import AnalyticsManager from "./dashboard/AnalyticsManager";
 
 function Sidebar({
   activePage = "overview",
@@ -119,15 +121,26 @@ function LogoutButton({ session }) {
     window.location.href = "/login";
   };
 
+  const email = session?.email || "";
+  const initial = (email.trim()[0] || "A").toUpperCase();
+
   return (
     <details className="relative">
-      <summary className="list-none cursor-pointer rounded-md border border-[var(--dash-border)] bg-[var(--dash-canvas)] px-3 py-2 text-sm font-semibold text-[var(--dash-ink)] transition-colors hover:bg-[var(--dash-fog)]">
-        {session?.email || "Akun"}
+      <summary
+        className="list-none flex h-9 w-9 cursor-pointer items-center justify-center rounded-full border border-[var(--dash-border)] bg-[var(--dash-ink)] text-sm font-semibold text-white transition-colors hover:bg-[var(--dash-dark)]"
+        title={email || "Akun"}
+      >
+        {initial}
       </summary>
-      <div className="absolute right-0 z-50 mt-2 w-44 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-2 shadow-xl">
+      <div className="absolute right-0 z-50 mt-2 w-56 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-2 shadow-xl">
         <p className="px-3 py-2 text-[11px] font-bold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
           {session?.mode === "dev" ? "Dev Mode" : "Admin"}
         </p>
+        {email ? (
+          <p className="truncate px-3 pb-2 text-sm font-semibold text-[var(--dash-ink)]" title={email}>
+            {email}
+          </p>
+        ) : null}
         <a
           href="/"
           className="block rounded-lg px-3 py-2 text-sm font-semibold text-[var(--dash-ink)] transition-colors hover:bg-[var(--dash-fog)]"
@@ -272,6 +285,7 @@ function ActiveInvitationWorkspace({ invitationSlug }) {
     { id: "media", label: "Media", requiresOrder: true },
     { id: "guests", label: "Tamu", requiresOrder: true },
     { id: "rsvp", label: "RSVP", requiresOrder: true },
+    { id: "analytics", label: "Statistik", requiresOrder: true },
   ];
 
   const renderActiveWorkspaceTab = () => {
@@ -297,6 +311,10 @@ function ActiveInvitationWorkspace({ invitationSlug }) {
 
     if (activeWorkspaceTab === "rsvp") {
       return <RSVPManager invitationSlug={invitationSlug} />;
+    }
+
+    if (activeWorkspaceTab === "analytics") {
+      return <AnalyticsManager invitationSlug={invitationSlug} />;
     }
 
     return <InvitationFormPanel invitationSlug={invitationSlug} />;
@@ -619,6 +637,7 @@ export default function Dashboard({
                   activePage={activePage}
                   activeInvitationSlug={activeInvitationSlug}
                 />
+                <RsvpNotifications />
                 <LogoutButton session={session} />
               </div>
             </div>

@@ -3,7 +3,12 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { fadeUp } from "./config";
-import { TextInput, SelectInput } from "./FormControls";
+import ConfirmDialog from "./ConfirmDialog";
+import {
+  DashboardButton,
+  DashboardCard,
+  TextInput,
+} from "./FormControls";
 
 export default function MediaManager({ invitationSlug = "" }) {
   const [mediaItems, setMediaItems] = useState([]);
@@ -12,12 +17,17 @@ export default function MediaManager({ invitationSlug = "" }) {
   const [file, setFile] = useState(null);
   const [message, setMessage] = useState("");
   const [replaceId, setReplaceId] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(null);
   const mediaTabs = [
     { id: "cover", label: "Cover" },
+    { id: "groom", label: "Foto Pria" },
+    { id: "bride", label: "Foto Wanita" },
     { id: "image", label: "Gallery" },
+    { id: "qris", label: "QRIS" },
     { id: "music", label: "Music" },
     { id: "video", label: "Video" },
   ];
+  const singleSlotTypes = ["cover", "groom", "bride", "qris"];
   const filteredMediaItems = mediaItems.filter((item) => item.mediaType === mediaType);
 
   useEffect(() => {
@@ -52,12 +62,22 @@ export default function MediaManager({ invitationSlug = "" }) {
       return;
     }
 
+    // Single-slot media (cover, couple portraits) should replace the existing
+    // entry instead of stacking duplicates.
+    let effectiveReplaceId = replaceId;
+    if (!effectiveReplaceId && singleSlotTypes.includes(mediaType)) {
+      const existing = mediaItems.find((item) => item.mediaType === mediaType);
+      if (existing) {
+        effectiveReplaceId = existing.id;
+      }
+    }
+
     const formData = new FormData();
     formData.append("invitationSlug", invitationSlug);
     formData.append("mediaType", mediaType);
     formData.append("title", title);
-    if (replaceId) {
-      formData.append("replaceId", replaceId);
+    if (effectiveReplaceId) {
+      formData.append("replaceId", effectiveReplaceId);
     }
     formData.append("file", file);
 
@@ -75,15 +95,15 @@ export default function MediaManager({ invitationSlug = "" }) {
       }
 
       setMediaItems((current) =>
-        replaceId
-          ? current.map((item) => (item.id === replaceId ? result.data : item))
+        effectiveReplaceId
+          ? current.map((item) => (item.id === effectiveReplaceId ? result.data : item))
           : [result.data, ...current],
       );
       setFile(null);
       setReplaceId("");
       setMessage(
         result.source === "supabase"
-          ? replaceId
+          ? effectiveReplaceId
             ? "Media berhasil diganti."
             : "Media berhasil diupload."
           : "Media berhasil diupload.",
@@ -168,23 +188,32 @@ export default function MediaManager({ invitationSlug = "" }) {
       <div className="border-b border-[var(--dash-border)] px-5 py-4">
         <div className="flex flex-wrap gap-2">
           {mediaTabs.map((tab) => (
-            <button
+            <DashboardButton
               key={tab.id}
               type="button"
+              variant={mediaType === tab.id ? "primary" : "secondary"}
+              size="sm"
               onClick={() => {
                 setMediaType(tab.id);
                 setTitle(tab.label);
               }}
-              className={`rounded-md border px-3 py-2 text-sm font-semibold transition-colors ${
-                mediaType === tab.id
-                  ? "border-[var(--dash-ink)] bg-[var(--dash-ink)] text-white"
-                  : "border-[var(--dash-border)] bg-white text-[var(--dash-muted)] hover:bg-[var(--dash-fog)] hover:text-[var(--dash-ink)]"
-              }`}
             >
               {tab.label}
-            </button>
+            </DashboardButton>
           ))}
         </div>
+        {mediaType === "groom" || mediaType === "bride" ? (
+          <p className="mt-3 text-xs font-medium text-[var(--dash-muted)]">
+            Pas foto {mediaType === "groom" ? "mempelai pria" : "mempelai wanita"} yang tampil di atas nama pada section Mempelai.
+            Satu foto saja — upload baru otomatis mengganti yang lama. Kalau dikosongkan, dipakai foto default dari Pengaturan.
+          </p>
+        ) : null}
+        {mediaType === "qris" ? (
+          <p className="mt-3 text-xs font-medium text-[var(--dash-muted)]">
+            Upload gambar QRIS (screenshot/ekspor dari aplikasi bank/e-wallet) untuk section Amplop Digital.
+            Satu gambar saja — upload baru otomatis mengganti yang lama. Pastikan kode QR terlihat jelas.
+          </p>
+        ) : null}
       </div>
 
       <div className="grid gap-3 border-b border-[var(--dash-border)] p-5 lg:grid-cols-[1fr_1fr_auto_auto]">
@@ -199,21 +228,20 @@ export default function MediaManager({ invitationSlug = "" }) {
           onChange={(event) => setFile(event.target.files?.[0] || null)}
           className="rounded-lg border border-[var(--dash-border)] bg-white px-3 py-2.5 text-sm font-medium text-[var(--dash-muted)]"
         />
-        <button
+        <DashboardButton
           type="button"
           onClick={uploadMedia}
-          className="rounded-md bg-[var(--dash-ink)] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[var(--dash-dark)]"
         >
           {replaceId ? "Replace" : "Upload"}
-        </button>
+        </DashboardButton>
         {replaceId ? (
-          <button
+          <DashboardButton
             type="button"
             onClick={cancelReplace}
-            className="rounded-md border border-[var(--dash-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--dash-ink)] hover:bg-[var(--dash-fog)]"
+            variant="secondary"
           >
             Batal
-          </button>
+          </DashboardButton>
         ) : null}
       </div>
 
@@ -223,9 +251,9 @@ export default function MediaManager({ invitationSlug = "" }) {
 
       <div className="grid gap-4 p-5 sm:grid-cols-2 xl:grid-cols-3">
         {filteredMediaItems.map((item) => (
-          <article
+          <DashboardCard
             key={item.id || item.url}
-            className="overflow-hidden rounded-[14px] border border-[var(--dash-border)] bg-white"
+            className="overflow-hidden p-0"
           >
             {item.mediaType === "music" ? (
               <div className="p-5">
@@ -239,8 +267,8 @@ export default function MediaManager({ invitationSlug = "" }) {
                   <source src={item.url} />
                 </audio>
                 <div className="mt-4 flex gap-2">
-                  <button type="button" onClick={() => startReplace(item)} className="rounded-md border border-[var(--dash-border)] px-3 py-2 text-sm font-semibold text-[var(--dash-ink)]">Replace</button>
-                  <button type="button" onClick={() => deleteMedia(item)} className="rounded-md bg-[var(--dash-ink)] px-3 py-2 text-sm font-semibold text-white">Delete</button>
+                  <DashboardButton type="button" size="sm" variant="secondary" onClick={() => startReplace(item)}>Replace</DashboardButton>
+                  <DashboardButton type="button" size="sm" variant="danger" onClick={() => setConfirmDelete(item)}>Delete</DashboardButton>
                 </div>
               </div>
             ) : (
@@ -261,13 +289,13 @@ export default function MediaManager({ invitationSlug = "" }) {
                     Dipakai sebagai: {item.mediaType === "image" ? "Gallery item" : item.mediaType}
                   </p>
                   <div className="mt-4 flex gap-2">
-                    <button type="button" onClick={() => startReplace(item)} className="rounded-md border border-[var(--dash-border)] px-3 py-2 text-sm font-semibold text-[var(--dash-ink)]">Replace</button>
-                    <button type="button" onClick={() => deleteMedia(item)} className="rounded-md bg-[var(--dash-ink)] px-3 py-2 text-sm font-semibold text-white">Delete</button>
+                    <DashboardButton type="button" size="sm" variant="secondary" onClick={() => startReplace(item)}>Replace</DashboardButton>
+                    <DashboardButton type="button" size="sm" variant="danger" onClick={() => deleteMedia(item)}>Delete</DashboardButton>
                   </div>
                 </div>
               </>
             )}
-          </article>
+          </DashboardCard>
         ))}
         {filteredMediaItems.length === 0 ? (
           <div className="rounded-[14px] border border-dashed border-[var(--dash-border)] bg-[var(--dash-fog)]/45 p-5 text-sm font-medium text-[var(--dash-muted)]">
@@ -275,6 +303,15 @@ export default function MediaManager({ invitationSlug = "" }) {
           </div>
         ) : null}
       </div>
+
+        <ConfirmDialog
+          open={Boolean(confirmDelete)}
+          title="Hapus Media?"
+          message={`Media "${confirmDelete?.title || confirmDelete?.mediaType}" akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.`}
+          confirmLabel="Ya, Hapus"
+          onConfirm={() => { deleteMedia(confirmDelete); setConfirmDelete(null); }}
+          onCancel={() => setConfirmDelete(null)}
+        />
         </>
       )}
     </motion.section>

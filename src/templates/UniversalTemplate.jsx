@@ -27,6 +27,8 @@ export default function UniversalTemplate({
   guestName,
   guestSlug,
   framedPreview = false,
+  previewOpening = false,
+  previewMode = false,
 }) {
   const musicRef = useRef(null);
   const musicFadeRef = useRef(null);
@@ -43,7 +45,12 @@ export default function UniversalTemplate({
   const coverConfig = getCoverSectionConfig(designConfig);
   const openingRevealConfig = getOpeningRevealConfig(designConfig);
   const openingSequenceConfig = getOpeningSequenceConfig(designConfig);
-  const openingOverlayConfig = { ...openingRevealConfig, sequencePreset: openingSequenceConfig.preset, asset: openingSequenceConfig.asset };
+  const openingOverlayConfig = {
+    ...openingRevealConfig,
+    enabled: previewOpening ? true : openingRevealConfig.enabled,
+    sequencePreset: openingSequenceConfig.preset,
+    asset: openingSequenceConfig.asset,
+  };
   const personalizedGuestName = invitation.features?.guestName === false ? "" : guestName;
   const coupleConfig = getCoupleSectionConfig(designConfig);
   const countdownConfig = getCountdownWidgetConfig(designConfig);
@@ -51,15 +58,19 @@ export default function UniversalTemplate({
   const galleryConfig = getGalleryWidgetConfig(designConfig);
   const storyConfig = getStoryWidgetConfig(designConfig);
   const musicConfig = getMusicWidgetConfig(designConfig);
-  const profileImages = ["/assets/CoverPasangan.png", "/assets/catin_wanita.jpg", "/assets/catin_pria.jpg"];
+  const bridePhoto = couple.bridePhoto || "/assets/catin_wanita.jpg";
+  const groomPhoto = couple.groomPhoto || "/assets/catin_pria.jpg";
+  const coverPhoto = invitation.coverImage || "/assets/CoverPasangan.png";
+  const profileImages = [coverPhoto, bridePhoto, groomPhoto];
   const coupleProfileImages = {
-    bride: profileImages[1],
-    groom: profileImages[2],
+    bride: bridePhoto,
+    groom: groomPhoto,
   };
 
   const { previewFocusSection, previewSectionOnly, shouldRenderSection } = usePreviewSectionFilter(invitation.templateId);
   const isCompactHomePreview =
     framedPreview || (previewSectionOnly && previewFocusSection === "home") || isNarrowViewport;
+  const shouldDelayInvitationContent = openingOverlayConfig.enabled && !isRevealOpen;
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -122,6 +133,21 @@ export default function UniversalTemplate({
   };
 
   useEffect(() => {
+    if (typeof document === "undefined") return undefined;
+    if (!openingOverlayConfig.enabled || isRevealOpen) return undefined;
+
+    const previousBodyOverflow = document.body.style.overflow;
+    const previousHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousBodyOverflow;
+      document.documentElement.style.overflow = previousHtmlOverflow;
+    };
+  }, [isRevealOpen, openingOverlayConfig.enabled]);
+
+  useEffect(() => {
     if (openingOverlayConfig.enabled) return;
     if (!musicConfig.enabled && !invitation.features?.music) return;
 
@@ -155,6 +181,7 @@ export default function UniversalTemplate({
             config={openingOverlayConfig}
             coverConfig={coverConfig}
             couple={couple}
+            coverImage={invitation.coverImage}
             guestName={personalizedGuestName}
             onOpen={openInvitation}
             framedPreview={framedPreview}
@@ -162,7 +189,7 @@ export default function UniversalTemplate({
         ) : null}
       </AnimatePresence>
 
-      {shouldRenderSection("home") ? (
+      {!shouldDelayInvitationContent && shouldRenderSection("home") ? (
         <HomeSection
           designConfig={designConfig}
           coverConfig={coverConfig}
@@ -171,19 +198,20 @@ export default function UniversalTemplate({
           personalizedGuestName={personalizedGuestName}
           profileImages={profileImages}
           isCompactHomePreview={isCompactHomePreview}
+          showGuestGreeting={!openingOverlayConfig.enabled}
         />
       ) : null}
 
-      {shouldRenderSection("couple") ? <CoupleSection designConfig={designConfig} couple={couple} coupleConfig={coupleConfig} profileImages={coupleProfileImages} /> : null}
-      {shouldRenderSection("acara") ? <EventSection designConfig={designConfig} events={events} eventConfig={eventConfig} /> : null}
-      {shouldRenderSection("countdown") ? <CountdownSection designConfig={designConfig} events={events} countdownConfig={countdownConfig} /> : null}
-      {shouldRenderSection("story") ? <StorySection designConfig={designConfig} story={story} storyConfig={storyConfig} /> : null}
-      {shouldRenderSection("gallery") ? <GallerySection designConfig={designConfig} invitation={invitation} galleryConfig={galleryConfig} /> : null}
-      {shouldRenderSection("gift") && invitation.features?.gift ? <GiftSection accounts={invitation.bankAccounts} designConfig={designConfig} /> : null}
-      {shouldRenderSection("rsvp") ? <RsvpSection designConfig={designConfig} invitation={invitation} personalizedGuestName={personalizedGuestName} guestSlug={guestSlug} /> : null}
-      {shouldRenderSection("doa-ucapan") ? <WishesSection designConfig={designConfig} /> : null}
+      {!shouldDelayInvitationContent && shouldRenderSection("couple") ? <CoupleSection designConfig={designConfig} couple={couple} coupleConfig={coupleConfig} profileImages={coupleProfileImages} /> : null}
+      {!shouldDelayInvitationContent && shouldRenderSection("acara") ? <EventSection designConfig={designConfig} events={events} eventConfig={eventConfig} /> : null}
+      {!shouldDelayInvitationContent && shouldRenderSection("countdown") ? <CountdownSection designConfig={designConfig} events={events} countdownConfig={countdownConfig} /> : null}
+      {!shouldDelayInvitationContent && shouldRenderSection("story") ? <StorySection designConfig={designConfig} story={story} storyConfig={storyConfig} /> : null}
+      {!shouldDelayInvitationContent && shouldRenderSection("gallery") ? <GallerySection designConfig={designConfig} invitation={invitation} galleryConfig={galleryConfig} /> : null}
+      {!shouldDelayInvitationContent && shouldRenderSection("gift") && invitation.features?.gift ? <GiftSection accounts={invitation.bankAccounts} designConfig={designConfig} qrisImage={invitation.qrisImage} /> : null}
+      {!shouldDelayInvitationContent && shouldRenderSection("rsvp") ? <RsvpSection designConfig={designConfig} invitation={invitation} personalizedGuestName={personalizedGuestName} guestSlug={guestSlug} /> : null}
+      {!shouldDelayInvitationContent && shouldRenderSection("doa-ucapan") ? <WishesSection designConfig={designConfig} slug={invitation.slug} preview={previewSectionOnly || previewMode} /> : null}
 
-      {!previewSectionOnly && (invitation.features?.music || musicConfig.enabled) ? (
+      {!shouldDelayInvitationContent && !previewSectionOnly && (invitation.features?.music || musicConfig.enabled) ? (
         <MusicPlayer
           musicUrl={invitation.musicUrl || ""}
           musicTitle={invitation.musicTitle || "Wedding Music"}

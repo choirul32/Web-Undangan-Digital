@@ -9,6 +9,8 @@ export default function InvitationRenderer({
   guestName,
   guestSlug,
   framedPreview = false,
+  previewOpening = false,
+  previewMode = false,
 }) {
   return (
     <UniversalTemplate
@@ -16,6 +18,8 @@ export default function InvitationRenderer({
       guestName={guestName}
       guestSlug={guestSlug}
       framedPreview={framedPreview}
+      previewOpening={previewOpening}
+      previewMode={previewMode}
     />
   );
 }

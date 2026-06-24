@@ -5,7 +5,7 @@ import { useState } from "react";
 export default function RSVPForm({ invitationSlug, guestSlug, guestName }) {
   const [form, setForm] = useState({
     guestName: guestName || "",
-    attendance: "hadir",
+    attendance: "",
     pax: 1,
     message: "",
   });
@@ -49,41 +49,52 @@ export default function RSVPForm({ invitationSlug, guestSlug, guestName }) {
   };
 
   return (
-    <form onSubmit={submitRSVP} className="mt-8 space-y-4 text-left">
+    <form
+      onSubmit={submitRSVP}
+      className="mt-8 space-y-4 rounded-2xl border border-[var(--color-accent-pale)] bg-white/95 p-5 text-left shadow-xl shadow-[var(--color-primary)]/8 sm:p-7"
+    >
       <label className="block">
-        <span className="text-sm font-black uppercase tracking-[0.12em] text-white/70">
-          Nama
-        </span>
+        <span className="sr-only">Nama</span>
         <input
           value={form.guestName}
           onChange={(event) => updateForm("guestName", event.target.value)}
-          className="mt-2 w-full rounded-2xl border border-white/12 bg-white/10 px-4 py-3 text-base font-bold text-white outline-none placeholder:text-white/35 focus:border-[var(--color-accent)]"
-          placeholder="Nama tamu"
+          className="w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-4 py-3.5 text-base font-semibold text-[var(--color-text)] outline-none placeholder:text-[var(--color-text)]/40 focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20"
+          placeholder="Nama"
           required
         />
       </label>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <label className="block">
+        <span className="sr-only">Ucapan dan doa</span>
+        <textarea
+          value={form.message}
+          onChange={(event) => updateForm("message", event.target.value)}
+          rows={4}
+          className="w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-4 py-3.5 text-base font-semibold leading-7 text-[var(--color-text)] outline-none placeholder:text-[var(--color-text)]/40 focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20"
+          placeholder="Ucapan dan doa"
+        />
+      </label>
+
+      <label className="block">
+        <span className="sr-only">Konfirmasi Kehadiran</span>
+        <select
+          value={form.attendance}
+          onChange={(event) => updateForm("attendance", event.target.value)}
+          required
+          className="w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-4 py-3.5 text-base font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20"
+        >
+          <option value="" disabled>
+            Konfirmasi Kehadiran
+          </option>
+          <option value="hadir">Hadir</option>
+          <option value="tidak_hadir">Tidak dapat hadir</option>
+        </select>
+      </label>
+
+      {form.attendance === "hadir" ? (
         <label className="block">
-          <span className="text-sm font-black uppercase tracking-[0.12em] text-white/70">
-            Kehadiran
-          </span>
-          <select
-            value={form.attendance}
-            onChange={(event) => updateForm("attendance", event.target.value)}
-            className="mt-2 w-full rounded-2xl border border-white/12 bg-white/10 px-4 py-3 text-base font-bold text-white outline-none focus:border-[var(--color-accent)]"
-          >
-            <option className="text-[var(--color-primary)]" value="hadir">
-              Hadir
-            </option>
-            <option className="text-[var(--color-primary)]" value="tidak_hadir">
-              Tidak hadir
-            </option>
-          </select>
-        </label>
-        <label className="block">
-          <span className="text-sm font-black uppercase tracking-[0.12em] text-white/70">
-            Jumlah Tamu
+          <span className="mb-1.5 block text-sm font-bold text-[var(--color-text)]/70">
+            Jumlah tamu yang hadir
           </span>
           <input
             type="number"
@@ -91,30 +102,17 @@ export default function RSVPForm({ invitationSlug, guestSlug, guestName }) {
             max="10"
             value={form.pax}
             onChange={(event) => updateForm("pax", event.target.value)}
-            className="mt-2 w-full rounded-2xl border border-white/12 bg-white/10 px-4 py-3 text-base font-bold text-white outline-none focus:border-[var(--color-accent)]"
+            className="w-full rounded-xl border border-[var(--color-accent-pale)] bg-white px-4 py-3.5 text-base font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/20"
           />
         </label>
-      </div>
+      ) : null}
 
-      <label className="block">
-        <span className="text-sm font-black uppercase tracking-[0.12em] text-white/70">
-          Ucapan
-        </span>
-        <textarea
-          value={form.message}
-          onChange={(event) => updateForm("message", event.target.value)}
-          rows={4}
-          className="mt-2 w-full rounded-2xl border border-white/12 bg-white/10 px-4 py-3 text-base font-bold leading-7 text-white outline-none placeholder:text-white/35 focus:border-[var(--color-accent)]"
-          placeholder="Tulis ucapan dan doa..."
-        />
-      </label>
-
-      <button className="w-full rounded-2xl bg-[var(--color-accent)] px-7 py-4 text-base font-black text-[var(--color-primary)]">
-        Kirim RSVP
+      <button className="min-w-32 rounded-xl bg-[var(--color-primary)] px-7 py-3 text-base font-black text-white shadow-md transition-transform hover:-translate-y-0.5">
+        Kirim
       </button>
 
       {status ? (
-        <p className="text-center text-sm font-bold text-white/78">{status}</p>
+        <p className="text-sm font-bold text-[var(--color-text)]/75">{status}</p>
       ) : null}
     </form>
   );

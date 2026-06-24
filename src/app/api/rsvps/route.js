@@ -21,6 +21,7 @@ function mapRsvp(item) {
     attendance: item.attendance,
     pax: item.pax,
     message: item.message,
+    hidden: item.hidden || false,
     createdAt: item.created_at,
   };
 }
@@ -71,6 +72,7 @@ export async function GET(request) {
 
   return NextResponse.json({
     source: "supabase",
+    invitationId: invitation.id,
     data: data.map(mapRsvp),
   });
 }
@@ -144,4 +146,80 @@ export async function POST(request) {
     });
     return fail("RSVP gagal diproses.", { status: 500, code: "internal_error" });
   }
+}
+
+// Admin moderation: toggle the public visibility of an RSVP message.
+export async function PATCH(request) {
+  if (!hasServiceEnv()) {
+    return fail("Production database is not configured.", {
+      status: 503,
+      code: "service_unavailable",
+    });
+  }
+
+  const admin = await requireAdminApiSession();
+  if (admin.error) {
+    return NextResponse.json(admin.error, { status: 401 });
+  }
+
+  let payload = {};
+  try {
+    payload = await request.json();
+  } catch {
+    return fail("Body JSON tidak valid.", { status: 400, code: "invalid_json" });
+  }
+
+  if (!payload.id || typeof payload.hidden !== "boolean") {
+    return fail("Butuh id dan hidden (boolean).", {
+      status: 400,
+      code: "invalid_input",
+    });
+  }
+
+  const supabase = createServiceSupabaseClient();
+  const { data, error } = await supabase
+    .from("rsvps")
+    .update({ hidden: payload.hidden })
+    .eq("id", payload.id)
+    .select("*")
+    .single();
+
+  if (error) {
+    logApiError("rsvps.patch", error, { id: payload.id });
+    return fail(error.message, { status: 500, code: "database_error" });
+  }
+
+  return ok(mapRsvp(data));
+}
+
+// Admin moderation: permanently delete an RSVP.
+export async function DELETE(request) {
+  if (!hasServiceEnv()) {
+    return fail("Production database is not configured.", {
+      status: 503,
+      code: "service_unavailable",
+    });
+  }
+
+  const admin = await requireAdminApiSession();
+  if (admin.error) {
+    return NextResponse.json(admin.error, { status: 401 });
+  }
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return fail("id wajib diisi.", { status: 400, code: "invalid_input" });
+  }
+
+  const supabase = createServiceSupabaseClient();
+  const { error } = await supabase.from("rsvps").delete().eq("id", id);
+
+  if (error) {
+    logApiError("rsvps.delete", error, { id });
+    return fail(error.message, { status: 500, code: "database_error" });
+  }
+
+  return ok({ id });
 }

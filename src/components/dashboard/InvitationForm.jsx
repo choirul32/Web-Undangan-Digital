@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { mergeTemplateOverrides } from "../../data/templateAdminDefaults";
 import {
   fadeUp,
@@ -100,7 +100,49 @@ function invitationToForm(invitation, templateOptions = []) {
     guestName: Boolean(
       invitation?.features?.guestName ?? initialInvitationForm.guestName,
     ),
+    viewCount: invitation?.viewCount || 0,
+    lastViewedAt: invitation?.lastViewedAt || null,
   };
+}
+
+function CouplePreviewCard({ groomNickname, brideNickname, groomParents, brideParents, quote }) {
+  return (
+    <div className="rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-fog)]/45 p-5">
+      <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)] mb-4 text-center">
+        Live Preview
+      </p>
+      <div className="relative flex min-h-[220px] flex-col items-center justify-center overflow-hidden rounded-xl border border-[var(--dash-border)] bg-white p-6 text-center shadow-sm">
+        <div className="absolute inset-0 bg-gradient-to-br from-amber-50/30 to-rose-50/30 opacity-50" />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={`${groomNickname}-${brideNickname}-${groomParents}-${brideParents}-${quote}`}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="relative z-10 flex flex-col items-center gap-1"
+          >
+            <span className="text-xs font-medium text-amber-600/80 tracking-widest uppercase">Wedding Preview</span>
+            <h4 className="mt-2 text-2xl font-bold text-[var(--dash-ink)] font-serif">
+              {groomNickname || "Pria"} & {brideNickname || "Wanita"}
+            </h4>
+            {groomParents || brideParents ? (
+              <div className="mt-3 space-y-0.5 text-[11px] text-[var(--dash-muted)]">
+                <p className="font-semibold">Putra-Putri dari:</p>
+                {groomParents ? <p>Bapak/Ibu {groomParents}</p> : null}
+                {brideParents ? <p>Bapak/Ibu {brideParents}</p> : null}
+              </div>
+            ) : null}
+            {quote ? (
+              <p className="mt-4 max-w-[200px] border-t border-[var(--dash-border)] pt-3 text-[10px] italic text-[var(--dash-muted)] leading-relaxed">
+                "{quote}"
+              </p>
+            ) : null}
+          </motion.div>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
 }
 
 export default function InvitationFormPanel({ invitationSlug = "" }) {
@@ -258,6 +300,31 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
       setSaveMessage("Order ditandai sebagai review. Kirim preview ke customer via WhatsApp.");
       redirectToActiveOrder(saved);
     }
+  };
+
+  const openWaNotification = (type = "review") => {
+    const wa = form.customerWhatsapp || "";
+    if (!wa) {
+      setSaveMessage("Nomor WhatsApp customer belum diisi di Step 0.");
+      return;
+    }
+
+    const slug = form.slug || invitationSlug;
+    const publicUrl = slug ? `${window.location.origin}/u/${slug}` : "(belum ada URL)";
+    const groomName = form.groomNickname || form.groomName || "Mempelai Pria";
+    const brideName = form.brideNickname || form.brideName || "Mempelai Wanita";
+    const customerName = form.customerName || "Bapak/Ibu";
+
+    const messages = {
+      review:
+        `Halo ${customerName} 😊\n\nUndangan digital ${groomName} & ${brideName} sudah siap untuk direview!\n\nSilakan cek preview di sini: ${publicUrl}\n\nJika ada yang perlu direvisi, mohon beritahu kami ya. Terima kasih! 🙏`,
+      published:
+        `Halo ${customerName} 🎉\n\nUndangan digital ${groomName} & ${brideName} sudah LIVE dan siap disebar!\n\nLink undangan: ${publicUrl}\n\nSelamat ya, semoga acaranya lancar dan penuh berkah! 🥰`,
+    };
+
+    const text = encodeURIComponent(messages[type] || messages.review);
+    const cleanWa = wa.replace(/[^0-9]/g, "");
+    window.open(`https://wa.me/${cleanWa}?text=${text}`, "_blank", "noreferrer");
   };
 
   const publishInvitation = async () => {
@@ -516,84 +583,95 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
 
     if (activeStep === 2) {
       return (
-        <div className="grid gap-5">
-          <div className="grid gap-5 lg:grid-cols-2">
-            <section className={mutedPanelClass}>
-              <div className="mb-5 border-b border-[var(--dash-border)] pb-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
-                  Data Mempelai
-                </p>
-                <h3 className="mt-1 text-lg font-semibold text-[var(--dash-ink)]">
-                  Mempelai Pria
-                </h3>
-              </div>
-              <div className="grid gap-5">
-                <Field label="Nama Lengkap">
-                  <TextInput
-                    value={form.groomName}
-                    onChange={(event) => updateForm("groomName", event.target.value)}
-                    placeholder="Nama lengkap mempelai pria"
-                  />
-                </Field>
-                <Field label="Nama Panggilan">
-                  <TextInput
-                    value={form.groomNickname}
-                    onChange={(event) => updateForm("groomNickname", event.target.value)}
-                    placeholder="Nama panggilan"
-                  />
-                </Field>
-                <Field label="Nama Orang Tua">
-                  <TextInput
-                    value={form.groomParents}
-                    onChange={(event) => updateForm("groomParents", event.target.value)}
-                    placeholder="Bapak ... & Ibu ..."
-                  />
-                </Field>
-              </div>
-            </section>
+        <div className="grid gap-5 lg:grid-cols-[1fr_320px]">
+          <div className="grid gap-5">
+            <div className="grid gap-5 md:grid-cols-2">
+              <section className={mutedPanelClass}>
+                <div className="mb-5 border-b border-[var(--dash-border)] pb-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
+                    Data Mempelai
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold text-[var(--dash-ink)]">
+                    Mempelai Pria
+                  </h3>
+                </div>
+                <div className="grid gap-5">
+                  <Field label="Nama Lengkap">
+                    <TextInput
+                      value={form.groomName}
+                      onChange={(event) => updateForm("groomName", event.target.value)}
+                      placeholder="Nama lengkap mempelai pria"
+                    />
+                  </Field>
+                  <Field label="Nama Panggilan">
+                    <TextInput
+                      value={form.groomNickname}
+                      onChange={(event) => updateForm("groomNickname", event.target.value)}
+                      placeholder="Nama panggilan"
+                    />
+                  </Field>
+                  <Field label="Nama Orang Tua">
+                    <TextInput
+                      value={form.groomParents}
+                      onChange={(event) => updateForm("groomParents", event.target.value)}
+                      placeholder="Bapak ... & Ibu ..."
+                    />
+                  </Field>
+                </div>
+              </section>
 
-            <section className={mutedPanelClass}>
-              <div className="mb-5 border-b border-[var(--dash-border)] pb-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
-                  Data Mempelai
-                </p>
-                <h3 className="mt-1 text-lg font-semibold text-[var(--dash-ink)]">
-                  Mempelai Wanita
-                </h3>
-              </div>
-              <div className="grid gap-5">
-                <Field label="Nama Lengkap">
-                  <TextInput
-                    value={form.brideName}
-                    onChange={(event) => updateForm("brideName", event.target.value)}
-                    placeholder="Nama lengkap mempelai wanita"
-                  />
-                </Field>
-                <Field label="Nama Panggilan">
-                  <TextInput
-                    value={form.brideNickname}
-                    onChange={(event) => updateForm("brideNickname", event.target.value)}
-                    placeholder="Nama panggilan"
-                  />
-                </Field>
-                <Field label="Nama Orang Tua">
-                  <TextInput
-                    value={form.brideParents}
-                    onChange={(event) => updateForm("brideParents", event.target.value)}
-                    placeholder="Bapak ... & Ibu ..."
-                  />
-                </Field>
-              </div>
-            </section>
+              <section className={mutedPanelClass}>
+                <div className="mb-5 border-b border-[var(--dash-border)] pb-3">
+                  <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
+                    Data Mempelai
+                  </p>
+                  <h3 className="mt-1 text-lg font-semibold text-[var(--dash-ink)]">
+                    Mempelai Wanita
+                  </h3>
+                </div>
+                <div className="grid gap-5">
+                  <Field label="Nama Lengkap">
+                    <TextInput
+                      value={form.brideName}
+                      onChange={(event) => updateForm("brideName", event.target.value)}
+                      placeholder="Nama lengkap mempelai wanita"
+                    />
+                  </Field>
+                  <Field label="Nama Panggilan">
+                    <TextInput
+                      value={form.brideNickname}
+                      onChange={(event) => updateForm("brideNickname", event.target.value)}
+                      placeholder="Nama panggilan"
+                    />
+                  </Field>
+                  <Field label="Nama Orang Tua">
+                    <TextInput
+                      value={form.brideParents}
+                      onChange={(event) => updateForm("brideParents", event.target.value)}
+                      placeholder="Bapak ... & Ibu ..."
+                    />
+                  </Field>
+                </div>
+              </section>
+            </div>
+            <div>
+              <Field label="Quote / Doa Pembuka">
+                <TextAreaInput
+                  value={form.quote}
+                  onChange={(event) => updateForm("quote", event.target.value)}
+                  rows={4}
+                />
+              </Field>
+            </div>
           </div>
-          <div className="md:col-span-2">
-            <Field label="Quote / Doa Pembuka">
-              <TextAreaInput
-                value={form.quote}
-                onChange={(event) => updateForm("quote", event.target.value)}
-                rows={4}
-              />
-            </Field>
+          <div className="lg:sticky lg:top-24 h-fit">
+            <CouplePreviewCard
+              groomNickname={form.groomNickname || form.groomName}
+              brideNickname={form.brideNickname || form.brideName}
+              groomParents={form.groomParents}
+              brideParents={form.brideParents}
+              quote={form.quote}
+            />
           </div>
         </div>
       );
@@ -711,6 +789,15 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
               Arsipkan
             </button>
           ) : null}
+          {(form.status === "review" || form.status === "published") ? (
+            <button
+              type="button"
+              onClick={() => openWaNotification(form.status)}
+              className="mt-3 w-full rounded-md bg-emerald-600 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-emerald-700 border-none outline-none"
+            >
+              Kirim Notifikasi WA
+            </button>
+          ) : null}
         </div>
       </div>
     );
@@ -744,6 +831,12 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
             <span className="rounded-md border border-[var(--dash-border)] bg-[var(--dash-fog)] px-3 py-2 text-xs font-semibold text-[var(--dash-muted)]">
               Status: {statusLabel(lifecycleLabels, form.status || "draft")}
             </span>
+            {form.viewCount !== undefined ? (
+              <span className="rounded-md border border-[var(--dash-border)] bg-[var(--dash-fog)] px-3 py-2 text-xs font-semibold text-[var(--dash-muted)]">
+                Dibuka: {form.viewCount} kali
+                {form.lastViewedAt ? ` (Terakhir: ${new Date(form.lastViewedAt).toLocaleDateString("id-ID")})` : ""}
+              </span>
+            ) : null}
           </div>
         </div>
       </div>
@@ -757,6 +850,15 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
             <button type="button" onClick={markReview} className={actionButtonClass}>
               Tandai Review
             </button>
+            {(form.status === "review" || form.status === "published") && (
+              <button
+                type="button"
+                onClick={() => openWaNotification(form.status)}
+                className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
+              >
+                Kirim WA
+              </button>
+            )}
           </div>
           {saveMessage ? (
             <p className="text-sm font-medium text-[var(--dash-muted)]">{saveMessage}</p>

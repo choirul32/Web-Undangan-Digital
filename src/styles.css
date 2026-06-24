@@ -279,6 +279,8 @@ body {
   -webkit-appearance: none;
   border-radius: 16px;
   background-color: #ffffff;
+  color: var(--dash-ink);
+  color-scheme: light;
   background-image:
     linear-gradient(45deg, transparent 50%, var(--dash-muted) 50%),
     linear-gradient(135deg, var(--dash-muted) 50%, transparent 50%);
@@ -292,15 +294,32 @@ body {
 
 .dashboard-ui select:hover {
   background-color: var(--dash-canvas);
+  color: var(--dash-ink);
 }
 
 .dashboard-ui select:focus {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-accent) 22%, transparent);
+  background-color: #ffffff;
+  color: var(--dash-ink);
 }
 
 .dashboard-ui select option {
   background: #ffffff;
   color: var(--dash-ink);
+}
+
+.dashboard-ui select option:checked,
+.dashboard-ui select option:hover {
+  background: var(--dash-fog);
+  color: var(--dash-ink);
+}
+
+/* Global content size — scales every invitation section uniformly via the
+   --content-scale variable set on the template root (sections.global.contentSize).
+   Defaults to 1 (no change) when unset. The opening overlay and floating music
+   player are deliberately excluded so only the scrollable content scales. */
+[data-preview-section] {
+  zoom: var(--content-scale, 1);
 }
 
 /* The framed desktop preview must behave like its 412px Samsung A54 canvas,
@@ -344,7 +363,7 @@ body {
 .framed-preview-mobile #section-couple h3,
 .framed-preview-mobile #section-acara h3,
 .framed-preview-mobile #section-story h3,
-.framed-preview-mobile #section-gift p:nth-child(2) {
+.framed-preview-mobile #section-gift .gift-account-number {
   font-size: 1.45rem !important;
   line-height: 1.15 !important;
 }
@@ -385,10 +404,19 @@ body {
 .framed-preview-mobile #section-couple .grid,
 .framed-preview-mobile #section-acara .grid,
 .framed-preview-mobile #section-story .grid,
-.framed-preview-mobile #section-gallery .grid,
 .framed-preview-mobile #section-gift .grid,
 .framed-preview-mobile #section-doa-ucapan .grid {
   grid-template-columns: minmax(0, 1fr) !important;
+}
+
+/* Gallery keeps a real multi-column layout in the mobile frame so each style
+   (grid vs masonry) stays visually distinct, matching how it renders on a phone. */
+.framed-preview-mobile #section-gallery .grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+}
+
+.framed-preview-mobile #section-gallery [class*="columns-"] {
+  column-count: 2 !important;
 }
 
 .framed-preview-mobile .template-music-player.right-6 {

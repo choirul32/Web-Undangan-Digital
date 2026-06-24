@@ -98,12 +98,21 @@ export function galleryClasses(variant = "grid") {
   if (variant === "carousel") {
     return {
       container: "mt-10 flex gap-4 overflow-x-auto pb-4 snap-x snap-mandatory scrollbar-hide",
-      item: "flex aspect-[4/5] w-64 shrink-0 snap-center items-center justify-center rounded-[8px] border border-dashed border-[var(--color-accent)] bg-[var(--color-surface)] p-6 text-center shadow-lg shadow-[var(--color-primary)]/8",
+      item: "aspect-[3/4] w-44 shrink-0 snap-center overflow-hidden rounded-[8px] shadow-lg shadow-[var(--color-primary)]/8 sm:w-64",
+      image: "h-full w-full object-cover",
+    };
+  }
+  if (variant === "masonry") {
+    return {
+      container: "mt-10 columns-2 gap-3 lg:columns-3 [&>*]:mb-3",
+      item: "block w-full break-inside-avoid overflow-hidden rounded-[8px] shadow-lg shadow-[var(--color-primary)]/8",
+      image: "w-full h-auto object-cover",
     };
   }
   return {
-    container: "mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-3",
-    item: "flex aspect-[4/5] items-center justify-center rounded-[8px] border border-dashed border-[var(--color-accent-pale)] bg-[var(--color-surface)] p-6 text-center shadow-lg shadow-[var(--color-primary)]/8",
+    container: "mt-10 grid grid-cols-2 gap-3 lg:grid-cols-3 lg:gap-4",
+    item: "aspect-[4/5] overflow-hidden rounded-[8px] shadow-lg shadow-[var(--color-primary)]/8",
+    image: "h-full w-full object-cover",
   };
 }
 

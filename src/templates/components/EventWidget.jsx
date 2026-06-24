@@ -22,6 +22,49 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } },
 };
 
+export function formatEventDate(value = "") {
+  if (!value) {
+    return "";
+  }
+
+  const isoDate = String(value).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const date = isoDate
+    ? new Date(
+        Number(isoDate[1]),
+        Number(isoDate[2]) - 1,
+        Number(isoDate[3]),
+      )
+    : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return new Intl.DateTimeFormat("id-ID", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(date);
+}
+
+export function formatEventTime(value = "") {
+  const rawTime = String(value).trim();
+  if (!rawTime) {
+    return "";
+  }
+
+  const normalizedTime = rawTime
+    .replace(/^pukul\s*:?\s*/i, "")
+    .replace(/\b(\d{1,2}):(\d{2})\b/g, "$1.$2")
+    .replace(/\s*[-–—]\s*/g, " - ");
+  const timeWithZone = /\b(WIB|WITA|WIT)\b/i.test(normalizedTime)
+    ? normalizedTime
+    : `${normalizedTime} WIB`;
+
+  return `Pukul : ${timeWithZone}`;
+}
+
 export default function EventWidget({
   events = [],
   config = defaultEventWidgetConfig,
@@ -53,8 +96,8 @@ export default function EventWidget({
             className={classes.item || ""}
           >
             <p className={classes.eyebrow || ""}>{event.title}</p>
-            <h3 className={classes.title || ""}>{event.date}</h3>
-            <p className={classes.time || ""}>{event.time}</p>
+            <h3 className={classes.title || ""}>{formatEventDate(event.date)}</h3>
+            <p className={classes.time || ""}>{formatEventTime(event.time)}</p>
             <p className={classes.venue || ""}>{event.venue}</p>
             <p className={classes.address || ""}>{event.address}</p>
             {config.showMaps ? (

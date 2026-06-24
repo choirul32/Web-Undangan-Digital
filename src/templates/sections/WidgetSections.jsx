@@ -65,10 +65,17 @@ export function RsvpSection({ designConfig, invitation, personalizedGuestName, g
   if (!invitation.features?.rsvp) return null;
 
   return (
-    <SectionFrame section="rsvp" designConfig={designConfig} applySectionStyle={false} baseClassName="bg-[var(--color-primary)] text-white">
+    <SectionFrame section="rsvp" designConfig={designConfig} baseClassName="bg-[var(--color-section-soft)]">
       <div className="relative z-10 mx-auto max-w-3xl text-center">
-        <p className="text-sm font-black uppercase tracking-[0.18em] text-[var(--color-accent-soft)]">RSVP</p>
-        <h2 className="template-section-title-heading mt-3 text-4xl font-black leading-tight text-white sm:text-5xl">Konfirmasi kehadiran</h2>
+        <p className="text-sm font-black uppercase tracking-[0.18em] text-[var(--color-accent)]">
+          Kehadiran & Doa
+        </p>
+        <h2 className="template-section-title-heading mt-3 font-serif text-4xl font-black leading-tight text-[var(--color-heading)] sm:text-5xl">
+          Doa & Ucapan
+        </h2>
+        <p className="mx-auto mt-4 max-w-xl text-base font-semibold leading-7 text-[var(--color-text)]/75">
+          Silakan konfirmasi kehadiran dan tuliskan doa terbaik untuk kedua mempelai.
+        </p>
         <RSVPForm invitationSlug={invitation.slug} guestSlug={personalizedGuestName ? guestSlug : undefined} guestName={personalizedGuestName} />
       </div>
     </SectionFrame>

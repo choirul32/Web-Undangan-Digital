@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { countdownPreviewClasses, WidgetPreviewShell } from "./shared";
+import { countdownPreviewClasses, readablePreviewLabel, WidgetPreviewShell } from "./shared";
 
 export function CountdownWidgetPreview({ variant = "cards", enabled = true }) {
   const classes = countdownPreviewClasses(variant);
@@ -41,10 +41,10 @@ export function CountdownWidgetPreview({ variant = "cards", enabled = true }) {
     <div className={`rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-section-soft)] p-4 ${enabled ? "" : "opacity-55"}`}>
       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-          Live Preview
+          Pratinjau
         </p>
         <p className="text-xs font-black text-[var(--color-accent)]">
-          {enabled ? variant : "disabled"}
+          {enabled ? readablePreviewLabel(variant) : "Nonaktif"}
         </p>
       </div>
       <div className="mt-4">
@@ -456,9 +456,9 @@ export function MusicPlayerPreview({ variant = "floating", position = "bottom-ri
     return (
       <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-section-soft)] p-4 opacity-55">
         <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-          Music Preview
+          Pratinjau Musik
         </p>
-        <p className="mt-2 text-xs font-black text-[var(--color-accent)]">disabled</p>
+        <p className="mt-2 text-xs font-black text-[var(--color-accent)]">Nonaktif</p>
       </div>
     );
   }
@@ -575,9 +575,9 @@ export function MusicPlayerPreview({ variant = "floating", position = "bottom-ri
     <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-section-soft)] p-4">
       <div className="flex items-center justify-between gap-3">
         <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--color-text)]">
-          Live Preview
+          Pratinjau
         </p>
-        <p className="text-xs font-black text-[var(--color-accent)]">{variant}</p>
+        <p className="text-xs font-black text-[var(--color-accent)]">{readablePreviewLabel(variant)}</p>
       </div>
       {/* Phone frame mockup */}
       <div className="mx-auto mt-4 w-[180px]">
