@@ -81,7 +81,7 @@ export const openingSequencePresetOptions = [
   "paper-reveal",
   "wayang-shadow",
 ];
-export const openingRevealBackgroundModeOptions = ["color", "image"];
+export const openingRevealBackgroundModeOptions = ["color", "cover", "image"];
 export const coverBackgroundModeOptions = ["color", "image"];
 export const couplePhotoStyleOptions = ["circle", "arch", "square"];
 
@@ -193,6 +193,66 @@ export const colorPalettePresets = [
     id: "forest-lime",
     label: "Forest Lime",
     colors: { primary: "#173b12", accent: "#84cc16", text: "#2a3c23", bg: "#f7ffe9", surface: "#ffffff" },
+  },
+  {
+    id: "opal-teal-coral",
+    label: "Opal Teal Coral",
+    colors: { primary: "#073b4c", accent: "#ef476f", text: "#18343d", bg: "#edfdfb", surface: "#ffffff" },
+  },
+  {
+    id: "charcoal-copper",
+    label: "Charcoal Copper",
+    colors: { primary: "#1f2933", accent: "#c46a2b", text: "#26323f", bg: "#f4f1ec", surface: "#ffffff" },
+  },
+  {
+    id: "pearl-lavender-mint",
+    label: "Pearl Lavender Mint",
+    colors: { primary: "#4c2f7a", accent: "#2fbf9f", text: "#312a45", bg: "#f7f2ff", surface: "#ffffff" },
+  },
+  {
+    id: "indigo-marigold",
+    label: "Indigo Marigold",
+    colors: { primary: "#312e81", accent: "#f59e0b", text: "#2d2f55", bg: "#f1f5ff", surface: "#ffffff" },
+  },
+  {
+    id: "ruby-cream-olive",
+    label: "Ruby Cream Olive",
+    colors: { primary: "#7f1d1d", accent: "#6b8e23", text: "#3f2a2a", bg: "#fff8e7", surface: "#ffffff" },
+  },
+  {
+    id: "tropical-emerald",
+    label: "Tropical Emerald",
+    colors: { primary: "#064e3b", accent: "#f97316", text: "#173d34", bg: "#ecfdf5", surface: "#ffffff" },
+  },
+  {
+    id: "editorial-black-ivory",
+    label: "Editorial Black Ivory",
+    colors: { primary: "#0b0b0f", accent: "#b45309", text: "#222222", bg: "#fffaf0", surface: "#ffffff" },
+  },
+  {
+    id: "sky-berry",
+    label: "Sky Berry",
+    colors: { primary: "#075985", accent: "#be185d", text: "#16364a", bg: "#f0f9ff", surface: "#ffffff" },
+  },
+  {
+    id: "matcha-plum",
+    label: "Matcha Plum",
+    colors: { primary: "#365314", accent: "#9333ea", text: "#2f3d28", bg: "#f7fee7", surface: "#ffffff" },
+  },
+  {
+    id: "sandstone-aqua",
+    label: "Sandstone Aqua",
+    colors: { primary: "#78350f", accent: "#0891b2", text: "#3d332b", bg: "#fffbeb", surface: "#ffffff" },
+  },
+  {
+    id: "noir-rose",
+    label: "Noir Rose",
+    colors: { primary: "#111827", accent: "#f43f5e", text: "#1f2937", bg: "#fdf2f8", surface: "#ffffff" },
+  },
+  {
+    id: "ceramic-blue",
+    label: "Ceramic Blue",
+    colors: { primary: "#164e63", accent: "#38bdf8", text: "#1c3b48", bg: "#ecfeff", surface: "#ffffff" },
   },
 ];
 
@@ -845,9 +905,11 @@ export const initialInvitationForm = {
   groomName: "",
   groomNickname: "",
   groomParents: "",
+  groomInstagram: "",
   brideName: "",
   brideNickname: "",
   brideParents: "",
+  brideInstagram: "",
   quote: "",
   rsvp: true,
   gift: true,

@@ -145,4 +145,3 @@ export function SectionFrame({ section, designConfig, baseClassName = "", applyS
     </motion.section>
   );
 }
-

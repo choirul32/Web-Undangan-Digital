@@ -17,6 +17,12 @@ import InvitationRenderer from "../../templates/InvitationRenderer";
 
 const IMAGE_URL_PATTERN = /\.(avif|gif|jpe?g|png|svg|webp)(\?.*)?$/i;
 const PRELOAD_TIMEOUT_MS = 8000;
+const PUBLIC_PREVIEW_MIN_LOADING_MS = 700;
+const DEFAULT_PREVIEW_GALLERY = [
+  "/assets/CoverPasangan.png",
+  "/assets/catin_wanita.jpg",
+  "/assets/catin_pria.jpg",
+];
 
 function collectImageUrls(value, urls = new Set()) {
   if (typeof value === "string") {
@@ -104,6 +110,76 @@ function applyEditorPreviewSnapshot(invitation, snapshot, templateId) {
   };
 }
 
+async function loadPlatformPreviewSettings() {
+  try {
+    const response = await fetch("/api/settings");
+    const result = await response.json();
+    if (response.ok && result.data) {
+      return result.data;
+    }
+  } catch {
+    // Fall back to local settings below.
+  }
+
+  try {
+    const raw = window.localStorage.getItem("nusa-invite:platform-settings");
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function applyPreviewSettings(invitation, settings = {}) {
+  const gallery =
+    Array.isArray(settings.defaultGalleryImages) && settings.defaultGalleryImages.length > 0
+      ? settings.defaultGalleryImages
+      : invitation.gallery?.length
+        ? invitation.gallery
+        : DEFAULT_PREVIEW_GALLERY;
+
+  const designConfig = invitation.designConfig || {};
+  const sections = designConfig.sections || {};
+  const widgets = designConfig.widgets || {};
+  const homeSection = sections.home || {};
+  const openingReveal = widgets.openingReveal || {};
+
+  return {
+    ...invitation,
+    gallery,
+    coverImage: settings.defaultTemplateThumbnail || invitation.coverImage,
+    designConfig: {
+      ...designConfig,
+      sections: {
+        ...sections,
+        home: {
+          ...homeSection,
+          backgroundImage:
+            homeSection.backgroundMode === "image"
+              ? settings.defaultCoverBackgroundImage || homeSection.backgroundImage
+              : homeSection.backgroundImage,
+        },
+      },
+      widgets: {
+        ...widgets,
+        openingReveal: {
+          ...openingReveal,
+          coverImage:
+            settings.defaultOpeningCoverImage || openingReveal.coverImage,
+          backgroundImage:
+            openingReveal.backgroundMode === "image"
+              ? settings.defaultOpeningBackgroundImage || openingReveal.backgroundImage
+              : openingReveal.backgroundImage,
+        },
+      },
+    },
+    couple: {
+      ...invitation.couple,
+      groomPhoto: settings.defaultGroomPhoto || invitation.couple?.groomPhoto,
+      bridePhoto: settings.defaultBridePhoto || invitation.couple?.bridePhoto,
+    },
+  };
+}
+
 export default function PreviewPageClient() {
   const searchParams = useSearchParams();
   const slug = searchParams.get("slug");
@@ -112,13 +188,14 @@ export default function PreviewPageClient() {
   const embeddedEditorPreview = searchParams.get("embeddedEditorPreview") === "1";
   const previewSectionOnly = searchParams.get("previewSectionOnly") === "1";
   const previewFocusSection = searchParams.get("focusSection") || null;
+  const mobileFramePreview = searchParams.get("mobileFrame") === "1";
   const disableOpeningOverlay =
     searchParams.get("disableOpeningOverlay") === "1" || previewSectionOnly;
   const previewOpening = searchParams.get("previewOpening") === "1";
   const previewGuest = searchParams.get("previewGuest") || "";
   const previewDataMode = searchParams.get("previewDataMode") || "filled";
   const framedDesktopPreview = !embeddedEditorPreview && !previewSectionOnly;
-  const shouldLoadBeforeRender = Boolean(slug || (editorPreview && templateId));
+  const shouldLoadBeforeRender = Boolean(slug || templateId);
   const [data, setData] = useState(() => (
     !slug && previewDataMode !== "empty" ? previewInvitation : emptyInvitation
   ));
@@ -131,6 +208,7 @@ export default function PreviewPageClient() {
     let isMounted = true;
 
     const loadPreviewData = async () => {
+      const loadStartedAt = Date.now();
       if (shouldLoadBeforeRender) {
         setIsLoading(true);
         setLoadError("");
@@ -218,6 +296,10 @@ export default function PreviewPageClient() {
         );
       }
 
+      if (templateId && previewDataMode !== "empty") {
+        nextData = applyPreviewSettings(nextData, await loadPlatformPreviewSettings());
+      }
+
       if (previewDataMode === "empty") {
         nextData = {
           ...nextData,
@@ -226,9 +308,11 @@ export default function PreviewPageClient() {
             groomName: "",
             groomNickname: "",
             groomParents: "",
+            groomInstagram: "",
             brideName: "",
             brideNickname: "",
             brideParents: "",
+            brideInstagram: "",
           },
           events: [],
           story: [],
@@ -241,9 +325,17 @@ export default function PreviewPageClient() {
         };
       }
 
+      if (isMounted && (slug || templateId)) {
+        await preloadInvitationImages(nextData);
+      }
+
       if (isMounted) {
-        if (slug) {
-          await preloadInvitationImages(nextData);
+        const minimumLoadingMs = embeddedEditorPreview ? 0 : PUBLIC_PREVIEW_MIN_LOADING_MS;
+        const remainingLoadingMs = minimumLoadingMs - (Date.now() - loadStartedAt);
+        if (remainingLoadingMs > 0) {
+          await new Promise((resolve) => {
+            window.setTimeout(resolve, remainingLoadingMs);
+          });
         }
       }
 
@@ -258,7 +350,7 @@ export default function PreviewPageClient() {
     return () => {
       isMounted = false;
     };
-  }, [editorPreview, loadAttempt, previewDataMode, shouldLoadBeforeRender, slug, templateId]);
+  }, [editorPreview, embeddedEditorPreview, loadAttempt, previewDataMode, shouldLoadBeforeRender, slug, templateId]);
 
   useEffect(() => {
     const handleMessage = (event) => {
@@ -299,6 +391,20 @@ export default function PreviewPageClient() {
     return () => window.removeEventListener("message", handleMessage);
   }, [templateId]);
 
+  useEffect(() => {
+    if (isLoading || loadError || typeof window === "undefined") {
+      return;
+    }
+
+    window.parent?.postMessage(
+      {
+        type: "nusa-invite:editor-preview-ready",
+        templateId: data.templateId,
+      },
+      window.location.origin,
+    );
+  }, [data.templateId, isLoading, loadError, replayKey]);
+
   if (isLoading) {
     return (
       <InvitationLoadingState description="Memuat data, desain, dan gambar undangan." />
@@ -328,6 +434,8 @@ export default function PreviewPageClient() {
         className={
           framedDesktopPreview
             ? "mx-auto min-h-screen w-full overflow-hidden bg-[var(--color-bg)] lg:min-h-[915px] lg:max-w-[412px] lg:border-x lg:border-black/10 lg:shadow-[0_24px_80px_rgba(15,23,42,0.18)]"
+            : previewOpening
+              ? "opening-only-preview-mobile"
             : previewSectionOnly
               ? "section-only-preview-mobile"
             : ""
@@ -338,7 +446,7 @@ export default function PreviewPageClient() {
           data={data}
           guestName={previewGuest || undefined}
           guestSlug={previewGuest ? "preview-guest" : undefined}
-          framedPreview={framedDesktopPreview || previewOpening}
+          framedPreview={framedDesktopPreview || previewOpening || mobileFramePreview}
           previewOpening={previewOpening}
           previewMode={!slug && previewDataMode !== "empty"}
           previewSectionOnly={previewSectionOnly}

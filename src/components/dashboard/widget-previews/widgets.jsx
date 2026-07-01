@@ -4,6 +4,117 @@ import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { countdownPreviewClasses, readablePreviewLabel, WidgetPreviewShell } from "./shared";
 
+function previewCardVisualProps(config = {}, fallbackClass = "") {
+  if (config.cardEnabled === false) {
+    return {
+      className: `${fallbackClass} border-transparent bg-transparent shadow-none`,
+      style: {
+        backgroundColor: "transparent",
+        backgroundImage: "none",
+        borderColor: "transparent",
+        boxShadow: "none",
+      },
+      hasOverlay: false,
+    };
+  }
+
+  const hasImage = config.cardBackgroundMode === "image" && config.cardBackgroundImage;
+  return {
+    className: `${fallbackClass} relative overflow-hidden`,
+    style: {
+      backgroundColor: hasImage ? undefined : config.cardBackgroundColor || undefined,
+      backgroundImage: hasImage ? `url(${config.cardBackgroundImage})` : undefined,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+    },
+    hasOverlay: Boolean(hasImage),
+  };
+}
+
+function EventPreviewIcon({ type = "event", className = "h-4 w-4" }) {
+  const commonProps = {
+    className,
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: "1.8",
+    strokeLinecap: "round",
+    strokeLinejoin: "round",
+    "aria-hidden": true,
+  };
+
+  if (type === "akad") {
+    return (
+      <svg {...commonProps}>
+        <circle cx="9" cy="13" r="4.2" />
+        <circle cx="15" cy="13" r="4.2" />
+        <path d="M11.8 9.7 13 7.4l1.2 2.3" />
+        <path d="M12 4.8 10.8 7.4h2.4L12 4.8Z" />
+      </svg>
+    );
+  }
+
+  if (type === "resepsi") {
+    return (
+      <svg {...commonProps}>
+        <path d="m12 3 1.4 4.2L18 8.6l-4.6 1.4L12 14l-1.4-4L6 8.6l4.6-1.4L12 3Z" />
+        <path d="m5 14 .8 2.2L8 17l-2.2.8L5 20l-.8-2.2L2 17l2.2-.8L5 14Z" />
+        <path d="m19 14 .8 2.2L22 17l-2.2.8L19 20l-.8-2.2L16 17l2.2-.8L19 14Z" />
+      </svg>
+    );
+  }
+
+  if (type === "calendar") {
+    return (
+      <svg {...commonProps}>
+        <path d="M8 2v4" />
+        <path d="M16 2v4" />
+        <rect x="3" y="4" width="18" height="18" rx="2" />
+        <path d="M3 10h18" />
+      </svg>
+    );
+  }
+
+  if (type === "clock") {
+    return (
+      <svg {...commonProps}>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 7v5l3 2" />
+      </svg>
+    );
+  }
+
+  if (type === "pin") {
+    return (
+      <svg {...commonProps}>
+        <path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" />
+        <circle cx="12" cy="10" r="2.5" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg {...commonProps}>
+      <path d="M8 2v4" />
+      <path d="M16 2v4" />
+      <rect x="3" y="4" width="18" height="18" rx="2" />
+      <path d="M3 10h18" />
+      <path d="M8 14h.01" />
+      <path d="M12 14h.01" />
+      <path d="M16 14h.01" />
+    </svg>
+  );
+}
+
+function EventPreviewDetail({ type, children }) {
+  return (
+    <span className="mt-1.5 flex items-center justify-center gap-1.5">
+      <EventPreviewIcon type={type} className="h-3.5 w-3.5 shrink-0 opacity-75" />
+      <span>{children}</span>
+    </span>
+  );
+}
+
 export function CountdownWidgetPreview({ variant = "cards", enabled = true }) {
   const classes = countdownPreviewClasses(variant);
   const [timeLeft, setTimeLeft] = useState({ days: 30, hours: 8, minutes: 32, seconds: 45 });
@@ -61,7 +172,21 @@ export function CountdownWidgetPreview({ variant = "cards", enabled = true }) {
   );
 }
 
-export function StoryWidgetPreview({ variant = "card", animation = "fade-up", enabled = true }) {
+export function StoryWidgetPreview({
+  variant = "card",
+  animation = "fade-up",
+  enabled = true,
+  cardEnabled = true,
+  cardBackgroundMode = "color",
+  cardBackgroundColor = "",
+  cardBackgroundImage = "",
+}) {
+  const cardConfig = {
+    cardEnabled,
+    cardBackgroundMode,
+    cardBackgroundColor,
+    cardBackgroundImage,
+  };
   const items = [
     { year: "2021", title: "Bertemu" },
     { year: "2024", title: "Lamaran" },
@@ -132,15 +257,20 @@ export function StoryWidgetPreview({ variant = "card", animation = "fade-up", en
 
   const renderStoryItem = (item, index) => {
     const animProps = getAnimationProps(animation, index);
+    const cardProps = previewCardVisualProps(cardConfig, "rounded-[8px] bg-white p-3 shadow-sm");
     return (
       <motion.div
         key={item.year}
         {...animProps}
         transition={{ duration: 0.45, ease: "easeOut" }}
-        className="relative rounded-[8px] bg-white p-3 shadow-sm"
+        className={cardProps.className}
+        style={cardProps.style}
       >
+        {cardProps.hasOverlay ? <div className="absolute inset-0 bg-white/72" /> : null}
+        <div className="relative z-10">
         <p className="text-[10px] font-black text-[var(--color-accent)]">{item.year}</p>
         <p className="mt-1 text-sm font-black text-[var(--color-primary)]">{item.title}</p>
+        </div>
       </motion.div>
     );
   };
@@ -204,29 +334,38 @@ export function StoryWidgetPreview({ variant = "card", animation = "fade-up", en
     return (
       <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
         <div key={animationKey} className="space-y-3">
-          {items.map((item, index) => (
-            <motion.div
-              key={item.year}
-              {...getAnimationProps(animation, index)}
-              transition={{ duration: 0.45, ease: "easeOut" }}
-              className="relative overflow-hidden rounded-[14px] border border-[var(--color-accent-pale)] bg-white p-3 shadow-sm"
-            >
-              <div className="absolute -right-5 -top-5 h-12 w-12 rounded-full bg-[var(--color-accent)]/12" />
-              <div className="relative flex items-start gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-pale)] text-xs font-black text-[var(--color-primary)]">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-accent)]">
-                    Chapter {item.year}
-                  </p>
-                  <p className="mt-1 text-sm font-black text-[var(--color-primary)]">
-                    {item.title}
-                  </p>
+          {items.map((item, index) => {
+            const cardProps = previewCardVisualProps(
+              cardConfig,
+              "overflow-hidden rounded-[14px] border border-[var(--color-accent-pale)] bg-white p-3 shadow-sm",
+            );
+
+            return (
+              <motion.div
+                key={item.year}
+                {...getAnimationProps(animation, index)}
+                transition={{ duration: 0.45, ease: "easeOut" }}
+                className={cardProps.className}
+                style={cardProps.style}
+              >
+                {cardProps.hasOverlay ? <div className="absolute inset-0 bg-white/72" /> : null}
+                <div className="absolute -right-5 -top-5 h-12 w-12 rounded-full bg-[var(--color-accent)]/12" />
+                <div className="relative z-10 flex items-start gap-3">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--color-accent-pale)] text-xs font-black text-[var(--color-primary)]">
+                    {String(index + 1).padStart(2, "0")}
+                  </span>
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-[var(--color-accent)]">
+                      Chapter {item.year}
+                    </p>
+                    <p className="mt-1 text-sm font-black text-[var(--color-primary)]">
+                      {item.title}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          ))}
+              </motion.div>
+            );
+          })}
         </div>
       </WidgetPreviewShell>
     );
@@ -238,6 +377,14 @@ export function StoryWidgetPreview({ variant = "card", animation = "fade-up", en
         <div key={animationKey} className="space-y-2">
           {items.map((item, index) => {
             const isRight = index % 2 === 1;
+            const cardProps = previewCardVisualProps(
+              cardConfig,
+              `max-w-[78%] rounded-2xl px-3 py-2 text-xs font-bold shadow-sm ${
+                isRight
+                  ? "rounded-br-sm bg-[var(--color-primary)] text-white"
+                  : "rounded-bl-sm bg-white text-[var(--color-primary)]"
+              }`,
+            );
             return (
               <motion.div
                 key={item.year}
@@ -246,16 +393,16 @@ export function StoryWidgetPreview({ variant = "card", animation = "fade-up", en
                 className={`flex ${isRight ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[78%] rounded-2xl px-3 py-2 text-xs font-bold shadow-sm ${
-                    isRight
-                      ? "rounded-br-sm bg-[var(--color-primary)] text-white"
-                      : "rounded-bl-sm bg-white text-[var(--color-primary)]"
-                  }`}
+                  className={cardProps.className}
+                  style={cardProps.style}
                 >
+                  {cardProps.hasOverlay ? <div className="absolute inset-0 bg-white/72" /> : null}
+                  <div className="relative z-10">
                   <p className={isRight ? "text-white/70" : "text-[var(--color-accent)]"}>
                     {item.year}
                   </p>
                   <p className="mt-1">{item.title}</p>
+                  </div>
                 </div>
               </motion.div>
             );
@@ -351,13 +498,52 @@ export function GalleryWidgetPreview({ variant = "grid", enabled = true }) {
   );
 }
 
-export function EventWidgetPreview({ variant = "cards", enabled = true, showMaps = true, showIcon = true }) {
-  const items = ["Akad", "Resepsi"];
-  const cardContent = (title) => (
+export function EventWidgetPreview({
+  variant = "cards",
+  enabled = true,
+  showMaps = true,
+  showIcon = true,
+  cardEnabled = true,
+  cardBackgroundMode = "color",
+  cardBackgroundColor = "",
+  cardBackgroundImage = "",
+}) {
+  const items = [
+    { title: "Akad", icon: "akad" },
+    { title: "Resepsi", icon: "resepsi" },
+  ];
+  const cardConfig = {
+    cardEnabled,
+    cardBackgroundMode,
+    cardBackgroundColor,
+    cardBackgroundImage,
+  };
+  const renderCard = (item, className) => {
+    const cardProps = previewCardVisualProps(cardConfig, className);
+    return (
+      <div key={item.title} className={cardProps.className} style={cardProps.style}>
+        {cardProps.hasOverlay ? <div className="absolute inset-0 bg-white/72" /> : null}
+        <div className="relative z-10">{cardContent(item)}</div>
+      </div>
+    );
+  };
+  const cardContent = (item) => (
     <>
-      <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[var(--color-accent)]">{title}</p>
-      <p className="mt-1 text-sm font-black text-[var(--color-primary)]">12 Jun 2026</p>
-      <p className="mt-1 text-xs font-black text-[var(--color-primary)]">09.00 WIB</p>
+      {showIcon ? (
+        <span className="mx-auto mb-2 flex h-8 w-8 items-center justify-center rounded-full border border-current text-[var(--color-accent)]">
+          <EventPreviewIcon type={item.icon} />
+        </span>
+      ) : null}
+      <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[var(--color-accent)]">{item.title}</p>
+      <p className="mt-1 text-sm font-black text-[var(--color-primary)]">
+        <EventPreviewDetail type="calendar">12 Jun 2026</EventPreviewDetail>
+      </p>
+      <p className="text-xs font-black text-[var(--color-primary)]">
+        <EventPreviewDetail type="clock">09.00 WIB</EventPreviewDetail>
+      </p>
+      <p className="text-[10px] font-bold text-[var(--color-text)]">
+        <EventPreviewDetail type="pin">Gedung Serbaguna</EventPreviewDetail>
+      </p>
       {showMaps ? (
         <span className="mt-2 inline-flex rounded-lg bg-[var(--color-primary)] px-3 py-1 text-[10px] font-black text-white">
           Maps
@@ -369,10 +555,9 @@ export function EventWidgetPreview({ variant = "cards", enabled = true, showMaps
   if (variant === "list") {
     return (
       <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
-        {showIcon ? <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full border-2 border-[var(--color-accent)] text-[var(--color-accent)] text-lg font-black">♥</div> : null}
         <div className="divide-y divide-[var(--color-accent-pale)] rounded-[8px] bg-white text-center shadow-sm">
           {items.map((item) => (
-            <div key={item} className="p-3">{cardContent(item)}</div>
+            renderCard(item, "p-3 text-center")
           ))}
         </div>
       </WidgetPreviewShell>
@@ -382,12 +567,9 @@ export function EventWidgetPreview({ variant = "cards", enabled = true, showMaps
   if (variant === "elegant") {
     return (
       <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
-        {showIcon ? <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-t-full rounded-b-md border-2 border-[var(--color-accent)] bg-white text-[var(--color-accent)] text-lg font-black">♥</div> : null}
         <div className="grid grid-cols-2 gap-2">
           {items.map((item) => (
-            <div key={item} className="rounded-t-full rounded-b-[8px] border border-[var(--color-accent-pale)] bg-white px-2 pb-3 pt-6 text-center shadow-sm">
-              {cardContent(item)}
-            </div>
+            renderCard(item, "rounded-t-full rounded-b-[8px] border border-[var(--color-accent-pale)] bg-white px-2 pb-3 pt-6 text-center shadow-sm")
           ))}
         </div>
       </WidgetPreviewShell>
@@ -397,13 +579,21 @@ export function EventWidgetPreview({ variant = "cards", enabled = true, showMaps
   if (variant === "minimal") {
     return (
       <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
-        {showIcon ? <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-accent)] text-white text-lg font-black">♥</div> : null}
         <div className="space-y-6 border-b border-[var(--color-accent-pale)] pb-6 text-center last:border-0 last:pb-0">
           {items.map((item) => (
-            <div key={item} className="flex flex-col items-center">
-              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--color-accent)]">{item}</p>
-              <p className="mt-2 text-sm font-black text-[var(--color-primary)]">12 Jun 2026</p>
-              <p className="mt-1 text-xs text-[var(--color-primary-hover)]">09.00 WIB</p>
+            <div key={item.title} className="flex flex-col items-center">
+              {showIcon ? (
+                <span className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-accent)] text-white">
+                  <EventPreviewIcon type={item.icon} />
+                </span>
+              ) : null}
+              <p className="text-[10px] font-black uppercase tracking-[0.15em] text-[var(--color-accent)]">{item.title}</p>
+              <p className="mt-2 text-sm font-black text-[var(--color-primary)]">
+                <EventPreviewDetail type="calendar">12 Jun 2026</EventPreviewDetail>
+              </p>
+              <p className="text-xs text-[var(--color-primary-hover)]">
+                <EventPreviewDetail type="clock">09.00 WIB</EventPreviewDetail>
+              </p>
             </div>
           ))}
         </div>
@@ -414,12 +604,9 @@ export function EventWidgetPreview({ variant = "cards", enabled = true, showMaps
   if (variant === "corner-bracket") {
     return (
       <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
-        {showIcon ? <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center border-2 border-[var(--color-accent)] text-[var(--color-accent)] text-lg font-black">♥</div> : null}
         <div className="grid grid-cols-2 gap-2">
           {items.map((item) => (
-            <div key={item} className="relative border border-[var(--color-accent-pale)] bg-white p-3 text-center shadow-sm before:absolute before:top-0 before:left-0 before:h-4 before:w-4 before:border-t-2 before:border-l-2 before:border-[var(--color-accent)] before:content-[''] after:absolute after:bottom-0 after:right-0 after:h-4 after:w-4 after:border-b-2 after:border-r-2 after:border-[var(--color-accent)] after:content-['']">
-              {cardContent(item)}
-            </div>
+            renderCard(item, "border border-[var(--color-accent-pale)] bg-white p-3 text-center shadow-sm before:absolute before:top-0 before:left-0 before:h-4 before:w-4 before:border-t-2 before:border-l-2 before:border-[var(--color-accent)] before:content-[''] after:absolute after:bottom-0 after:right-0 after:h-4 after:w-4 after:border-b-2 after:border-r-2 after:border-[var(--color-accent)] after:content-['']")
           ))}
         </div>
       </WidgetPreviewShell>
@@ -428,12 +615,9 @@ export function EventWidgetPreview({ variant = "cards", enabled = true, showMaps
 
   return (
     <WidgetPreviewShell title="Live Preview" label={variant} enabled={enabled}>
-      {showIcon ? <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-[8px] border-2 border-[var(--color-accent-pale)] bg-white text-[var(--color-accent)] text-lg font-black">♥</div> : null}
       <div className="grid grid-cols-2 gap-2">
         {items.map((item) => (
-          <div key={item} className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3 text-center shadow-sm">
-            {cardContent(item)}
-          </div>
+          renderCard(item, "rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3 text-center shadow-sm")
         ))}
       </div>
     </WidgetPreviewShell>

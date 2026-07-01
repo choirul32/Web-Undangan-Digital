@@ -16,14 +16,39 @@ export default function MetadataStep({
   templateCategoryOptions,
   templateBadgeOptions,
   selectedBadgeOption,
-  currentStepNumber,
-  totalEditorSteps,
+  designConfig,
   isUploadingThumbnail,
   updateTemplateThumbnail,
 }) {
   if (!visible || !templateDraft) {
     return null;
   }
+
+  const globalStyle = designConfig?.sections?.global || {};
+  const metadataComplete = Boolean(
+    templateDraft.id &&
+      templateDraft.name &&
+      templateDraft.category &&
+      templateDraft.previewUrl,
+  );
+  const thumbnailComplete = Boolean(templateDraft.image);
+  const colorComplete = Boolean(
+    globalStyle.primaryColor ||
+      globalStyle.accentColor ||
+      globalStyle.backgroundColor ||
+      globalStyle.textColor,
+  );
+  const typographyComplete = Boolean(globalStyle.headingFont || globalStyle.bodyFont);
+  const checklist = [
+    { label: "Lengkapi Metadata Utama", done: metadataComplete },
+    { label: "Upload Thumbnail", done: thumbnailComplete },
+    { label: "Konfigurasi Preset Warna", done: colorComplete },
+    { label: "Atur Global Typography", done: typographyComplete },
+  ];
+  const completionPercent = Math.round(
+    (checklist.filter((item) => item.done).length / checklist.length) * 100,
+  );
+  const templateStatusLabel = templateDraft.status || "draft";
 
   return (
     <div id="template-basic" className="mt-5 scroll-mt-24">
@@ -153,39 +178,38 @@ export default function MetadataStep({
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--dash-muted)]">
-                    Status Draft
+                    Status Template
                   </p>
                   <p className="mt-1 text-lg font-semibold text-[var(--dash-ink)]">
-                    {Math.round((currentStepNumber / totalEditorSteps) * 100)}% Selesai
+                    {completionPercent}% Selesai
                   </p>
                 </div>
                 <span className="rounded-full border border-[var(--dash-border)] bg-[var(--dash-fog)] px-3 py-1 text-xs font-semibold text-[var(--dash-ink)]">
-                  {templateDraft.status || "draft"}
+                  {templateStatusLabel}
                 </span>
               </div>
               <div className="mt-3 h-2 rounded-full bg-[var(--dash-fog)]">
                 <div
                   className="h-2 rounded-full bg-[var(--dash-ink)] transition-all"
-                  style={{ width: `${(currentStepNumber / totalEditorSteps) * 100}%` }}
+                  style={{ width: `${completionPercent}%` }}
                 />
               </div>
               <ul className="mt-4 space-y-2 text-sm font-semibold text-[var(--dash-ink)]">
-                <li className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-[var(--dash-ink)]" />
-                  Lengkapi Metadata Utama
-                </li>
-                <li className="flex items-center gap-2">
-                  <span className={`h-2 w-2 rounded-full ${templateDraft.image ? "bg-emerald-500" : "bg-[var(--dash-ink)]"}`} />
-                  Upload Thumbnail
-                </li>
-                <li className="flex items-center gap-2 text-[var(--dash-muted)]">
-                  <span className="h-2 w-2 rounded-full bg-[var(--dash-border)]" />
-                  Konfigurasi Preset Warna
-                </li>
-                <li className="flex items-center gap-2 text-[var(--dash-muted)]">
-                  <span className="h-2 w-2 rounded-full bg-[var(--dash-border)]" />
-                  Atur Global Typography
-                </li>
+                {checklist.map((item) => (
+                  <li
+                    key={item.label}
+                    className={`flex items-center gap-2 ${
+                      item.done ? "text-[var(--dash-ink)]" : "text-[var(--dash-muted)]"
+                    }`}
+                  >
+                    <span
+                      className={`h-2 w-2 rounded-full ${
+                        item.done ? "bg-emerald-500" : "bg-[var(--dash-border)]"
+                      }`}
+                    />
+                    {item.label}
+                  </li>
+                ))}
               </ul>
             </DashboardCard>
 

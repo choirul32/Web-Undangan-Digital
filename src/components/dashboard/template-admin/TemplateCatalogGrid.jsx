@@ -41,42 +41,58 @@ export default function TemplateCatalogGrid({
 
   return (
     <div className="mt-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {filteredTemplates.map((template) => (
           <DashboardCard
             key={template.id}
-            className="group overflow-hidden bg-[var(--dash-canvas)] p-0 shadow-[var(--dash-shadow)]"
+            className="group overflow-hidden bg-[var(--dash-canvas)] p-3 shadow-[var(--dash-shadow)]"
           >
-            <img
-              src={template.image || defaultThumbnail}
-              alt={`Preview ${template.name}`}
-              className="aspect-[4/5] w-full bg-[var(--dash-fog)] object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-            />
-            <div className="space-y-4 p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="text-xl font-black text-[var(--dash-ink)]">{template.name}</h3>
-                <span className="rounded-full bg-[var(--dash-fog)] px-3 py-1 text-xs font-black text-[var(--dash-ink)]">
-                  {template.badge}
-                </span>
-              </div>
-              <p className="mt-1 text-sm font-semibold text-[var(--dash-muted)]">{template.id}</p>
-              <p className="mt-2 line-clamp-2 text-sm font-semibold leading-6 text-[var(--dash-muted)]">
-                {template.description}
-              </p>
-              <p className="mt-2 text-xs font-bold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
-                {template.supportedFeatures.length} fitur support
-              </p>
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <p className="text-sm font-black text-[var(--dash-ink)]">{template.category}</p>
-                  <p className="text-base font-black text-[var(--color-accent)]">{template.price}</p>
+            <div className="flex gap-3">
+              <a
+                href={template.previewUrl}
+                className="relative block aspect-[9/13] w-24 shrink-0 overflow-hidden rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] shadow-inner"
+                title="Buka preview"
+              >
+                <img
+                  src={template.image || defaultThumbnail}
+                  alt={`Preview ${template.name}`}
+                  className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
+                />
+                <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/60" />
+              </a>
+              <div className="min-w-0 flex-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <h3 className="truncate text-base font-black text-[var(--dash-ink)]">{template.name}</h3>
+                    <p className="mt-0.5 truncate text-[11px] font-bold text-[var(--dash-muted)]">{template.id}</p>
+                  </div>
+                  {template.badge ? (
+                    <span className="shrink-0 rounded-full bg-[var(--dash-fog)] px-2 py-1 text-[10px] font-black text-[var(--dash-ink)]">
+                      {template.badge}
+                    </span>
+                  ) : null}
                 </div>
-                <TemplateStatusPill status={template.status} />
+                <p className="mt-2 line-clamp-2 text-xs font-semibold leading-5 text-[var(--dash-muted)]">
+                  {template.description}
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <TemplateStatusPill status={template.status} />
+                  <span className="rounded-full bg-[var(--dash-fog)] px-2.5 py-1 text-[10px] font-black uppercase tracking-[0.06em] text-[var(--dash-muted)]">
+                    {template.supportedFeatures.length} fitur
+                  </span>
+                </div>
+                <div className="mt-2 flex items-end justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-black text-[var(--dash-ink)]">{template.category}</p>
+                    <p className="text-sm font-black text-[var(--color-accent)]">{template.price}</p>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center justify-end gap-2 border-t border-[var(--dash-border)] pt-3">
+            </div>
+            <div className="mt-3 flex items-center justify-end gap-1.5 border-t border-[var(--dash-border)] pt-2.5">
                 <a
                   href={template.previewUrl}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--dash-border)] text-[var(--dash-ink)] transition-colors hover:bg-[var(--dash-fog)]"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--dash-border)] text-[var(--dash-ink)] transition-colors hover:bg-[var(--dash-fog)]"
                   title="Preview"
                 >
                   <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -89,7 +105,7 @@ export default function TemplateCatalogGrid({
                   size="sm"
                   variant="secondary"
                   onClick={() => startEditTemplate(template)}
-                  className="h-9 w-9 !rounded-full !p-0"
+                  className="h-8 w-8 !rounded-full !p-0"
                   title="Edit"
                 >
                   <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -102,7 +118,7 @@ export default function TemplateCatalogGrid({
                   size="sm"
                   variant="secondary"
                   onClick={() => duplicateTemplate(template)}
-                  className="h-9 w-9 !rounded-full !p-0"
+                  className="h-8 w-8 !rounded-full !p-0"
                   title="Duplikat"
                 >
                   <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -115,7 +131,7 @@ export default function TemplateCatalogGrid({
                   size="sm"
                   variant="secondary"
                   onClick={() => toggleTemplateStatus(template.id)}
-                  className="h-9 w-9 !rounded-full !p-0"
+                  className="h-8 w-8 !rounded-full !p-0"
                   title={template.status === "active" ? "Sembunyikan" : "Aktifkan"}
                 >
                   {template.status === "active" ? (
@@ -136,7 +152,7 @@ export default function TemplateCatalogGrid({
                   size="sm"
                   variant="danger"
                   onClick={() => deleteTemplate(template)}
-                  className="h-9 w-9 !rounded-full !p-0"
+                  className="h-8 w-8 !rounded-full !p-0"
                   title="Hapus"
                 >
                   <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -147,7 +163,6 @@ export default function TemplateCatalogGrid({
                     <path d="M14 11v6" />
                   </svg>
                 </DashboardButton>
-              </div>
             </div>
           </DashboardCard>
         ))}

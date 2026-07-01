@@ -49,6 +49,8 @@ const optionLabels = {
   "photo-album": "Album foto",
   "chapter-scroll": "Bab cerita",
   "chat-style": "Gaya chat",
+  color: "Warna",
+  image: "Gambar",
 };
 
 function optionLabel(value) {
@@ -68,6 +70,65 @@ function MiniInput({ label, value, onChange, type = "text" }) {
         onChange={handleChange}
       />
     </Field>
+  );
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function CardVisualControls({ config, onChange, labelPrefix = "Card" }) {
+  const updateCardImage = async (file) => {
+    if (!file) return;
+    const previewUrl = await readFileAsDataUrl(file);
+    onChange("cardBackgroundImage", previewUrl);
+  };
+
+  return (
+    <>
+      <BooleanToggle
+        label={`${labelPrefix} aktif`}
+        checked={config.cardEnabled !== false}
+        onChange={(checked) => onChange("cardEnabled", checked)}
+      />
+      {config.cardEnabled !== false ? (
+        <>
+          <Field label={`Background ${labelPrefix}`}>
+            <SelectInput
+              value={config.cardBackgroundMode || "color"}
+              onChange={(event) => onChange("cardBackgroundMode", event.target.value)}
+            >
+              <option value="color">{optionLabel("color")}</option>
+              <option value="image">{optionLabel("image")}</option>
+            </SelectInput>
+          </Field>
+          {config.cardBackgroundMode === "image" ? (
+            <Field label={`Gambar ${labelPrefix}`}>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => updateCardImage(event.target.files?.[0])}
+                className="w-full rounded-xl border border-[var(--dash-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--dash-ink)] outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--dash-ink)] file:px-3 file:py-2 file:text-sm file:font-bold file:text-white"
+              />
+            </Field>
+          ) : (
+            <Field label={`Warna ${labelPrefix}`}>
+              <input
+                type="color"
+                value={config.cardBackgroundColor || "#ffffff"}
+                onChange={(event) => onChange("cardBackgroundColor", event.target.value)}
+                className="h-11 w-full rounded-xl border border-[var(--dash-border)] bg-white p-1 outline-none focus:border-[var(--color-accent)]"
+              />
+            </Field>
+          )}
+        </>
+      ) : null}
+    </>
   );
 }
 
@@ -220,11 +281,20 @@ export default function WidgetsStep({
                   ))}
                 </SelectInput>
               </Field>
+              <CardVisualControls
+                config={storyWidgetConfig}
+                onChange={updateStoryWidget}
+                labelPrefix="Card Story"
+              />
             </div>
             <StoryWidgetPreview
               variant={storyWidgetConfig.variant}
               animation={storyWidgetConfig.animation}
               enabled={Boolean(storyWidgetConfig.enabled)}
+              cardEnabled={storyWidgetConfig.cardEnabled !== false}
+              cardBackgroundMode={storyWidgetConfig.cardBackgroundMode || "color"}
+              cardBackgroundColor={storyWidgetConfig.cardBackgroundColor || ""}
+              cardBackgroundImage={storyWidgetConfig.cardBackgroundImage || ""}
             />
           </div>
       </WidgetPanel>
@@ -300,12 +370,21 @@ export default function WidgetsStep({
                 checked={eventWidgetConfig.showIcon}
                 onChange={(checked) => updateEventWidget("showIcon", checked)}
               />
+              <CardVisualControls
+                config={eventWidgetConfig}
+                onChange={updateEventWidget}
+                labelPrefix="Card Acara"
+              />
             </div>
             <EventWidgetPreview
               variant={eventWidgetConfig.variant}
               enabled={Boolean(eventWidgetConfig.enabled)}
               showMaps={Boolean(eventWidgetConfig.showMaps)}
               showIcon={Boolean(eventWidgetConfig.showIcon)}
+              cardEnabled={eventWidgetConfig.cardEnabled !== false}
+              cardBackgroundMode={eventWidgetConfig.cardBackgroundMode || "color"}
+              cardBackgroundColor={eventWidgetConfig.cardBackgroundColor || ""}
+              cardBackgroundImage={eventWidgetConfig.cardBackgroundImage || ""}
             />
           </div>
       </WidgetPanel>

@@ -83,6 +83,23 @@ export async function POST(request) {
   const originalSlug = payload.originalSlug || "";
 
   if (originalSlug && originalSlug !== payload.slug) {
+    const { data: existingSlug, error: existingSlugError } = await supabase
+      .from("invitations")
+      .select("id")
+      .eq("slug", payload.slug)
+      .maybeSingle();
+
+    if (existingSlugError) {
+      return NextResponse.json({ error: existingSlugError.message }, { status: 500 });
+    }
+
+    if (existingSlug) {
+      return NextResponse.json(
+        { error: "Slug sudah dipakai order lain. Gunakan slug baru atau edit order yang sudah ada." },
+        { status: 409 },
+      );
+    }
+
     const { data: invitation, error } = await supabase
       .from("invitations")
       .update(invitationRow)
@@ -100,9 +117,44 @@ export async function POST(request) {
     });
   }
 
+  if (originalSlug) {
+    const { data: invitation, error } = await supabase
+      .from("invitations")
+      .update(invitationRow)
+      .eq("slug", originalSlug)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      source: "supabase",
+      data: invitation,
+    });
+  }
+
+  const { data: existingInvitation, error: existingError } = await supabase
+    .from("invitations")
+    .select("id")
+    .eq("slug", payload.slug)
+    .maybeSingle();
+
+  if (existingError) {
+    return NextResponse.json({ error: existingError.message }, { status: 500 });
+  }
+
+  if (existingInvitation) {
+    return NextResponse.json(
+      { error: "Slug sudah dipakai order lama. Buat slug baru agar template/data lama tidak ikut menempel." },
+      { status: 409 },
+    );
+  }
+
   const { data: invitation, error } = await supabase
     .from("invitations")
-    .upsert(invitationRow, { onConflict: "slug" })
+    .insert(invitationRow)
     .select()
     .single();
 

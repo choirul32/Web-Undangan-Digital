@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const previewViewport = {
   width: 412,
@@ -16,6 +16,7 @@ export default function OrnamentCanvasPanel({
   previewSnapshot,
 }) {
   const iframeRef = useRef(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(true);
   const postPreviewSnapshot = () => {
     if (!previewSnapshot || !iframeRef.current?.contentWindow) {
       return;
@@ -33,6 +34,25 @@ export default function OrnamentCanvasPanel({
   useEffect(() => {
     postPreviewSnapshot();
   }, [previewSnapshot]);
+
+  useEffect(() => {
+    setIsPreviewLoading(true);
+  }, [templatePreviewSrc]);
+
+  useEffect(() => {
+    const handlePreviewReady = (event) => {
+      if (event.origin !== window.location.origin) {
+        return;
+      }
+
+      if (event.data?.type === "nusa-invite:editor-preview-ready") {
+        setIsPreviewLoading(false);
+      }
+    };
+
+    window.addEventListener("message", handlePreviewReady);
+    return () => window.removeEventListener("message", handlePreviewReady);
+  }, []);
 
   useEffect(() => {
     if (!iframeRef.current?.contentWindow) {
@@ -69,7 +89,7 @@ export default function OrnamentCanvasPanel({
   };
 
   return (
-    <div className="space-y-3 xl:sticky xl:top-4 xl:z-20">
+    <div className="space-y-3 xl:sticky xl:top-4 xl:z-10 xl:max-h-[calc(100vh-6.5rem)] xl:overflow-y-auto xl:pb-3">
       <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3 shadow-[0_10px_30px_rgba(15,23,42,0.08)]">
         <div className="flex items-center justify-between gap-2">
           <div>
@@ -101,7 +121,13 @@ export default function OrnamentCanvasPanel({
           <div className="relative w-full max-w-[300px]">
             <div className="relative rounded-[28px] border-2 border-[var(--color-primary)]/65 bg-[var(--color-primary)]/10 p-1.5 shadow-[0_12px_28px_rgba(15,23,42,0.14)]">
               <div className="absolute left-1/2 top-0 z-20 h-4 w-20 -translate-x-1/2 rounded-b-2xl bg-[var(--color-primary)]/70" />
-              <div className="relative aspect-[9/16] overflow-hidden rounded-[23px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)]">
+              <div
+                className="relative overflow-hidden rounded-[23px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)]"
+                style={{
+                  width: `${previewViewport.width * previewViewport.scale}px`,
+                  height: `${previewViewport.height * previewViewport.scale}px`,
+                }}
+              >
                 <iframe
                   key={templatePreviewSrc}
                   ref={iframeRef}
@@ -117,6 +143,16 @@ export default function OrnamentCanvasPanel({
                   }}
                   onLoad={postPreviewSnapshot}
                 />
+                {isPreviewLoading ? (
+                  <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center bg-[var(--color-bg)]/90 backdrop-blur-sm">
+                    <div className="flex flex-col items-center gap-2 rounded-[8px] border border-[var(--color-accent-pale)] bg-white/90 px-4 py-3 shadow-lg">
+                      <span className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--color-accent-pale)] border-t-[var(--color-primary)]" />
+                      <span className="text-[10px] font-black uppercase tracking-[0.12em] text-[var(--color-primary)]">
+                        Memuat preview
+                      </span>
+                    </div>
+                  </div>
+                ) : null}
                 <div className="pointer-events-none absolute inset-0 border border-dashed border-[var(--color-accent)]/45" />
               </div>
               <div className="mx-auto mt-1 h-1 w-12 rounded-full bg-[var(--color-primary)]/35" />

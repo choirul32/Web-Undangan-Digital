@@ -79,7 +79,7 @@ export default function UniversalTemplate({
   const isCompactHomePreview =
     framedPreview || (previewSectionOnly && previewFocusSection === "home") || isNarrowViewport;
   const shouldDelayInvitationContent = openingOverlayConfig.enabled && !isRevealOpen;
-  const showHomeGuestGreeting = !openingRevealConfig.enabled && !shouldDisableOpeningOverlay;
+  const showHomeGuestGreeting = !openingOverlayConfig.enabled;
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -93,9 +93,14 @@ export default function UniversalTemplate({
     return () => media.removeEventListener("change", updateViewportState);
   }, []);
 
-  const startMusic = ({ fadeIn = true } = {}) => {
+  const startMusic = ({ fadeIn = true, attempt = 0 } = {}) => {
     const audio = musicRef.current;
-    if (!audio) return;
+    if (!audio) {
+      if (attempt < 8 && typeof window !== "undefined") {
+        window.setTimeout(() => startMusic({ fadeIn, attempt: attempt + 1 }), 80);
+      }
+      return;
+    }
 
     if (musicFadeRef.current) {
       window.clearInterval(musicFadeRef.current);
@@ -166,15 +171,24 @@ export default function UniversalTemplate({
       hasPlayed = true;
       startMusic({ fadeIn: true });
       window.removeEventListener("scroll", handleInteraction);
+      window.removeEventListener("wheel", handleInteraction);
       window.removeEventListener("touchstart", handleInteraction);
+      window.removeEventListener("pointerdown", handleInteraction);
+      window.removeEventListener("keydown", handleInteraction);
     };
 
     window.addEventListener("scroll", handleInteraction, { once: true, passive: true });
+    window.addEventListener("wheel", handleInteraction, { once: true, passive: true });
     window.addEventListener("touchstart", handleInteraction, { once: true, passive: true });
+    window.addEventListener("pointerdown", handleInteraction, { once: true, passive: true });
+    window.addEventListener("keydown", handleInteraction, { once: true });
 
     return () => {
       window.removeEventListener("scroll", handleInteraction);
+      window.removeEventListener("wheel", handleInteraction);
       window.removeEventListener("touchstart", handleInteraction);
+      window.removeEventListener("pointerdown", handleInteraction);
+      window.removeEventListener("keydown", handleInteraction);
     };
   }, [openingOverlayConfig.enabled, musicConfig.enabled, invitation.features?.music]);
 
@@ -218,10 +232,22 @@ export default function UniversalTemplate({
       {!shouldDelayInvitationContent && shouldRenderSection("story") ? <StorySection designConfig={designConfig} story={story} storyConfig={storyConfig} /> : null}
       {!shouldDelayInvitationContent && shouldRenderSection("gallery") ? <GallerySection designConfig={designConfig} invitation={invitation} galleryConfig={galleryConfig} /> : null}
       {!shouldDelayInvitationContent && shouldRenderSection("gift") && invitation.features?.gift ? <GiftSection accounts={invitation.bankAccounts} designConfig={designConfig} qrisImage={invitation.qrisImage} /> : null}
-      {!shouldDelayInvitationContent && shouldRenderSection("rsvp") ? <RsvpSection designConfig={designConfig} invitation={invitation} personalizedGuestName={personalizedGuestName} guestSlug={guestSlug} /> : null}
-      {!shouldDelayInvitationContent && shouldRenderSection("doa-ucapan") ? <WishesSection designConfig={designConfig} slug={invitation.slug} preview={previewSectionOnly || previewMode} /> : null}
+      {!shouldDelayInvitationContent && shouldRenderSection("rsvp") ? (
+        <RsvpSection
+          designConfig={designConfig}
+          invitation={invitation}
+          personalizedGuestName={personalizedGuestName}
+          guestSlug={guestSlug}
+          preview={previewSectionOnly || previewMode}
+        />
+      ) : null}
+      {!shouldDelayInvitationContent &&
+      shouldRenderSection("doa-ucapan") &&
+      (!invitation.features?.rsvp || previewFocusSection === "doa-ucapan") ? (
+        <WishesSection designConfig={designConfig} slug={invitation.slug} preview={previewSectionOnly || previewMode} />
+      ) : null}
 
-      {!shouldDelayInvitationContent && !previewSectionOnly && (invitation.features?.music || musicConfig.enabled) ? (
+      {!previewSectionOnly && (invitation.features?.music || musicConfig.enabled) ? (
         <MusicPlayer
           musicUrl={invitation.musicUrl || ""}
           musicTitle={invitation.musicTitle || "Wedding Music"}

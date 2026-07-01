@@ -329,6 +329,7 @@ function TemplateAdminPage() {
     const names = Array.from(
       new Set([
         "opening",
+        "global",
         ...Object.keys(parsedDesignConfig?.ornaments || {}),
         ...Object.keys(parsedDesignConfig?.sections || {}),
       ]),
@@ -656,6 +657,28 @@ function TemplateAdminPage() {
     templateDraft?.id,
     templatePreviewTick,
   ]);
+  const previewConfigVersion = useMemo(() => {
+    let hash = 0;
+    for (let index = 0; index < designConfigText.length; index += 1) {
+      hash = (hash * 31 + designConfigText.charCodeAt(index)) >>> 0;
+    }
+    return hash.toString(36);
+  }, [designConfigText]);
+  const coverSectionPreviewSrc = useMemo(() => {
+    const previewTemplateId = templateDraft?.id || "standard";
+    const guestQuery =
+      previewGuestMode === "withGuest"
+        ? `&previewGuest=${encodeURIComponent("Bapak/Ibu Preview")}`
+        : "";
+
+    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&embeddedEditorPreview=1&focusSection=home&previewSectionOnly=1&disableOpeningOverlay=1&previewTick=${templatePreviewTick}-${previewConfigVersion}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
+  }, [
+    previewDataMode,
+    previewConfigVersion,
+    previewGuestMode,
+    templateDraft?.id,
+    templatePreviewTick,
+  ]);
   const fullTemplatePreviewSrc = `${templatePreviewSrc.replace(
     "&embeddedEditorPreview=1",
     "",
@@ -666,12 +689,28 @@ function TemplateAdminPage() {
       previewGuestMode === "withGuest"
         ? `&previewGuest=${encodeURIComponent("Bapak/Ibu Preview")}`
         : "";
-    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&embeddedEditorPreview=1&previewOpening=1&focusSection=home&previewSectionOnly=1&previewTick=${templatePreviewTick}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
-  }, [previewDataMode, previewGuestMode, templateDraft?.id, templatePreviewTick]);
+    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&embeddedEditorPreview=1&previewOpening=1&focusSection=home&previewSectionOnly=1&previewTick=${templatePreviewTick}-${previewConfigVersion}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
+  }, [previewConfigVersion, previewDataMode, previewGuestMode, templateDraft?.id, templatePreviewTick]);
+  const ornamentSectionPreviewSrc = useMemo(() => {
+    const previewTemplateId = templateDraft?.id || "standard";
+    const guestQuery =
+      previewGuestMode === "withGuest"
+        ? `&previewGuest=${encodeURIComponent("Bapak/Ibu Preview")}`
+        : "";
+
+    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&embeddedEditorPreview=1&mobileFrame=1&focusSection=${encodeURIComponent(previewFocusSection)}&disableOpeningOverlay=1&previewTick=${templatePreviewTick}-${previewConfigVersion}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
+  }, [
+    previewConfigVersion,
+    previewDataMode,
+    previewFocusSection,
+    previewGuestMode,
+    templateDraft?.id,
+    templatePreviewTick,
+  ]);
   const ornamentCanvasPreviewSrc =
     activeDesignSection === "opening"
       ? openingSectionPreviewSrc
-      : `${templatePreviewSrc}&previewSectionOnly=1&disableOpeningOverlay=1`;
+      : ornamentSectionPreviewSrc;
   const imageGenerationPrompt = useMemo(() => {
     const selectedConcept =
       smartThemeConcepts.find((concept) => concept.id === selectedThemeConcept) ||
@@ -807,15 +846,30 @@ function TemplateAdminPage() {
     const normalizedConfig = normalizeDesignConfig(config);
     const currentOrnaments = normalizedConfig.ornaments || {};
     const currentSections = normalizedConfig.sections || {};
+    const legacySectionOrnaments = currentOrnaments.section || [];
+    const migratedOrnaments = {
+      ...currentOrnaments,
+      global: [
+        ...(currentOrnaments.global || []),
+        ...legacySectionOrnaments.filter(
+          (legacyOrnament) =>
+            !(currentOrnaments.global || []).some(
+              (globalOrnament) =>
+                globalOrnament.id && legacyOrnament.id && globalOrnament.id === legacyOrnament.id,
+            ),
+        ),
+      ],
+    };
+    delete migratedOrnaments.section;
 
     return {
       ...normalizedConfig,
       ornaments: presetSections.reduce(
         (ornaments, section) => ({
           ...ornaments,
-          [section]: currentOrnaments[section] || [],
+          [section]: migratedOrnaments[section] || [],
         }),
-        {},
+        { ...migratedOrnaments },
       ),
       sections: presetSections.reduce(
         (sections, section) => ({
@@ -858,6 +912,26 @@ function TemplateAdminPage() {
       ornaments: {
         ...(parsedDesignConfig.ornaments || {}),
         [activeDesignSection]: sectionOrnaments,
+      },
+    });
+  };
+
+  const toggleGlobalOrnamentExclusion = (sectionName) => {
+    if (!parsedDesignConfig || !sectionName) return;
+
+    const currentExclusions = parsedDesignConfig.ornamentExclusions || {};
+    const globalExclusions = Array.isArray(currentExclusions.global)
+      ? currentExclusions.global
+      : [];
+    const nextGlobalExclusions = globalExclusions.includes(sectionName)
+      ? globalExclusions.filter((item) => item !== sectionName)
+      : [...globalExclusions, sectionName];
+
+    writeDesignConfig({
+      ...parsedDesignConfig,
+      ornamentExclusions: {
+        ...currentExclusions,
+        global: nextGlobalExclusions,
       },
     });
   };
@@ -2137,8 +2211,7 @@ function TemplateAdminPage() {
               templateCategoryOptions={templateCategoryOptions}
               templateBadgeOptions={templateBadgeOptions}
               selectedBadgeOption={selectedBadgeOption}
-              currentStepNumber={currentStepNumber}
-              totalEditorSteps={totalEditorSteps}
+              designConfig={parsedDesignConfig}
                 isUploadingThumbnail={isUploadingThumbnail}
                 updateTemplateThumbnail={updateTemplateThumbnail}
               />
@@ -2151,6 +2224,7 @@ function TemplateAdminPage() {
                 coverOpeningAnimationOptions={coverOpeningAnimationOptions}
                 coverBackgroundModeOptions={coverBackgroundModeOptions}
                 updateCoverBackgroundImage={updateCoverBackgroundImage}
+                coverPreviewSrc={coverSectionPreviewSrc}
               />
               <GlobalStyleStep
                 visible={editorStep === 3}
@@ -2254,6 +2328,8 @@ function TemplateAdminPage() {
                             duplicateOrnamentAtIndex={duplicateOrnamentAtIndex}
                             removeOrnamentAtIndex={removeOrnamentAtIndex}
                             reorderSelectedOrnament={reorderSelectedOrnament}
+                            globalExcludedSections={parsedDesignConfig.ornamentExclusions?.global || []}
+                            toggleGlobalOrnamentExclusion={toggleGlobalOrnamentExclusion}
                           />
                           {selectedOrnament ? (
                             <OrnamentPropertiesPanel

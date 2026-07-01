@@ -4,6 +4,7 @@ const emptyDesignConfig = {
   canvas: {},
   sections: {},
   ornaments: {},
+  ornamentExclusions: {},
   widgets: {},
   animations: {},
 };
@@ -16,6 +17,7 @@ export function normalizeDesignConfig(config = {}) {
     canvas: safeConfig.canvas || {},
     sections: safeConfig.sections || {},
     ornaments: safeConfig.ornaments || {},
+    ornamentExclusions: safeConfig.ornamentExclusions || {},
     widgets: safeConfig.widgets || {},
     animations: safeConfig.animations || {},
   };
@@ -41,6 +43,10 @@ export function mergeDesignConfigs(baseConfig = {}, overrideConfig = {}) {
       ...normalizedBase.ornaments,
       ...normalizedOverride.ornaments,
     },
+    ornamentExclusions: {
+      ...normalizedBase.ornamentExclusions,
+      ...normalizedOverride.ornamentExclusions,
+    },
     widgets: {
       ...normalizedBase.widgets,
       ...normalizedOverride.widgets,
@@ -61,6 +67,7 @@ export function getDesignConfig(templateId, overrideConfig = {}) {
 export function getSectionOrnaments(designConfig, sectionName) {
   const normalizedConfig = normalizeDesignConfig(designConfig);
   const ornaments = normalizedConfig.ornaments;
+  const globalExcludedSections = new Set(normalizedConfig.ornamentExclusions?.global || []);
   const sectionSequence = normalizedConfig.animations?.sections?.[sectionName] || {};
   const applySequence = (items = []) =>
     items.map((ornament, index) => {
@@ -79,20 +86,21 @@ export function getSectionOrnaments(designConfig, sectionName) {
       };
     });
 
-  return [
-    ...(ornaments.section || []),
-    ...(sectionName && sectionName !== "section" ? ornaments[sectionName] || [] : []),
-  ].map((ornament, index, allOrnaments) => {
-    if (!sectionSequence.enabled) {
-      return ornament;
-    }
+  const sectionOrnaments =
+    sectionName === "global"
+      ? ornaments.global || []
+      : [
+          ...(globalExcludedSections.has(sectionName) ? [] : ornaments.global || []),
+          ...(ornaments.section || []),
+          ...(sectionName && sectionName !== "section" ? ornaments[sectionName] || [] : []),
+        ];
 
-    return applySequence(allOrnaments)[index];
-  });
+  return sectionSequence.enabled ? applySequence(sectionOrnaments) : sectionOrnaments;
 }
 
 export const defaultCoverSectionConfig = {
   photoEnabled: true,
+  photoStyle: "arch",
   layout: "centered",
   backgroundMode: "color",
   backgroundImage: "",
@@ -138,6 +146,10 @@ export const defaultCoupleSectionConfig = {
   fontPreset: "serif",
   parentTextEnabled: true,
   instagramEnabled: false,
+  cardEnabled: true,
+  cardBackgroundMode: "color",
+  cardBackgroundColor: "#ffffff",
+  cardBackgroundImage: "",
 };
 
 export const defaultSectionStyleConfig = {

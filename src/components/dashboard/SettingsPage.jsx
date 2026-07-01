@@ -25,6 +25,14 @@ const defaultSettings = {
   defaultTemplateThumbnail: "/assets/CoverPasangan.png",
   defaultGroomPhoto: "/assets/catin_pria.jpg",
   defaultBridePhoto: "/assets/catin_wanita.jpg",
+  defaultCoverBackgroundImage: "/assets/backgrounds/soft-watercolor-cream.jpg",
+  defaultOpeningBackgroundImage: "/assets/backgrounds/soft-watercolor-cream.jpg",
+  defaultOpeningCoverImage: "/assets/CoverPasangan.png",
+  defaultGalleryImages: [
+    "/assets/CoverPasangan.png",
+    "/assets/catin_wanita.jpg",
+    "/assets/catin_pria.jpg",
+  ],
   paymentInstructions:
     "Pembayaran manual via transfer bank. Admin memverifikasi bukti bayar dari WhatsApp sebelum order diproses.",
   orderMessage:
@@ -52,6 +60,15 @@ const dashboardPalettes = [
   { id: "sunset-coral", name: "Terracotta Calm", colors: ["#5b3a2e", "#c98b6a", "#fbf1eb"] },
   { id: "forest-lime", name: "Sage Olive", colors: ["#344a3f", "#8da06f", "#f2f5ee"] },
   { id: "mono-slate", name: "Slate Neutral", colors: ["#2f3542", "#7d8793", "#f3f5f7"] },
+];
+
+const settingsTabs = [
+  { id: "profile", label: "Profil" },
+  { id: "messages", label: "Pesan" },
+  { id: "assets", label: "Asset Default" },
+  { id: "banks", label: "Katalog Bank" },
+  { id: "system", label: "Sistem" },
+  { id: "pricing", label: "Harga" },
 ];
 
 function ImageUploadControl({ field, uploadingField, onUpload, showReset, onReset }) {
@@ -118,6 +135,7 @@ function SectionCard({ title, desc, onReset, children }) {
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState(defaultSettings);
+  const [activeSettingsTab, setActiveSettingsTab] = useState("assets");
   const [message, setMessage] = useState("");
   const [isDirty, setIsDirty] = useState(false);
   const [uploadingField, setUploadingField] = useState("");
@@ -186,6 +204,48 @@ export default function SettingsPage() {
       }
     } catch (err) {
       setMessage(`Gambar dipakai lokal (server offline: ${err.message}).`);
+    } finally {
+      setUploadingField("");
+    }
+  };
+
+  const uploadGalleryImage = async (file) => {
+    if (!file) {
+      return;
+    }
+
+    const dataUrl = await readFileAsDataUrl(file);
+    const localImages = [...(settings.defaultGalleryImages || []), dataUrl];
+    updateSetting("defaultGalleryImages", localImages);
+
+    setUploadingField("defaultGalleryImages");
+    setMessage("Mengunggah gambar gallery...");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const response = await fetch("/api/settings/thumbnail", {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Gagal mengunggah gambar gallery.");
+      }
+      if (result?.data?.url) {
+        setSettings((current) => ({
+          ...current,
+          defaultGalleryImages: [
+            ...(current.defaultGalleryImages || []).filter((item) => item !== dataUrl),
+            result.data.url,
+          ],
+        }));
+        setIsDirty(true);
+        setMessage("Gambar gallery terunggah. Jangan lupa Simpan Perubahan.");
+      } else {
+        setMessage("Gambar gallery aktif lokal. Jangan lupa Simpan Perubahan.");
+      }
+    } catch (err) {
+      setMessage(`Gambar gallery dipakai lokal (server offline: ${err.message}).`);
     } finally {
       setUploadingField("");
     }
@@ -278,7 +338,7 @@ export default function SettingsPage() {
   );
 
   return (
-    <motion.section variants={fadeUp} className="mx-auto w-full max-w-4xl space-y-6 pb-28">
+    <motion.section variants={fadeUp} className="w-full space-y-6 pb-28">
       <div>
         <h2 className="text-3xl font-black text-[var(--color-primary)]">Pengaturan</h2>
         <p className="mt-1 text-sm font-semibold text-[var(--color-text)]/80">
@@ -286,6 +346,27 @@ export default function SettingsPage() {
         </p>
       </div>
 
+      <div className="sticky top-0 z-20 -mx-1 overflow-x-auto border-b border-[var(--color-accent-pale)]/55 bg-[var(--dash-bg,#f8fafc)]/95 px-1 py-2 backdrop-blur">
+        <div className="flex min-w-max gap-2">
+          {settingsTabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveSettingsTab(tab.id)}
+              className={`rounded-lg border px-4 py-2 text-sm font-black transition-colors ${
+                activeSettingsTab === tab.id
+                  ? "border-[var(--color-accent)] bg-white text-[var(--color-primary)] shadow-sm"
+                  : "border-transparent bg-white/55 text-[var(--color-text)]/72 hover:bg-white hover:text-[var(--color-primary)]"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {activeSettingsTab === "profile" ? (
+        <>
       <SectionCard
         title="Profil Bisnis"
         desc="Kelola informasi dasar brand dan kontak yang ditampilkan ke customer."
@@ -320,7 +401,11 @@ export default function SettingsPage() {
           </div>
         </div>
       </SectionCard>
+        </>
+      ) : null}
 
+      {activeSettingsTab === "messages" ? (
+        <>
       <SectionCard
         title="Default Teks"
         desc="Atur template pesan standar untuk broadcast dan fallback teks."
@@ -354,7 +439,11 @@ export default function SettingsPage() {
           </Field>
         </div>
       </SectionCard>
+        </>
+      ) : null}
 
+      {activeSettingsTab === "assets" ? (
+        <>
       <SectionCard
         title="Thumbnail Template Default"
         desc="Gambar cadangan yang dipakai saat sebuah template belum punya thumbnail sendiri. Tampil di katalog dashboard dan landing page."
@@ -428,12 +517,106 @@ export default function SettingsPage() {
       </SectionCard>
 
       <SectionCard
+        title="Foto Gallery Dummy"
+        desc="Foto cadangan untuk preview template dummy saat undangan belum punya gallery sendiri."
+        onReset={() => updateSetting("defaultGalleryImages", defaultSettings.defaultGalleryImages)}
+      >
+        <div className="grid gap-3 sm:grid-cols-3">
+          {(settings.defaultGalleryImages || defaultSettings.defaultGalleryImages).map((image, index) => (
+            <div key={`${image}-${index}`} className="overflow-hidden rounded-lg border border-[var(--color-accent-pale)] bg-[var(--color-muted)]">
+              <img src={image} alt={`Gallery dummy ${index + 1}`} className="aspect-[4/5] w-full object-cover" />
+              <button
+                type="button"
+                onClick={() =>
+                  updateSetting(
+                    "defaultGalleryImages",
+                    (settings.defaultGalleryImages || []).filter((_, itemIndex) => itemIndex !== index),
+                  )
+                }
+                className="w-full border-t border-[var(--color-accent-pale)] bg-white px-3 py-2 text-xs font-black text-[var(--color-primary)] hover:bg-[var(--color-bg)]"
+              >
+                Hapus
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4">
+          <label
+            className={`inline-flex cursor-pointer items-center gap-2 rounded-lg border border-[var(--color-accent-pale)] bg-white px-4 py-2 text-sm font-bold text-[var(--color-primary)] transition-colors hover:bg-[var(--color-bg)] ${
+              uploadingField === "defaultGalleryImages" ? "pointer-events-none opacity-60" : ""
+            }`}
+          >
+            {uploadingField === "defaultGalleryImages" ? "Mengunggah..." : "Tambah Foto Gallery"}
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              disabled={uploadingField === "defaultGalleryImages"}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) uploadGalleryImage(file);
+                event.target.value = "";
+              }}
+            />
+          </label>
+          <p className="mt-2 text-xs font-medium text-[var(--color-text)]/60">
+            Rekomendasi 3-6 foto. Klik Simpan Perubahan setelah upload.
+          </p>
+        </div>
+      </SectionCard>
+
+      <SectionCard
+        title="Asset Default Cover & Pembuka"
+        desc="Gambar default yang dipakai berulang di preview template. Foto asli tetap diupload saat pembuatan order."
+        onReset={() => {
+          updateSetting("defaultCoverBackgroundImage", defaultSettings.defaultCoverBackgroundImage);
+          updateSetting("defaultOpeningBackgroundImage", defaultSettings.defaultOpeningBackgroundImage);
+          updateSetting("defaultOpeningCoverImage", defaultSettings.defaultOpeningCoverImage);
+        }}
+      >
+        <div className="grid gap-6 md:grid-cols-3">
+          {[
+            { field: "defaultCoverBackgroundImage", label: "Background Cover" },
+            { field: "defaultOpeningBackgroundImage", label: "Background Pembuka" },
+            { field: "defaultOpeningCoverImage", label: "Foto Tengah Pembuka" },
+          ].map(({ field, label }) => (
+            <div key={field} className="space-y-3">
+              <img
+                src={settings[field] || defaultSettings[field]}
+                alt={`Pratinjau ${label}`}
+                className="aspect-[4/5] w-full rounded-lg border border-[var(--color-accent-pale)] bg-[var(--color-muted)] object-cover"
+              />
+              <p className="text-sm font-bold text-[var(--color-text)]">{label}</p>
+              <ImageUploadControl
+                field={field}
+                uploadingField={uploadingField}
+                onUpload={uploadSettingImage}
+                showReset={settings[field] && settings[field] !== defaultSettings[field]}
+                onReset={() => updateSetting(field, defaultSettings[field])}
+              />
+            </div>
+          ))}
+        </div>
+        <p className="mt-3 text-xs font-medium text-[var(--color-text)]/60">
+          Dipakai sebagai fallback saat template memilih mode gambar tapi tidak punya override khusus. Klik Simpan Perubahan setelah upload.
+        </p>
+      </SectionCard>
+        </>
+      ) : null}
+
+      {activeSettingsTab === "banks" ? (
+        <>
+      <SectionCard
         title="Katalog Bank"
         desc="Daftar nama dan logo bank yang dapat dipilih saat mengisi Amplop Digital."
       >
         <BankCatalogManager />
       </SectionCard>
+        </>
+      ) : null}
 
+      {activeSettingsTab === "system" ? (
+        <>
       <SectionCard title="Preferensi Sistem" desc="Konfigurasi zona waktu, format tanggal, tema, dan perilaku preview.">
         <div className="grid gap-4 md:grid-cols-2">
           <Field label="Zona Waktu">
@@ -626,7 +809,11 @@ export default function SettingsPage() {
           </a>
         </div>
       </SectionCard>
+        </>
+      ) : null}
 
+      {activeSettingsTab === "pricing" ? (
+        <>
       <SectionCard
         title="Paket & Harga"
         desc="Harga yang ditampilkan di landing page. Ubah sesuai promo atau update tarif terbaru."
@@ -680,9 +867,11 @@ export default function SettingsPage() {
           Harga ini akan langsung tampil di landing page setelah disimpan.
         </p>
       </SectionCard>
+        </>
+      ) : null}
 
       <div className="fixed bottom-0 left-0 right-0 z-30 border-t border-[var(--color-accent-pale)] bg-white/95 px-4 py-3 backdrop-blur md:left-64">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-4">
+        <div className="flex w-full items-center justify-between gap-4">
           <p className="hidden text-sm font-semibold text-[var(--color-text)]/70 sm:block">
             {isDirty ? "Anda memiliki perubahan yang belum disimpan." : "Semua perubahan sudah tersimpan."}
           </p>
@@ -705,7 +894,7 @@ export default function SettingsPage() {
           </div>
         </div>
         {message ? (
-          <p className="mx-auto mt-2 w-full max-w-4xl text-xs font-semibold text-[var(--color-text)]/70">
+          <p className="mt-2 w-full text-xs font-semibold text-[var(--color-text)]/70">
             {message}
           </p>
         ) : null}

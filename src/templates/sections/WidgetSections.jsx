@@ -4,6 +4,7 @@ import EventWidget from "../components/EventWidget";
 import StoryWidget from "../components/StoryWidget";
 import GalleryWidget from "../components/GalleryWidget";
 import RSVPForm from "../components/RSVPForm";
+import { WishesSection } from "./BaseSections";
 import { countdownClasses, eventClasses, galleryClasses, storyClasses } from "../utils/templateSectionClasses";
 
 export function EventSection({ designConfig, events, eventConfig }) {
@@ -61,12 +62,12 @@ export function GallerySection({ designConfig, invitation, galleryConfig }) {
   );
 }
 
-export function RsvpSection({ designConfig, invitation, personalizedGuestName, guestSlug }) {
+export function RsvpSection({ designConfig, invitation, personalizedGuestName, guestSlug, preview = false }) {
   if (!invitation.features?.rsvp) return null;
 
   return (
     <SectionFrame section="rsvp" designConfig={designConfig} baseClassName="bg-[var(--color-section-soft)]">
-      <div className="relative z-10 mx-auto max-w-3xl text-center">
+      <div className="relative z-10 mx-auto max-w-4xl text-center">
         <p className="text-sm font-black uppercase tracking-[0.18em] text-[var(--color-accent)]">
           Kehadiran & Doa
         </p>
@@ -76,7 +77,15 @@ export function RsvpSection({ designConfig, invitation, personalizedGuestName, g
         <p className="mx-auto mt-4 max-w-xl text-base font-semibold leading-7 text-[var(--color-text)]/75">
           Silakan konfirmasi kehadiran dan tuliskan doa terbaik untuk kedua mempelai.
         </p>
-        <RSVPForm invitationSlug={invitation.slug} guestSlug={personalizedGuestName ? guestSlug : undefined} guestName={personalizedGuestName} />
+        <div className="mx-auto max-w-3xl">
+          <RSVPForm invitationSlug={invitation.slug} guestSlug={personalizedGuestName ? guestSlug : undefined} guestName={personalizedGuestName} />
+        </div>
+        <WishesSection
+          designConfig={designConfig}
+          slug={invitation.slug}
+          preview={preview}
+          framed={false}
+        />
       </div>
     </SectionFrame>
   );

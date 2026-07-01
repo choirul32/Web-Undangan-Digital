@@ -3,6 +3,15 @@ import { motion } from "framer-motion";
 import { SectionFrame, SectionTitle, fadeUp, profileImageClass, profileNameClass } from "../utils/templateStyling";
 import CopyAccountNumber from "../components/CopyAccountNumber";
 
+function instagramUrl(value = "") {
+  const rawValue = String(value || "").trim();
+  if (!rawValue) return "";
+  if (/^https?:\/\//i.test(rawValue)) return rawValue;
+
+  const username = rawValue.replace(/^@/, "").replace(/^instagram\.com\//i, "");
+  return username ? `https://instagram.com/${username}` : "";
+}
+
 export function CoupleSection({ designConfig, couple, coupleConfig, profileImages }) {
   const brideImage = profileImages?.bride || profileImages?.[1] || profileImages?.[0] || "/assets/catin_wanita.jpg";
   const groomImage = profileImages?.groom || profileImages?.[2] || profileImages?.[1] || "/assets/catin_pria.jpg";
@@ -11,13 +20,35 @@ export function CoupleSection({ designConfig, couple, coupleConfig, profileImage
       name: couple.brideName,
       image: brideImage,
       parentText: couple.brideParents ? `Putri dari ${couple.brideParents}` : "",
+      instagram: instagramUrl(couple.brideInstagram),
     },
     {
       name: couple.groomName,
       image: groomImage,
       parentText: couple.groomParents ? `Putra dari ${couple.groomParents}` : "",
+      instagram: instagramUrl(couple.groomInstagram),
     },
   ].filter((profile) => profile.name);
+  const cardBackgroundMode = coupleConfig.cardBackgroundMode || "color";
+  const hasCardBackgroundImage = cardBackgroundMode === "image" && coupleConfig.cardBackgroundImage;
+  const articleStyle =
+    coupleConfig.cardEnabled === false
+      ? {
+          backgroundColor: "transparent",
+          backgroundImage: "none",
+          borderColor: "transparent",
+          boxShadow: "none",
+        }
+      : {
+          backgroundColor: hasCardBackgroundImage ? undefined : coupleConfig.cardBackgroundColor || "#ffffff",
+          backgroundImage: hasCardBackgroundImage ? `url(${coupleConfig.cardBackgroundImage})` : undefined,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        };
+  const articleClass =
+    coupleConfig.cardEnabled === false
+      ? "text-center"
+      : "relative overflow-hidden rounded-[8px] border border-[var(--color-accent-pale)] p-7 text-center shadow-xl shadow-[var(--color-primary)]/8";
 
   return (
     <SectionFrame section="couple" designConfig={designConfig} baseClassName="bg-[var(--color-surface)]">
@@ -28,7 +59,9 @@ export function CoupleSection({ designConfig, couple, coupleConfig, profileImage
         />
         <div className="mt-12 grid gap-8 md:grid-cols-2">
           {profiles.map((profile) => (
-            <motion.article key={profile.name} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.25 }} variants={fadeUp} className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-7 text-center shadow-xl shadow-[var(--color-primary)]/8">
+            <motion.article key={profile.name} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.25 }} variants={fadeUp} className={articleClass} style={articleStyle}>
+              {hasCardBackgroundImage ? <div className="absolute inset-0 bg-white/72" /> : null}
+              <div className="relative z-10">
               {coupleConfig.photoEnabled ? <img src={profile.image} alt={profile.name} className={profileImageClass(coupleConfig)} /> : null}
               <h3 className={profileNameClass(coupleConfig)}>{profile.name}</h3>
               {coupleConfig.parentTextEnabled && profile.parentText ? (
@@ -41,7 +74,17 @@ export function CoupleSection({ designConfig, couple, coupleConfig, profileImage
                   </p>
                 </div>
               ) : null}
-              {coupleConfig.instagramEnabled ? <a className="mt-5 inline-flex rounded-2xl bg-[var(--color-accent)] px-5 py-3 text-sm font-black text-[var(--color-primary)]">Instagram</a> : null}
+              {coupleConfig.instagramEnabled && profile.instagram ? (
+                <a
+                  href={profile.instagram}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="mt-5 inline-flex rounded-2xl bg-[var(--color-accent)] px-5 py-3 text-sm font-black text-[var(--color-primary)]"
+                >
+                  Instagram
+                </a>
+              ) : null}
+              </div>
             </motion.article>
           ))}
         </div>
@@ -102,7 +145,7 @@ export function GiftSection({ accounts = [], designConfig, qrisImage = "" }) {
   );
 }
 
-export function WishesSection({ designConfig, slug = "", preview = false }) {
+export function WishesSection({ designConfig, slug = "", preview = false, framed = true }) {
   const [wishes, setWishes] = useState(null);
 
   useEffect(() => {
@@ -125,11 +168,36 @@ export function WishesSection({ designConfig, slug = "", preview = false }) {
     };
   }, [preview, slug]);
 
-  const list = wishes || [];
+  const previewWishes = [
+    {
+      id: "preview-wish-1",
+      name: "Rani & Keluarga",
+      message:
+        "Selamat menempuh hidup baru. Semoga menjadi keluarga yang sakinah, mawaddah, warahmah dan selalu dilimpahi kebahagiaan.",
+    },
+    {
+      id: "preview-wish-2",
+      name: "Bapak Arif",
+      message:
+        "Barakallah untuk kedua mempelai. Semoga acara berjalan lancar dan menjadi awal perjalanan rumah tangga yang penuh berkah.",
+    },
+    {
+      id: "preview-wish-3",
+      name: "Sahabat Kampus",
+      message:
+        "Akhirnya sampai juga di hari bahagia. Semoga Dimas dan Salsa selalu kompak, saling menjaga, dan bahagia selamanya.",
+    },
+    {
+      id: "preview-wish-4",
+      name: "Ibu Lina",
+      message:
+        "Turut berbahagia atas pernikahannya. Semoga cinta dan doa keluarga selalu mengiringi setiap langkah kalian.",
+    },
+  ];
+  const list = wishes || (preview ? previewWishes : []);
 
-  return (
-    <SectionFrame section="doa-ucapan" designConfig={designConfig} baseClassName="bg-[var(--color-section-soft)]">
-      <div className="relative z-10 mx-auto max-w-4xl text-center">
+  const content = (
+    <div className="relative z-10 mx-auto max-w-4xl text-center">
         <SectionTitle eyebrow="Doa & Ucapan" title="Kirimkan doa terbaik" />
         {list.length === 0 ? (
           <div className="mt-10">
@@ -143,7 +211,7 @@ export function WishesSection({ designConfig, slug = "", preview = false }) {
             ) : null}
           </div>
         ) : (
-          <div className="mt-10 grid gap-5 md:grid-cols-2">
+          <div className="mx-auto mt-10 max-w-2xl space-y-4">
             {list.map((wish, index) => (
               <motion.div key={wish.id || `wish-${index}`} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.25 }} variants={fadeUp} className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)] p-6 text-left shadow-lg shadow-[var(--color-primary)]/8">
                 <p className="text-base font-semibold leading-7 text-[var(--color-text)]">&ldquo;{wish.message}&rdquo;</p>
@@ -153,7 +221,15 @@ export function WishesSection({ designConfig, slug = "", preview = false }) {
           </div>
         )}
       </div>
+  );
+
+  if (!framed) {
+    return <div className="mt-12">{content}</div>;
+  }
+
+  return (
+    <SectionFrame section="doa-ucapan" designConfig={designConfig} baseClassName="bg-[var(--color-section-soft)]">
+      {content}
     </SectionFrame>
   );
 }
-

@@ -53,6 +53,8 @@ export function mapSupabaseInvitation(
   if (!row) {
     return null;
   }
+  const features = row.features || {};
+  const instagram = features.instagram || {};
 
   return {
     id: row.id,
@@ -80,6 +82,8 @@ export function mapSupabaseInvitation(
       brideNickname: row.bride_nickname,
       brideParents: row.bride_parents,
       quote: row.quote,
+      groomInstagram: instagram.groom || "",
+      brideInstagram: instagram.bride || "",
       groomPhoto:
         findMediaUrl(row.invitation_media, "groom") || defaults.groomPhoto || null,
       bridePhoto:
@@ -126,7 +130,7 @@ export function mapSupabaseInvitation(
       rsvpStatus: guest.rsvp_status,
       pax: guest.pax,
     })),
-    features: row.features || {},
+    features,
   };
 }
 
@@ -267,6 +271,10 @@ export function formPayloadToInvitationRow(payload) {
       gift: Boolean(payload.gift),
       music: Boolean(payload.music),
       guestName: Boolean(payload.guestName),
+      instagram: {
+        groom: payload.groomInstagram || "",
+        bride: payload.brideInstagram || "",
+      },
     },
   };
 }

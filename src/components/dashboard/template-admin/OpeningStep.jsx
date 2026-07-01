@@ -18,11 +18,16 @@ const optionLabels = {
   video: "Video",
   "image-sequence": "Rangkaian gambar",
   auto: "Otomatis",
-  cinematic: "Sinematik",
+  "cinematic-soft": "Sinematik lembut",
   simple: "Sederhana",
-  elegant: "Elegan",
-  color: "Warna",
-  image: "Gambar",
+  "floral-bloom": "Bunga mekar",
+  "falling-petals": "Kelopak jatuh",
+  "royal-gate": "Royal",
+  "paper-reveal": "Kertas lembut",
+  "wayang-shadow": "Bayangan wayang",
+  color: "Warna tema",
+  cover: "Foto cover",
+  image: "Upload gambar",
   "with-content": "Bersama konten",
   "before-content": "Sebelum konten",
   "background-only": "Background saja",
@@ -145,10 +150,10 @@ export default function OpeningStep({
           <div className="space-y-4">
             <Panel
               eyebrow="Mode"
-              title="Gaya pembuka"
-              description="Pilih rasa pembuka secara cepat, lalu atur teks tombolnya."
+              title="Gaya isi pembuka"
+              description="Mengatur animasi konten di dalam pembuka: teks, nama pasangan, tombol, dan efek atmosfer."
             >
-              <Field label="Gaya Pembuka">
+              <Field label="Gaya Isi">
                 <SelectInput
                   value={openingSequenceWidgetConfig.preset || "auto"}
                   onChange={(event) => updateOpeningSequenceWidget("preset", event.target.value)}
@@ -169,16 +174,16 @@ export default function OpeningStep({
 
             <Panel
               eyebrow="Tampilan"
-              title="Foto dan background"
-              description="Atur elemen visual utama yang langsung terlihat saat pembuka muncul."
+              title="Visual pembuka"
+              description="Pilih background layar dan apakah foto cover juga ditampilkan sebagai foto tengah."
             >
               <ToggleField
                 checked={openingRevealWidgetConfig.coverImageEnabled !== false}
-                label="Tampilkan gambar cover"
-                desc="Biasanya memakai foto pasangan atau cover utama."
+                label="Foto cover di tengah"
+                desc="Aktifkan jika cover perlu tampil sebagai foto/kartu di tengah layar."
                 onChange={(checked) => updateOpeningRevealWidget("coverImageEnabled", checked)}
               />
-              <Field label="Jenis Background">
+              <Field label="Visual Background">
                 <SelectInput
                   value={openingRevealWidgetConfig.backgroundMode}
                   onChange={(event) => updateOpeningRevealWidget("backgroundMode", event.target.value)}
@@ -191,11 +196,13 @@ export default function OpeningStep({
                 </SelectInput>
               </Field>
               {openingRevealWidgetConfig.backgroundMode === "image" ? (
-                <FileInput
-                  label="Gambar Background"
-                  accept="image/*"
-                  onChange={(file) => updateOpeningRevealImage("backgroundImage", file)}
-                />
+                <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-fog)] px-3 py-2 text-sm font-semibold leading-5 text-[var(--dash-muted)]">
+                  Background gambar memakai default dari Pengaturan. Upload foto asli dilakukan di order/media undangan.
+                </div>
+              ) : openingRevealWidgetConfig.backgroundMode === "cover" ? (
+                <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-fog)] px-3 py-2 text-sm font-semibold leading-5 text-[var(--dash-muted)]">
+                  Memakai foto cover undangan sebagai background layar.
+                </div>
               ) : (
                 <Field label="Warna Background">
                   <input
@@ -210,10 +217,10 @@ export default function OpeningStep({
 
             <Panel
               eyebrow="Animasi & Musik"
-              title="Gerakan pembuka"
-              description="Atur cara panel muncul dan apakah musik ikut diputar setelah undangan dibuka."
+              title="Efek layar pembuka"
+              description="Mengatur bentuk layar pembuka seperti fade, tirai, gerbang, atau kartu kertas."
             >
-              <Field label="Animasi Panel">
+              <Field label="Efek Layar">
                 <SelectInput
                   value={openingRevealWidgetConfig.animation}
                   onChange={(event) => updateOpeningRevealWidget("animation", event.target.value)}
@@ -348,7 +355,7 @@ export default function OpeningStep({
           <div className="rounded-[14px] border border-[var(--dash-border)] bg-white p-3 lg:sticky lg:top-4">
             <div className="mb-2 flex items-center justify-between gap-2">
               <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--dash-muted)]">
-                Pratinjau Home
+                Pratinjau Pembuka
               </p>
               <DashboardButton
                 type="button"
@@ -362,18 +369,17 @@ export default function OpeningStep({
             <div className="mx-auto w-fit">
               <div className="relative rounded-[24px] border-[3px] border-[var(--color-primary)]/65 bg-[var(--color-primary)]/10 p-1.5 shadow-[0_10px_24px_rgba(15,23,42,0.16)]">
                 <div className="absolute left-1/2 top-0 z-20 h-4 w-16 -translate-x-1/2 rounded-b-2xl bg-[var(--color-primary)]/70" />
-                {/* Render the iframe at a real ~390px phone width, then scale it
-                    down to fit the frame so proportions match an actual device
-                    instead of squishing content into an undersized viewport. */}
+                {/* Match the 412px phone viewport used by other section previews. */}
                 <div
                   className="relative overflow-hidden rounded-[18px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)]"
                   style={{ width: 218, height: 388 }}
                 >
                   <iframe
+                    key={openingSectionPreviewSrc}
                     src={openingSectionPreviewSrc}
                     title="Pratinjau pembuka home"
                     className="absolute left-0 top-0 origin-top-left border-0"
-                    style={{ width: 390, height: 693, transform: "scale(0.56)" }}
+                    style={{ width: 412, height: 732, transform: "scale(0.529)" }}
                   />
                 </div>
                 <div className="mx-auto mt-1 h-1 w-10 rounded-full bg-[var(--color-primary)]/35" />

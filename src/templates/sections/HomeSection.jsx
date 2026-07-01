@@ -6,8 +6,91 @@ import { getSectionOrnaments } from "../designConfigs";
 export function CoverDateDisplay({ date, variant = "separator-dot", compact = false }) {
   const d = new Date(date);
   const day = d.getDate();
+  const weekday = d.toLocaleDateString("id-ID", { weekday: "long" });
   const monthLong = d.toLocaleDateString("id-ID", { month: "long" });
+  const monthShort = d.toLocaleDateString("id-ID", { month: "short" });
   const year = d.getFullYear();
+  const baseTextClass = `font-black text-[var(--color-primary)] ${
+    compact ? "text-[12px]" : "text-lg"
+  }`;
+  const smallTextClass = compact ? "text-[9px]" : "text-xs";
+
+  if (variant === "plain") {
+    return <p className={`${baseTextClass} mt-3 tracking-[0.08em]`}>{day} {monthLong} {year}</p>;
+  }
+
+  if (variant === "separator-line") {
+    return (
+      <div className="mt-3 flex items-center justify-center gap-3">
+        <span className="h-px w-8 bg-[var(--color-accent)]" />
+        <p className={`${baseTextClass} tracking-[0.08em]`}>{day} {monthLong} {year}</p>
+        <span className="h-px w-8 bg-[var(--color-accent)]" />
+      </div>
+    );
+  }
+
+  if (variant === "stacked") {
+    return (
+      <div className="mt-3 text-center">
+        <p className={`font-black leading-none text-[var(--color-primary)] ${compact ? "text-3xl" : "text-5xl"}`}>{day}</p>
+        <p className={`${smallTextClass} mt-1 font-black uppercase tracking-[0.22em] text-[var(--color-accent)]`}>{monthLong}</p>
+        <p className={`${smallTextClass} mt-0.5 font-bold tracking-[0.12em] text-[var(--color-text)]`}>{year}</p>
+      </div>
+    );
+  }
+
+  if (variant === "badge") {
+    return (
+      <div className="mx-auto mt-3 inline-flex rounded-full border border-[var(--color-accent-pale)] bg-[var(--color-surface)]/88 px-4 py-2 shadow-lg shadow-[var(--color-primary)]/8">
+        <p className={`${smallTextClass} font-black uppercase tracking-[0.14em] text-[var(--color-primary)]`}>
+          {day} {monthLong} {year}
+        </p>
+      </div>
+    );
+  }
+
+  if (variant === "columns") {
+    return (
+      <div className="mx-auto mt-3 grid max-w-[220px] grid-cols-3 divide-x divide-[var(--color-accent-pale)] border-y border-[var(--color-accent-pale)] py-2">
+        <p className={`${smallTextClass} font-black uppercase tracking-[0.16em] text-[var(--color-accent)]`}>{monthShort}</p>
+        <p className={`font-black leading-none text-[var(--color-primary)] ${compact ? "text-xl" : "text-2xl"}`}>{day}</p>
+        <p className={`${smallTextClass} font-black tracking-[0.12em] text-[var(--color-accent)]`}>{year}</p>
+      </div>
+    );
+  }
+
+  if (variant === "full-day") {
+    return (
+      <div className="mt-3 text-center">
+        <p className={`${smallTextClass} font-black uppercase tracking-[0.22em] text-[var(--color-accent)]`}>{weekday}</p>
+        <div className="mt-1 flex items-center justify-center gap-3">
+          <span className="h-px w-7 bg-[var(--color-accent-pale)]" />
+          <p className={`${baseTextClass} tracking-[0.08em]`}>{day} {monthLong} {year}</p>
+          <span className="h-px w-7 bg-[var(--color-accent-pale)]" />
+        </div>
+      </div>
+    );
+  }
+
+  if (variant === "block") {
+    return (
+      <div className="mx-auto mt-3 grid max-w-[230px] grid-cols-3 divide-x divide-[var(--color-accent-pale)] rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)]/88 py-2 shadow-lg shadow-[var(--color-primary)]/8">
+        <div>
+          <p className={`font-black leading-none text-[var(--color-primary)] ${compact ? "text-lg" : "text-2xl"}`}>{day}</p>
+          <p className={`${smallTextClass} mt-1 font-bold uppercase tracking-[0.14em] text-[var(--color-accent)]`}>Tgl</p>
+        </div>
+        <div>
+          <p className={`font-black leading-none text-[var(--color-primary)] ${compact ? "text-lg" : "text-2xl"}`}>{monthShort}</p>
+          <p className={`${smallTextClass} mt-1 font-bold uppercase tracking-[0.14em] text-[var(--color-accent)]`}>Bln</p>
+        </div>
+        <div>
+          <p className={`font-black leading-none text-[var(--color-primary)] ${compact ? "text-lg" : "text-2xl"}`}>{year}</p>
+          <p className={`${smallTextClass} mt-1 font-bold uppercase tracking-[0.14em] text-[var(--color-accent)]`}>Thn</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <p
       className={`font-black tracking-[0.12em] text-[var(--color-primary)] ${
@@ -31,6 +114,27 @@ export default function HomeSection({
 }) {
   const coverBackgroundColor = coverConfig.backgroundColor || "#fbf7ef";
   const coverBackgroundImage = coverConfig.backgroundMode === "image" ? coverConfig.backgroundImage : "";
+  const photoStyle = coverConfig.photoStyle || "arch";
+  const photoShapeClass =
+    photoStyle === "circle"
+      ? "aspect-square rounded-full"
+      : photoStyle === "square"
+        ? "aspect-[4/5] rounded-[8px]"
+        : coverConfig.layout === "stacked"
+          ? "aspect-[4/3] rounded-[18px]"
+          : "aspect-[3/4] rounded-t-full rounded-b-[18px]";
+  const compactPhotoSizeClass =
+    photoStyle === "circle"
+      ? "mb-2 w-24 sm:w-28"
+      : coverConfig.layout === "stacked"
+        ? "mb-2 w-32 sm:w-40"
+        : "mb-2 w-20 sm:w-24";
+  const fullPhotoSizeClass =
+    photoStyle === "circle"
+      ? "mb-4 w-36 sm:mb-8 sm:w-52"
+      : coverConfig.layout === "stacked"
+        ? "mb-4 w-48 sm:mb-8 sm:w-80"
+        : "mb-4 w-28 sm:mb-8 sm:w-56";
 
   return (
     <section
@@ -58,17 +162,11 @@ export default function HomeSection({
             src={profileImages[0]}
             alt={`${couple.groomNickname} dan ${couple.brideNickname}`}
             className={`mx-auto object-cover shadow-2xl shadow-[var(--color-primary)]/12 ${
-              coverConfig.layout === "stacked"
-                ? "aspect-[4/3] rounded-[18px]"
-                : "aspect-[3/4] rounded-t-full rounded-b-[18px]"
+              photoShapeClass
             } ${
               isCompactHomePreview
-                ? coverConfig.layout === "stacked"
-                  ? "mb-2 w-32 sm:w-40"
-                  : "mb-2 w-20 sm:w-24"
-                : coverConfig.layout === "stacked"
-                  ? "mb-4 w-48 sm:mb-8 sm:w-80"
-                  : "mb-4 w-28 sm:mb-8 sm:w-56"
+                ? compactPhotoSizeClass
+                : fullPhotoSizeClass
             }`}
           />
         ) : null}
@@ -172,4 +270,3 @@ export default function HomeSection({
     </section>
   );
 }
-

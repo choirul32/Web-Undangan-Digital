@@ -7,6 +7,10 @@ export const defaultStoryWidgetConfig = {
   enabled: true,
   variant: "card",
   animation: "fade-up",
+  cardEnabled: true,
+  cardBackgroundMode: "color",
+  cardBackgroundColor: "",
+  cardBackgroundImage: "",
 };
 
 export function getStoryWidgetConfig(designConfig = {}) {
@@ -77,6 +81,34 @@ function animationProps(animation, index) {
   };
 }
 
+function cardVisualProps(config = {}, fallbackClass = "") {
+  if (config.cardEnabled === false) {
+    return {
+      className: `${fallbackClass} border-transparent bg-transparent shadow-none backdrop-blur-0`,
+      style: {
+        backgroundColor: "transparent",
+        backgroundImage: "none",
+        borderColor: "transparent",
+        boxShadow: "none",
+        backdropFilter: "none",
+      },
+      hasOverlay: false,
+    };
+  }
+
+  const hasImage = config.cardBackgroundMode === "image" && config.cardBackgroundImage;
+  return {
+    className: `${fallbackClass} relative overflow-hidden`,
+    style: {
+      backgroundColor: hasImage ? undefined : config.cardBackgroundColor || undefined,
+      backgroundImage: hasImage ? `url(${config.cardBackgroundImage})` : undefined,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+    },
+    hasOverlay: Boolean(hasImage),
+  };
+}
+
 export default function StoryWidget({ stories = [], config = defaultStoryWidgetConfig, classes = {} }) {
   if (!config.enabled) {
     return null;
@@ -87,6 +119,10 @@ export default function StoryWidget({ stories = [], config = defaultStoryWidgetC
       <div className={classes.container || "mt-8 space-y-5"}>
         {stories.map((item, index) => {
           const animation = animationProps(config.animation, index);
+          const cardProps = cardVisualProps(
+            config,
+            "group rounded-[26px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)]/88 p-6 text-left shadow-xl shadow-[var(--color-primary)]/8 backdrop-blur sm:p-8",
+          );
 
           return (
             <motion.article
@@ -94,10 +130,12 @@ export default function StoryWidget({ stories = [], config = defaultStoryWidgetC
               {...animation}
               viewport={{ once: true, amount: 0.3 }}
               transition={animation.transition || { duration: 0.55, ease: "easeOut" }}
-              className="group relative overflow-hidden rounded-[26px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)]/88 p-6 text-left shadow-xl shadow-[var(--color-primary)]/8 backdrop-blur sm:p-8"
+              className={cardProps.className}
+              style={cardProps.style}
             >
+              {cardProps.hasOverlay ? <div className="absolute inset-0 bg-white/74" /> : null}
               <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[var(--color-accent)]/12 transition-transform duration-500 group-hover:scale-125" />
-              <div className="relative flex items-start gap-5">
+              <div className="relative z-10 flex items-start gap-5">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border border-[var(--color-accent)]/35 bg-[var(--color-bg)] text-lg font-black text-[var(--color-primary)] shadow-lg shadow-[var(--color-primary)]/8">
                   {String(index + 1).padStart(2, "0")}
                 </div>
@@ -128,6 +166,14 @@ export default function StoryWidget({ stories = [], config = defaultStoryWidgetC
         {stories.map((item, index) => {
           const animation = animationProps(config.animation, index);
           const isRight = index % 2 === 1;
+          const cardProps = cardVisualProps(
+            config,
+            `max-w-[82%] rounded-[24px] border border-[var(--color-accent-pale)] px-5 py-4 text-left shadow-lg shadow-[var(--color-primary)]/8 ${
+              isRight
+                ? "rounded-br-md bg-[var(--color-primary)] text-white"
+                : "rounded-bl-md bg-[var(--color-surface)]/90 text-[var(--color-text)]"
+            }`,
+          );
 
           return (
             <motion.article
@@ -137,12 +183,9 @@ export default function StoryWidget({ stories = [], config = defaultStoryWidgetC
               transition={animation.transition || { duration: 0.45, ease: "easeOut" }}
               className={`flex ${isRight ? "justify-end" : "justify-start"}`}
             >
-              <div className={`max-w-[82%] rounded-[24px] border border-[var(--color-accent-pale)] px-5 py-4 text-left shadow-lg shadow-[var(--color-primary)]/8 ${
-                isRight
-                  ? "rounded-br-md bg-[var(--color-primary)] text-white"
-                  : "rounded-bl-md bg-[var(--color-surface)]/90 text-[var(--color-text)]"
-              }`}
-              >
+              <div className={cardProps.className} style={cardProps.style}>
+                {cardProps.hasOverlay ? <div className="absolute inset-0 bg-white/74" /> : null}
+                <div className="relative z-10">
                 {item.year ? (
                   <p className={`text-xs font-black uppercase tracking-[0.14em] ${isRight ? "text-white/70" : "text-[var(--color-accent)]"}`}>
                     {item.year}
@@ -154,6 +197,7 @@ export default function StoryWidget({ stories = [], config = defaultStoryWidgetC
                 <p className={`mt-2 text-sm font-semibold leading-6 ${isRight ? "text-white/82" : "text-[var(--color-text)]"}`}>
                   {item.desc || item.description}
                 </p>
+                </div>
               </div>
             </motion.article>
           );
@@ -166,6 +210,7 @@ export default function StoryWidget({ stories = [], config = defaultStoryWidgetC
     <div className={classes.container || "mt-8 space-y-4"}>
       {stories.map((item, index) => {
         const animation = animationProps(config.animation, index);
+        const cardProps = cardVisualProps(config, classes.item || "");
 
         return (
           <motion.article
@@ -173,12 +218,16 @@ export default function StoryWidget({ stories = [], config = defaultStoryWidgetC
             {...animation}
             viewport={{ once: true, amount: 0.25 }}
             transition={animation.transition || { duration: 0.45, ease: "easeOut" }}
-            className={classes.item || ""}
+            className={cardProps.className}
+            style={cardProps.style}
           >
+            {cardProps.hasOverlay ? <div className="absolute inset-0 bg-white/74" /> : null}
+            <div className="relative z-10">
             {classes.marker ? <span className={classes.marker} /> : null}
             {item.year ? <p className={classes.year || ""}>{item.year}</p> : null}
             <h3 className={classes.title || ""}>{item.title}</h3>
             <p className={classes.description || ""}>{item.desc || item.description}</p>
+            </div>
           </motion.article>
         );
       })}

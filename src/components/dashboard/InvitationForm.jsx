@@ -8,7 +8,7 @@ import {
   initialInvitationForm,
   formSteps,
 } from "./config";
-import { Field, TextInput, SelectInput, ToggleField, TextAreaInput } from "./FormControls";
+import { DashboardButton, Field, TextInput, SelectInput, ToggleField, TextAreaInput } from "./FormControls";
 
 const mutedPanelClass =
   "rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-fog)]/45 p-4";
@@ -47,6 +47,61 @@ const paymentStatusLabels = {
 
 function statusLabel(labels, value) {
   return labels[value] || value || "-";
+}
+
+function InvitationSaveBar({
+  hasUnsavedChanges,
+  isSaving,
+  saveMessage,
+  onPreview,
+  onSaveDraft,
+  onSave,
+}) {
+  const statusText = isSaving
+    ? "Menyimpan perubahan..."
+    : hasUnsavedChanges
+      ? "Ada perubahan belum disimpan."
+      : saveMessage || "Semua perubahan tersimpan.";
+
+  return (
+    <div className="sticky bottom-0 z-30 mt-6 border-t border-[var(--dash-border)] bg-white/95 px-4 py-3 backdrop-blur">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 text-sm font-semibold text-[var(--dash-muted)]">
+          <span
+            className={`h-2.5 w-2.5 rounded-full ${
+              isSaving
+                ? "bg-amber-500"
+                : hasUnsavedChanges
+                  ? "bg-red-500"
+                  : "bg-emerald-500"
+            }`}
+          />
+          <span>{statusText}</span>
+        </div>
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <DashboardButton
+            type="button"
+            onClick={onPreview}
+            variant="secondary"
+            disabled={!onPreview}
+          >
+            Pratinjau
+          </DashboardButton>
+          <DashboardButton
+            type="button"
+            onClick={onSaveDraft}
+            variant="secondary"
+            loading={isSaving}
+          >
+            {isSaving ? "Menyimpan..." : "Simpan Draft"}
+          </DashboardButton>
+          <DashboardButton type="button" onClick={onSave} loading={isSaving}>
+            {isSaving ? "Menyimpan..." : "Simpan"}
+          </DashboardButton>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function normalizeTemplateOption(template) {
@@ -88,11 +143,15 @@ function invitationToForm(invitation, templateOptions = []) {
       invitation?.couple?.groomNickname || initialInvitationForm.groomNickname,
     groomParents:
       invitation?.couple?.groomParents || initialInvitationForm.groomParents,
+    groomInstagram:
+      invitation?.couple?.groomInstagram || initialInvitationForm.groomInstagram,
     brideName: invitation?.couple?.brideName || initialInvitationForm.brideName,
     brideNickname:
       invitation?.couple?.brideNickname || initialInvitationForm.brideNickname,
     brideParents:
       invitation?.couple?.brideParents || initialInvitationForm.brideParents,
+    brideInstagram:
+      invitation?.couple?.brideInstagram || initialInvitationForm.brideInstagram,
     quote: invitation?.couple?.quote || initialInvitationForm.quote,
     rsvp: Boolean(invitation?.features?.rsvp ?? initialInvitationForm.rsvp),
     gift: Boolean(invitation?.features?.gift ?? initialInvitationForm.gift),
@@ -154,6 +213,8 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
     slug: invitationSlug || initialInvitationForm.slug,
   });
   const [saveMessage, setSaveMessage] = useState("");
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [publishErrors, setPublishErrors] = useState([]);
 
   const publicPath = `/u/${form.slug || "slug-order"}`;
@@ -161,6 +222,21 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
     typeof window !== "undefined" && form.slug
       ? `${window.location.origin}${publicPath}`
       : publicPath;
+
+  useEffect(() => {
+    if (invitationSlug) {
+      return;
+    }
+
+    setForm({
+      ...initialInvitationForm,
+      slug: initialInvitationForm.slug,
+    });
+    setActiveStep(0);
+    setSaveMessage("");
+    setHasUnsavedChanges(false);
+    setPublishErrors([]);
+  }, [invitationSlug]);
 
   useEffect(() => {
     let isMounted = true;
@@ -226,6 +302,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
       .then((result) => {
         if (isMounted && result.data) {
           setForm(invitationToForm(result.data, templateOptions));
+          setHasUnsavedChanges(false);
         }
       })
       .catch(() => {
@@ -242,7 +319,23 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
   const updateForm = (field, value) => {
     setForm((current) => ({ ...current, [field]: value }));
     setPublishErrors([]);
+    setHasUnsavedChanges(true);
+    setSaveMessage("Ada perubahan belum disimpan.");
   };
+
+  useEffect(() => {
+    if (!hasUnsavedChanges) {
+      return undefined;
+    }
+
+    const handleBeforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [hasUnsavedChanges]);
 
   const redirectToActiveOrder = (savedInvitation) => {
     const savedSlug = savedInvitation?.slug || form.slug;
@@ -256,9 +349,15 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
   };
 
   const saveDraft = async (overrides = {}) => {
+    if (isSavingDraft) {
+      return null;
+    }
+
     const nextForm = { ...form, ...overrides };
 
     try {
+      setIsSavingDraft(true);
+      setSaveMessage("Menyimpan perubahan...");
       const response = await fetch("/api/invitations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -279,10 +378,13 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
           ? "Draft tersimpan ke Supabase."
           : "Draft lokal tersimpan. Supabase belum dikonfigurasi.",
       );
+      setHasUnsavedChanges(false);
       return result.data || true;
     } catch (error) {
       setSaveMessage(error.message || "Draft lokal tersimpan. API belum tersedia.");
       return null;
+    } finally {
+      setIsSavingDraft(false);
     }
   };
 
@@ -297,6 +399,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
 
     if (saved) {
       setForm((current) => ({ ...current, status: "review", orderStatus: "review" }));
+      setHasUnsavedChanges(false);
       setSaveMessage("Order ditandai sebagai review. Kirim preview ke customer via WhatsApp.");
       redirectToActiveOrder(saved);
     }
@@ -363,6 +466,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
       }
 
       setForm((current) => ({ ...current, status: "published" }));
+      setHasUnsavedChanges(false);
       setPublishErrors([]);
       setSaveMessage(
         result.source === "supabase"
@@ -399,6 +503,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
       }
 
       setForm((current) => ({ ...current, status: "archived" }));
+      setHasUnsavedChanges(false);
       setPublishErrors([]);
       setSaveMessage(
         result.source === "supabase"
@@ -423,6 +528,15 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
     } catch {
       setSaveMessage(`Link publish: ${publicUrl}`);
     }
+  };
+
+  const openInvitationPreview = () => {
+    if (!form.slug) {
+      setSaveMessage("Isi slug publik dulu sebelum membuka pratinjau.");
+      return;
+    }
+
+    window.open(publicPath, "_blank", "noreferrer");
   };
 
   const renderStep = () => {
@@ -617,6 +731,13 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
                       placeholder="Bapak ... & Ibu ..."
                     />
                   </Field>
+                  <Field label="Instagram">
+                    <TextInput
+                      value={form.groomInstagram}
+                      onChange={(event) => updateForm("groomInstagram", event.target.value)}
+                      placeholder="@username atau https://instagram.com/username"
+                    />
+                  </Field>
                 </div>
               </section>
 
@@ -649,6 +770,13 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
                       value={form.brideParents}
                       onChange={(event) => updateForm("brideParents", event.target.value)}
                       placeholder="Bapak ... & Ibu ..."
+                    />
+                  </Field>
+                  <Field label="Instagram">
+                    <TextInput
+                      value={form.brideInstagram}
+                      onChange={(event) => updateForm("brideInstagram", event.target.value)}
+                      placeholder="@username atau https://instagram.com/username"
                     />
                   </Field>
                 </div>
@@ -844,10 +972,12 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
       <div className="sticky top-[81px] z-20 border-b border-[var(--dash-border)] bg-[var(--dash-canvas)]/95 px-5 py-3 backdrop-blur-xl">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap gap-2">
-            <button type="button" onClick={saveDraftAndMaybeRedirect} className={actionButtonClass}>
-              Simpan Draft
-            </button>
-            <button type="button" onClick={markReview} className={actionButtonClass}>
+            <button
+              type="button"
+              onClick={markReview}
+              disabled={isSavingDraft}
+              className={`${actionButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
+            >
               Tandai Review
             </button>
             {(form.status === "review" || form.status === "published") && (
@@ -860,9 +990,9 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
               </button>
             )}
           </div>
-          {saveMessage ? (
-            <p className="text-sm font-medium text-[var(--dash-muted)]">{saveMessage}</p>
-          ) : null}
+          <p className="text-sm font-semibold text-[var(--dash-muted)]">
+            {hasUnsavedChanges ? "Preview berubah, data belum disimpan." : saveMessage || "Data siap diedit."}
+          </p>
         </div>
       </div>
 
@@ -931,6 +1061,15 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
           ) : null}
         </div>
       </div>
+
+      <InvitationSaveBar
+        hasUnsavedChanges={hasUnsavedChanges}
+        isSaving={isSavingDraft}
+        saveMessage={saveMessage}
+        onPreview={openInvitationPreview}
+        onSaveDraft={saveDraftAndMaybeRedirect}
+        onSave={saveDraftAndMaybeRedirect}
+      />
     </motion.section>
   );
 }

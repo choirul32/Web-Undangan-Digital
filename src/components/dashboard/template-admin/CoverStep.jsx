@@ -1,6 +1,5 @@
 "use client";
 
-import { CoverSectionPreview } from "../WidgetPreviews";
 import { Field, SelectInput, ToggleField } from "../FormControls";
 
 const optionLabels = {
@@ -20,10 +19,46 @@ const optionLabels = {
   "pop-up": "Pop up lembut",
   color: "Warna",
   image: "Gambar",
+  arch: "Lengkung",
+  circle: "Lingkaran",
+  square: "Kotak",
 };
 
 function optionLabel(value) {
   return optionLabels[value] || value;
+}
+
+function CoverLivePreview({ src }) {
+  return (
+    <div className="rounded-[14px] border border-[var(--dash-border)] bg-white p-3 lg:sticky lg:top-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--dash-muted)]">
+          Pratinjau Cover
+        </p>
+        <span className="rounded-full bg-[var(--dash-fog)] px-2.5 py-1 text-[11px] font-black text-[var(--dash-ink)]">
+          412px
+        </span>
+      </div>
+      <div className="mx-auto w-fit">
+        <div className="relative rounded-[24px] border-[3px] border-[var(--color-primary)]/65 bg-[var(--color-primary)]/10 p-1.5 shadow-[0_10px_24px_rgba(15,23,42,0.16)]">
+          <div className="absolute left-1/2 top-0 z-20 h-4 w-16 -translate-x-1/2 rounded-b-2xl bg-[var(--color-primary)]/70" />
+          <div
+            className="relative overflow-hidden rounded-[18px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)]"
+            style={{ width: 218, height: 388 }}
+          >
+            <iframe
+              key={src}
+              src={src}
+              title="Pratinjau cover utama"
+              className="absolute left-0 top-0 origin-top-left border-0"
+              style={{ width: 412, height: 732, transform: "scale(0.529)" }}
+            />
+          </div>
+          <div className="mx-auto mt-1 h-1 w-10 rounded-full bg-[var(--color-primary)]/35" />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function CoverStep({
@@ -35,6 +70,7 @@ export default function CoverStep({
   coverOpeningAnimationOptions,
   coverBackgroundModeOptions,
   updateCoverBackgroundImage,
+  coverPreviewSrc,
 }) {
   if (!visible) {
     return null;
@@ -69,6 +105,20 @@ export default function CoverStep({
                 {coverLayoutOptions.map((layout) => (
                   <option key={layout} value={layout}>
                     {optionLabel(layout)}
+                  </option>
+                ))}
+              </SelectInput>
+            </Field>
+            <Field label="Bentuk Foto">
+              <SelectInput
+                value={coverSectionConfig.photoStyle || "arch"}
+                onChange={(event) =>
+                  updateTemplateSectionConfig("home", "photoStyle", event.target.value)
+                }
+              >
+                {["arch", "circle", "square"].map((style) => (
+                  <option key={style} value={style}>
+                    {optionLabel(style)}
                   </option>
                 ))}
               </SelectInput>
@@ -116,14 +166,9 @@ export default function CoverStep({
               </SelectInput>
             </Field>
             {coverSectionConfig.backgroundMode === "image" ? (
-              <Field label="Gambar Background">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) => updateCoverBackgroundImage(event.target.files?.[0])}
-                  className="w-full rounded-xl border border-[var(--dash-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--dash-ink)] outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--dash-ink)] file:px-3 file:py-2 file:text-sm file:font-bold file:text-white"
-                />
-              </Field>
+              <div className="rounded-xl border border-[var(--dash-border)] bg-white px-3 py-2 text-sm font-semibold leading-5 text-[var(--dash-muted)]">
+                Background gambar memakai default dari Pengaturan. Upload foto asli dilakukan di order/media undangan.
+              </div>
             ) : (
               <Field label="Warna Background">
                 <input
@@ -137,7 +182,7 @@ export default function CoverStep({
               </Field>
             )}
           </div>
-          <CoverSectionPreview config={coverSectionConfig} />
+          <CoverLivePreview src={coverPreviewSrc} />
         </div>
       </div>
     </div>

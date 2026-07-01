@@ -20,7 +20,11 @@ export default function OrnamentLayerPanel({
   duplicateOrnamentAtIndex,
   removeOrnamentAtIndex,
   reorderSelectedOrnament,
+  globalExcludedSections = [],
+  toggleGlobalOrnamentExclusion,
 }) {
+  const countdownExcluded = globalExcludedSections.includes("countdown");
+
   return (
     <div className="overflow-hidden rounded-[14px] border border-[var(--dash-border)] bg-white shadow-[var(--dash-shadow)] xl:sticky xl:top-4 xl:flex xl:max-h-[calc(100vh-6.5rem)] xl:flex-col">
       <div className="flex items-center justify-between border-b border-[var(--dash-border)] px-3 py-2.5">
@@ -50,6 +54,41 @@ export default function OrnamentLayerPanel({
             ))}
           </SelectInput>
         </Field>
+
+        {activeDesignSection === "global" ? (
+          <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-fog)] p-3">
+            <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--dash-muted)]">
+              Pengecualian Global
+            </p>
+            <button
+              type="button"
+              onClick={() => toggleGlobalOrnamentExclusion?.("countdown")}
+              className={`mt-2 flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-xs font-bold transition-colors ${
+                countdownExcluded
+                  ? "border-[var(--color-accent)] bg-white text-[var(--color-primary)]"
+                  : "border-[var(--dash-border)] bg-white/70 text-[var(--dash-muted)] hover:bg-white hover:text-[var(--dash-ink)]"
+              }`}
+            >
+              <span>
+                Sembunyikan di section hitung mundur
+                <span className="mt-0.5 block text-[10px] font-semibold opacity-70">
+                  Cocok untuk section kecil agar tidak terlalu penuh.
+                </span>
+              </span>
+              <span
+                className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
+                  countdownExcluded ? "bg-[var(--color-accent)]" : "bg-slate-300"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
+                    countdownExcluded ? "translate-x-4" : "translate-x-0.5"
+                  }`}
+                />
+              </span>
+            </button>
+          </div>
+        ) : null}
 
         <div className="flex items-center gap-2">
           <div className="relative flex-1">

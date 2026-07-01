@@ -8,7 +8,13 @@ export function OpeningRevealPreview({ config = {} }) {
   const enabled = Boolean(config.enabled);
   const animation = config.animation || "fade";
   const backgroundColor = config.backgroundColor || "#fbf7ef";
-  const useImageBackground = config.backgroundMode === "image";
+  const backgroundPreviewImage =
+    config.backgroundMode === "cover"
+      ? "/assets/CoverPasangan.png"
+      : config.backgroundMode === "image"
+        ? config.backgroundImage || "/assets/CoverPasangan.png"
+        : "";
+  const useImageBackground = Boolean(backgroundPreviewImage);
   const coverImageEnabled = config.coverImageEnabled !== false;
   const openingAsset = config.asset || {};
   const hasOpeningAsset = Boolean(
@@ -19,7 +25,7 @@ export function OpeningRevealPreview({ config = {} }) {
   const isSplit = animation === "curtain" || animation === "gate";
   const panelStyle = useImageBackground
     ? {
-        backgroundImage: `url(${config.backgroundImage || "/assets/CoverPasangan.png"})`,
+        backgroundImage: `url(${backgroundPreviewImage})`,
         backgroundSize: "200% 100%",
         backgroundRepeat: "no-repeat",
       }
@@ -34,7 +40,7 @@ export function OpeningRevealPreview({ config = {} }) {
         {useImageBackground && !isSplit ? (
           <div
             className="absolute inset-0 bg-cover bg-center opacity-35"
-            style={{ backgroundImage: `url(${config.backgroundImage || "/assets/CoverPasangan.png"})` }}
+            style={{ backgroundImage: `url(${backgroundPreviewImage})` }}
           />
         ) : null}
         {isSplit ? (
@@ -245,12 +251,34 @@ export function CoupleSectionPreview({ config = {} }) {
       parents: "Bapak Anwar & Ibu Lestari",
     },
   ];
+  const cardBackgroundMode = config.cardBackgroundMode || "color";
+  const hasCardBackgroundImage = cardBackgroundMode === "image" && config.cardBackgroundImage;
+  const previewCardStyle =
+    config.cardEnabled === false
+      ? {
+          backgroundColor: "transparent",
+          backgroundImage: "none",
+          borderColor: "transparent",
+          boxShadow: "none",
+        }
+      : {
+          backgroundColor: hasCardBackgroundImage ? undefined : config.cardBackgroundColor || "#ffffff",
+          backgroundImage: hasCardBackgroundImage ? `url(${config.cardBackgroundImage})` : undefined,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        };
+  const previewCardClass =
+    config.cardEnabled === false
+      ? "text-center"
+      : "relative overflow-hidden rounded-[12px] border border-[var(--color-accent-pale)] p-3 text-center shadow-sm";
 
   return (
     <WidgetPreviewShell title="Live Preview" label={config.photoStyle || "arch"} enabled>
       <div className="grid grid-cols-2 gap-3">
         {profiles.map((profile) => (
-          <div key={profile.name} className="rounded-[12px] border border-[var(--color-accent-pale)] bg-white p-3 text-center shadow-sm">
+          <div key={profile.name} className={previewCardClass} style={previewCardStyle}>
+            {hasCardBackgroundImage ? <div className="absolute inset-0 bg-white/72" /> : null}
+            <div className="relative z-10">
             <p className="mb-2 text-[8px] font-black uppercase tracking-[0.16em] text-[var(--color-accent)]">
               {profile.role}
             </p>
@@ -273,6 +301,7 @@ export function CoupleSectionPreview({ config = {} }) {
                 Instagram
               </span>
             ) : null}
+            </div>
           </div>
         ))}
       </div>

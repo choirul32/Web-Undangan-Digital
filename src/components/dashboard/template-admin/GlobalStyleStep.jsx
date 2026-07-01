@@ -78,6 +78,20 @@ const coupleFontLabels = {
   script: "Script romantis",
 };
 
+const coupleCardBackgroundLabels = {
+  color: "Warna",
+  image: "Gambar",
+};
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function getSelectedFont(fonts, selectedId) {
   return fonts.find((font) => font.id === selectedId);
 }
@@ -158,6 +172,12 @@ export default function GlobalStyleStep({
   if (!visible) {
     return null;
   }
+
+  const updateCoupleCardImage = async (file) => {
+    if (!file) return;
+    const previewUrl = await readFileAsDataUrl(file);
+    updateTemplateSectionConfig("couple", "cardBackgroundImage", previewUrl);
+  };
 
   return (
     <>
@@ -327,6 +347,13 @@ export default function GlobalStyleStep({
                   updateTemplateSectionConfig("couple", "instagramEnabled", checked)
                 }
               />
+              <ToggleField
+                checked={coupleSectionConfig.cardEnabled !== false}
+                label="Card aktif"
+                onChange={(checked) =>
+                  updateTemplateSectionConfig("couple", "cardEnabled", checked)
+                }
+              />
               <Field label="Bentuk Foto">
                 <SelectInput
                   value={coupleSectionConfig.photoStyle}
@@ -355,6 +382,45 @@ export default function GlobalStyleStep({
                   ))}
                 </SelectInput>
               </Field>
+              {coupleSectionConfig.cardEnabled !== false ? (
+                <>
+                  <Field label="Background Card">
+                    <SelectInput
+                      value={coupleSectionConfig.cardBackgroundMode || "color"}
+                      onChange={(event) =>
+                        updateTemplateSectionConfig("couple", "cardBackgroundMode", event.target.value)
+                      }
+                    >
+                      {Object.entries(coupleCardBackgroundLabels).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </SelectInput>
+                  </Field>
+                  {coupleSectionConfig.cardBackgroundMode === "image" ? (
+                    <Field label="Gambar Card">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(event) => updateCoupleCardImage(event.target.files?.[0])}
+                        className="w-full rounded-xl border border-[var(--dash-border)] bg-white px-3 py-2 text-sm font-semibold text-[var(--dash-ink)] outline-none file:mr-3 file:rounded-lg file:border-0 file:bg-[var(--dash-ink)] file:px-3 file:py-2 file:text-sm file:font-bold file:text-white"
+                      />
+                    </Field>
+                  ) : (
+                    <Field label="Warna Card">
+                      <input
+                        type="color"
+                        value={coupleSectionConfig.cardBackgroundColor || "#ffffff"}
+                        onChange={(event) =>
+                          updateTemplateSectionConfig("couple", "cardBackgroundColor", event.target.value)
+                        }
+                        className="h-11 w-full rounded-xl border border-[var(--dash-border)] bg-white p-1 outline-none focus:border-[var(--color-accent)]"
+                      />
+                    </Field>
+                  )}
+                </>
+              ) : null}
             </div>
             <CoupleSectionPreview config={coupleSectionConfig} />
           </div>

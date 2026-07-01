@@ -11,6 +11,14 @@ const DEFAULT_SETTINGS = {
   defaultTemplateThumbnail: "/assets/CoverPasangan.png",
   defaultGroomPhoto: "/assets/catin_pria.jpg",
   defaultBridePhoto: "/assets/catin_wanita.jpg",
+  defaultCoverBackgroundImage: "/assets/backgrounds/soft-watercolor-cream.jpg",
+  defaultOpeningBackgroundImage: "/assets/backgrounds/soft-watercolor-cream.jpg",
+  defaultOpeningCoverImage: "/assets/CoverPasangan.png",
+  defaultGalleryImages: [
+    "/assets/CoverPasangan.png",
+    "/assets/catin_wanita.jpg",
+    "/assets/catin_pria.jpg",
+  ],
   features: {
     music: "active",
     rsvp: "active",
