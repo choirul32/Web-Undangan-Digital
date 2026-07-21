@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiSession } from "../../../../../lib/auth";
 import { createServiceSupabaseClient } from "../../../../../lib/supabase/server";
+import { MAX_IMAGE_UPLOAD_BYTES } from "../../../../../lib/uploadValidation";
 
 const BUCKET_NAME = "template-assets";
 
@@ -16,12 +17,12 @@ const ASSET_RULES = {
     fallbackUrl: "",
   },
   "image-sequence": {
-    maxSize: 2 * 1024 * 1024,
+    maxSize: MAX_IMAGE_UPLOAD_BYTES,
     allowedTypes: ["image/png", "image/jpeg", "image/webp", "image/svg+xml"],
     fallbackUrl: "/assets/nusantara-premium.svg",
   },
   poster: {
-    maxSize: 2 * 1024 * 1024,
+    maxSize: MAX_IMAGE_UPLOAD_BYTES,
     allowedTypes: ["image/png", "image/jpeg", "image/webp", "image/svg+xml"],
     fallbackUrl: "/assets/nusantara-premium.svg",
   },

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { fadeUp } from "./config";
 import ConfirmDialog from "./ConfirmDialog";
@@ -9,12 +9,74 @@ import {
   DashboardCard,
   TextInput,
 } from "./FormControls";
+import { prepareImageForUpload } from "../../lib/imageUpload";
+
+function formatFileSize(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return "Ukuran tidak tersedia";
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)} MB`;
+}
+
+function readableMediaType(type = "") {
+  if (!type) return "Tipe tidak tersedia";
+  if (type === "image") return "Gallery";
+  if (type === "qris") return "QRIS";
+  if (type === "groom") return "Foto pria";
+  if (type === "bride") return "Foto wanita";
+  if (type === "cover") return "Cover";
+  if (type === "music") return "Musik";
+  if (type === "video") return "Video";
+  return type;
+}
+
+function getImageFileDimensions(file) {
+  return new Promise((resolve) => {
+    if (!file?.type?.startsWith("image/") || file.type === "image/svg+xml") {
+      resolve(null);
+      return;
+    }
+
+    const url = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      URL.revokeObjectURL(url);
+      resolve({
+        width: image.naturalWidth || image.width,
+        height: image.naturalHeight || image.height,
+      });
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(null);
+    };
+    image.src = url;
+  });
+}
+
+async function getRemoteFileSize(url) {
+  if (!url || url.startsWith("data:")) {
+    return null;
+  }
+
+  try {
+    const response = await fetch(url, { method: "HEAD" });
+    if (!response.ok) return null;
+
+    const size = Number(response.headers.get("content-length"));
+    return Number.isFinite(size) && size > 0 ? size : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function MediaManager({ invitationSlug = "" }) {
   const [mediaItems, setMediaItems] = useState([]);
   const [mediaType, setMediaType] = useState("image");
   const [title, setTitle] = useState("Gallery");
   const [file, setFile] = useState(null);
+  const [fileDetails, setFileDetails] = useState(null);
+  const [mediaDimensions, setMediaDimensions] = useState({});
+  const [mediaFileSizes, setMediaFileSizes] = useState({});
   const [message, setMessage] = useState("");
   const [replaceId, setReplaceId] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
@@ -28,7 +90,39 @@ export default function MediaManager({ invitationSlug = "" }) {
     { id: "video", label: "Video" },
   ];
   const singleSlotTypes = ["cover", "groom", "bride", "qris"];
-  const filteredMediaItems = mediaItems.filter((item) => item.mediaType === mediaType);
+  const filteredMediaItems = useMemo(
+    () => mediaItems.filter((item) => item.mediaType === mediaType),
+    [mediaItems, mediaType],
+  );
+  const getItemFileSize = (item) => {
+    const key = item.id || item.url;
+    if (item.fileSize) return item.fileSize;
+    return key ? mediaFileSizes[key] : undefined;
+  };
+
+  const formatMediaFileSize = (item) => {
+    const size = getItemFileSize(item);
+    if (size === undefined) return "";
+    if (size === null) return "Mengecek ukuran...";
+    return formatFileSize(size);
+  };
+
+  const updateSelectedFile = async (selectedFile) => {
+    setFile(selectedFile || null);
+
+    if (!selectedFile) {
+      setFileDetails(null);
+      return;
+    }
+
+    const dimensions = await getImageFileDimensions(selectedFile);
+    setFileDetails({
+      name: selectedFile.name || "File tanpa nama",
+      size: selectedFile.size || 0,
+      type: selectedFile.type || "Tipe tidak terbaca",
+      dimensions,
+    });
+  };
 
   useEffect(() => {
     if (!invitationSlug) {
@@ -56,6 +150,27 @@ export default function MediaManager({ invitationSlug = "" }) {
     };
   }, [invitationSlug]);
 
+  useEffect(() => {
+    let isMounted = true;
+
+    filteredMediaItems.forEach((item) => {
+      const key = item.id || item.url;
+      if (!key || item.fileSize || mediaFileSizes[key] !== undefined) {
+        return;
+      }
+
+      setMediaFileSizes((current) => ({ ...current, [key]: null }));
+      getRemoteFileSize(item.url).then((size) => {
+        if (!isMounted) return;
+        setMediaFileSizes((current) => ({ ...current, [key]: size || 0 }));
+      });
+    });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [filteredMediaItems, mediaFileSizes]);
+
   const uploadMedia = async () => {
     if (!file) {
       setMessage("Pilih file dulu.");
@@ -72,18 +187,32 @@ export default function MediaManager({ invitationSlug = "" }) {
       }
     }
 
-    const formData = new FormData();
-    formData.append("invitationSlug", invitationSlug);
-    formData.append("mediaType", mediaType);
-    formData.append("title", title);
-    if (effectiveReplaceId) {
-      formData.append("replaceId", effectiveReplaceId);
-    }
-    formData.append("file", file);
-
-    setMessage(replaceId ? "Mengganti media..." : "Mengupload media...");
-
     try {
+      const imagePresetByType = {
+        cover: "cover",
+        groom: "portrait",
+        bride: "portrait",
+        image: "gallery",
+        qris: "qris",
+      };
+      const isImageMedia = ["cover", "groom", "bride", "image", "qris"].includes(mediaType);
+      setMessage(isImageMedia ? "Mengoptimalkan gambar..." : "Menyiapkan upload...");
+      const prepared = await prepareImageForUpload(file, imagePresetByType[mediaType] || "default");
+
+      const formData = new FormData();
+      formData.append("invitationSlug", invitationSlug);
+      formData.append("mediaType", mediaType);
+      formData.append("title", title);
+      if (effectiveReplaceId) {
+        formData.append("replaceId", effectiveReplaceId);
+      }
+      formData.append("file", prepared.file);
+
+      setMessage(
+        prepared.message ||
+          (replaceId ? "Mengganti media..." : "Mengupload media..."),
+      );
+
       const response = await fetch("/api/media", {
         method: "POST",
         body: formData,
@@ -96,10 +225,28 @@ export default function MediaManager({ invitationSlug = "" }) {
 
       setMediaItems((current) =>
         effectiveReplaceId
-          ? current.map((item) => (item.id === effectiveReplaceId ? result.data : item))
-          : [result.data, ...current],
+          ? current.map((item) =>
+              item.id === effectiveReplaceId
+                ? {
+                    ...result.data,
+                    fileSize: prepared.file.size,
+                    mimeType: prepared.file.type,
+                    originalFileSize: file.size,
+                  }
+                : item,
+            )
+          : [
+              {
+                ...result.data,
+                fileSize: prepared.file.size,
+                mimeType: prepared.file.type,
+                originalFileSize: file.size,
+              },
+              ...current,
+            ],
       );
       setFile(null);
+      setFileDetails(null);
       setReplaceId("");
       setMessage(
         result.source === "supabase"
@@ -123,6 +270,7 @@ export default function MediaManager({ invitationSlug = "" }) {
   const cancelReplace = () => {
     setReplaceId("");
     setFile(null);
+    setFileDetails(null);
     setMessage("");
   };
 
@@ -225,7 +373,7 @@ export default function MediaManager({ invitationSlug = "" }) {
         <input
           type="file"
           accept={mediaType === "music" ? "audio/*" : mediaType === "video" ? "video/*" : "image/*"}
-          onChange={(event) => setFile(event.target.files?.[0] || null)}
+          onChange={(event) => updateSelectedFile(event.target.files?.[0] || null)}
           className="rounded-lg border border-[var(--dash-border)] bg-white px-3 py-2.5 text-sm font-medium text-[var(--dash-muted)]"
         />
         <DashboardButton
@@ -245,6 +393,41 @@ export default function MediaManager({ invitationSlug = "" }) {
         ) : null}
       </div>
 
+      {fileDetails ? (
+        <div className="border-b border-[var(--dash-border)] px-5 py-4">
+          <div className="rounded-[10px] border border-[var(--dash-border)] bg-[var(--dash-fog)]/45 p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
+                  Detail file terpilih
+                </p>
+                <p className="mt-1 truncate text-sm font-semibold text-[var(--dash-ink)]">
+                  {fileDetails.name}
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[var(--dash-muted)]">
+                  {formatFileSize(fileDetails.size)}
+                </span>
+                <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[var(--dash-muted)]">
+                  {fileDetails.type}
+                </span>
+                {fileDetails.dimensions ? (
+                  <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[var(--dash-muted)]">
+                    {fileDetails.dimensions.width} x {fileDetails.dimensions.height}px
+                  </span>
+                ) : null}
+              </div>
+            </div>
+            {fileDetails.size > 5 * 1024 * 1024 ? (
+              <p className="mt-3 text-xs font-semibold text-amber-700">
+                File lebih dari 5MB, akan dicoba dikompres otomatis sebelum upload.
+              </p>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
       {message ? (
         <p className="px-5 pt-4 text-sm font-medium text-[var(--dash-muted)]">{message}</p>
       ) : null}
@@ -263,6 +446,21 @@ export default function MediaManager({ invitationSlug = "" }) {
                 <p className="mt-2 text-lg font-semibold text-[var(--dash-ink)]">
                   {item.title}
                 </p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="rounded-full bg-[var(--dash-fog)] px-3 py-1 text-xs font-semibold text-[var(--dash-muted)]">
+                    {readableMediaType(item.mediaType)}
+                  </span>
+                  {formatMediaFileSize(item) ? (
+                    <span className="rounded-full bg-[var(--dash-fog)] px-3 py-1 text-xs font-semibold text-[var(--dash-muted)]">
+                      {formatMediaFileSize(item)}
+                    </span>
+                  ) : null}
+                  {item.mimeType ? (
+                    <span className="rounded-full bg-[var(--dash-fog)] px-3 py-1 text-xs font-semibold text-[var(--dash-muted)]">
+                      {item.mimeType}
+                    </span>
+                  ) : null}
+                </div>
                 <audio controls className="mt-4 w-full">
                   <source src={item.url} />
                 </audio>
@@ -276,6 +474,17 @@ export default function MediaManager({ invitationSlug = "" }) {
                 <img
                   src={item.url}
                   alt={item.title || "Media undangan"}
+                  onLoad={(event) => {
+                    const key = item.id || item.url;
+                    const width = event.currentTarget.naturalWidth;
+                    const height = event.currentTarget.naturalHeight;
+                    if (!key || !width || !height) return;
+
+                    setMediaDimensions((current) => ({
+                      ...current,
+                      [key]: { width, height },
+                    }));
+                  }}
                   className="aspect-[4/3] w-full bg-[var(--dash-fog)] object-cover"
                 />
                 <div className="p-5">
@@ -288,6 +497,26 @@ export default function MediaManager({ invitationSlug = "" }) {
                   <p className="mt-1 text-xs font-medium text-[var(--dash-muted)]">
                     Dipakai sebagai: {item.mediaType === "image" ? "Gallery item" : item.mediaType}
                   </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="rounded-full bg-[var(--dash-fog)] px-3 py-1 text-xs font-semibold text-[var(--dash-muted)]">
+                      {readableMediaType(item.mediaType)}
+                    </span>
+                    {mediaDimensions[item.id || item.url] ? (
+                      <span className="rounded-full bg-[var(--dash-fog)] px-3 py-1 text-xs font-semibold text-[var(--dash-muted)]">
+                        {mediaDimensions[item.id || item.url].width} x {mediaDimensions[item.id || item.url].height}px
+                      </span>
+                    ) : null}
+                    {formatMediaFileSize(item) ? (
+                      <span className="rounded-full bg-[var(--dash-fog)] px-3 py-1 text-xs font-semibold text-[var(--dash-muted)]">
+                        {formatMediaFileSize(item)}
+                      </span>
+                    ) : null}
+                    {item.mimeType ? (
+                      <span className="rounded-full bg-[var(--dash-fog)] px-3 py-1 text-xs font-semibold text-[var(--dash-muted)]">
+                        {item.mimeType}
+                      </span>
+                    ) : null}
+                  </div>
                   <div className="mt-4 flex gap-2">
                     <DashboardButton type="button" size="sm" variant="secondary" onClick={() => startReplace(item)}>Replace</DashboardButton>
                     <DashboardButton type="button" size="sm" variant="danger" onClick={() => deleteMedia(item)}>Delete</DashboardButton>

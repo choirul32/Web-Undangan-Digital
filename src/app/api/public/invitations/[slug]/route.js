@@ -3,6 +3,8 @@ import { getInvitationBySlug } from "../../../../../lib/invitations";
 
 // Always reflect the latest published data.
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export async function GET(_request, { params }) {
   const invitation = await getInvitationBySlug(params.slug);

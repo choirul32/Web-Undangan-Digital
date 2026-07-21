@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiSession } from "../../../lib/auth";
 import { createServiceSupabaseClient } from "../../../lib/supabase/server";
+import { validateImageUpload } from "../../../lib/uploadValidation";
 
 const BUCKET_NAME = "invitation-media";
 
@@ -31,6 +32,39 @@ function mapMedia(item) {
     title: item.title,
     url: item.url,
     storagePath: item.storage_path,
+    fileSize: item.file_size || null,
+    mimeType: item.mime_type || null,
+  };
+}
+
+async function getStorageFileSize(supabase, storagePath = "") {
+  if (!storagePath) return null;
+
+  const parts = storagePath.split("/");
+  const filename = parts.pop();
+  const directory = parts.join("/");
+
+  if (!filename || !directory) return null;
+
+  const { data } = await supabase.storage
+    .from(BUCKET_NAME)
+    .list(directory, {
+      limit: 1,
+      search: filename,
+    });
+  const match = (data || []).find((item) => item.name === filename);
+  const size = Number(match?.metadata?.size || match?.metadata?.contentLength || 0);
+
+  return Number.isFinite(size) && size > 0 ? size : null;
+}
+
+async function mapMediaWithStorageDetails(supabase, item) {
+  const mapped = mapMedia(item);
+  if (mapped.fileSize) return mapped;
+
+  return {
+    ...mapped,
+    fileSize: await getStorageFileSize(supabase, item.storage_path),
   };
 }
 
@@ -73,7 +107,7 @@ export async function GET(request) {
 
   return NextResponse.json({
     source: "supabase",
-    data: data.map(mapMedia),
+    data: await Promise.all(data.map((item) => mapMediaWithStorageDetails(supabase, item))),
   });
 }
 
@@ -87,6 +121,13 @@ export async function POST(request) {
 
   if (!file || typeof file === "string") {
     return NextResponse.json({ error: "file is required" }, { status: 400 });
+  }
+
+  if (file.type?.startsWith("image/")) {
+    const validationError = validateImageUpload(file, "Gambar media");
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
+    }
   }
 
   if (!invitationSlug) {
@@ -173,7 +214,11 @@ export async function POST(request) {
 
   return NextResponse.json({
     source: "supabase",
-    data: mapMedia(data),
+    data: {
+      ...mapMedia(data),
+      fileSize: file.size || null,
+      mimeType: file.type || null,
+    },
   });
 }
 

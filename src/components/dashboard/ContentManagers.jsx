@@ -17,6 +17,7 @@ import {
   formatEventDate,
   formatEventTime,
 } from "../../templates/components/EventWidget";
+import { prepareImageForUpload } from "../../lib/imageUpload";
 
 const MapLocationPicker = dynamic(() => import("./MapLocationPicker"), {
   ssr: false,
@@ -900,18 +901,21 @@ function BankAccountManager({ invitationSlug = "" }) {
       return;
     }
 
-    const formData = new FormData();
-    formData.append("invitationSlug", invitationSlug);
-    formData.append("mediaType", "qris");
-    formData.append("title", "QRIS Amplop Digital");
-    if (qrisItem?.id) {
-      formData.append("replaceId", qrisItem.id);
-    }
-    formData.append("file", qrisFile);
-
-    setQrisMessage(qrisItem ? "Mengganti QRIS..." : "Mengupload QRIS...");
-
     try {
+      setQrisMessage("Mengoptimalkan QRIS...");
+      const prepared = await prepareImageForUpload(qrisFile, "qris");
+
+      const formData = new FormData();
+      formData.append("invitationSlug", invitationSlug);
+      formData.append("mediaType", "qris");
+      formData.append("title", "QRIS Amplop Digital");
+      if (qrisItem?.id) {
+        formData.append("replaceId", qrisItem.id);
+      }
+      formData.append("file", prepared.file);
+
+      setQrisMessage(prepared.message || (qrisItem ? "Mengganti QRIS..." : "Mengupload QRIS..."));
+
       const response = await fetch("/api/media", {
         method: "POST",
         body: formData,

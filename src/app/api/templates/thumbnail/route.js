@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiSession } from "../../../../lib/auth";
 import { createServiceSupabaseClient } from "../../../../lib/supabase/server";
+import { validateImageUpload } from "../../../../lib/uploadValidation";
 
 const BUCKET_NAME = "template-assets";
 
@@ -21,6 +22,11 @@ export async function POST(request) {
 
   if (!file || typeof file === "string") {
     return NextResponse.json({ error: "file is required" }, { status: 400 });
+  }
+
+  const validationError = validateImageUpload(file, "Thumbnail template");
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
   if (!hasServiceEnv()) {

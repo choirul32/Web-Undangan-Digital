@@ -12,6 +12,7 @@ import {
   TextInput,
 } from "./FormControls";
 import { readFileAsDataUrl } from "./widget-previews/shared";
+import { prepareImageForUpload } from "../../lib/imageUpload";
 
 const storageKey = "nusa-invite:platform-settings";
 
@@ -179,15 +180,23 @@ export default function SettingsPage() {
       return;
     }
 
-    // Instant local preview (and the value used in dev/sample mode).
-    const dataUrl = await readFileAsDataUrl(file);
-    updateSetting(field, dataUrl);
-
     setUploadingField(field);
-    setMessage("Mengunggah gambar...");
+    setMessage("Mengoptimalkan gambar...");
     try {
+      const presetByField = {
+        defaultTemplateThumbnail: "thumbnail",
+        defaultGroomPhoto: "portrait",
+        defaultBridePhoto: "portrait",
+        defaultCoverBackgroundImage: "cover",
+        defaultOpeningBackgroundImage: "opening",
+        defaultOpeningCoverImage: "opening",
+      };
+      const prepared = await prepareImageForUpload(file, presetByField[field] || "default");
+      const dataUrl = await readFileAsDataUrl(prepared.file);
+      updateSetting(field, dataUrl);
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", prepared.file);
       const response = await fetch("/api/settings/thumbnail", {
         method: "POST",
         body: formData,
@@ -214,15 +223,16 @@ export default function SettingsPage() {
       return;
     }
 
-    const dataUrl = await readFileAsDataUrl(file);
-    const localImages = [...(settings.defaultGalleryImages || []), dataUrl];
-    updateSetting("defaultGalleryImages", localImages);
-
     setUploadingField("defaultGalleryImages");
-    setMessage("Mengunggah gambar gallery...");
+    setMessage("Mengoptimalkan gambar gallery...");
     try {
+      const prepared = await prepareImageForUpload(file, "gallery");
+      const dataUrl = await readFileAsDataUrl(prepared.file);
+      const localImages = [...(settings.defaultGalleryImages || []), dataUrl];
+      updateSetting("defaultGalleryImages", localImages);
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", prepared.file);
       const response = await fetch("/api/settings/thumbnail", {
         method: "POST",
         body: formData,

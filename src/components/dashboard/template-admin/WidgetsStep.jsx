@@ -15,6 +15,7 @@ import {
   TextInput,
   ToggleField,
 } from "../FormControls";
+import { prepareImageForUpload } from "../../../lib/imageUpload";
 
 const optionLabels = {
   cards: "Kartu",
@@ -85,7 +86,8 @@ function readFileAsDataUrl(file) {
 function CardVisualControls({ config, onChange, labelPrefix = "Card" }) {
   const updateCardImage = async (file) => {
     if (!file) return;
-    const previewUrl = await readFileAsDataUrl(file);
+    const prepared = await prepareImageForUpload(file, "default");
+    const previewUrl = await readFileAsDataUrl(prepared.file);
     onChange("cardBackgroundImage", previewUrl);
   };
 

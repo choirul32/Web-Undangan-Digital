@@ -4,6 +4,8 @@ import { getInvitationBySlug } from "../../lib/invitations";
 import ViewTracker from "../../components/ViewTracker";
 
 export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
 
 export default async function ShortPublicInvitationPage({ params }) {
   const invitation = await getInvitationBySlug(params.slug);

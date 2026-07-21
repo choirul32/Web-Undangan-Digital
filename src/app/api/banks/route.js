@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiSession } from "../../../lib/auth";
 import { createServiceSupabaseClient } from "../../../lib/supabase/server";
+import { MAX_IMAGE_UPLOAD_BYTES } from "../../../lib/uploadValidation";
 
 const BUCKET_NAME = "template-assets";
-const MAX_LOGO_SIZE = 2 * 1024 * 1024;
+const MAX_LOGO_SIZE = MAX_IMAGE_UPLOAD_BYTES;
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp", "image/svg+xml"];
 
 function hasServiceEnv() {
@@ -47,7 +48,7 @@ function validateLogo(file) {
   }
 
   if (file.size > MAX_LOGO_SIZE) {
-    return "Ukuran logo maksimal 2MB.";
+    return "Ukuran logo maksimal 5MB.";
   }
 
   if (!ALLOWED_TYPES.includes(file.type)) {

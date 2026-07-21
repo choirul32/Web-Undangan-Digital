@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiSession } from "../../../../../lib/auth";
 import { createServiceSupabaseClient } from "../../../../../lib/supabase/server";
+import { validateImageUpload } from "../../../../../lib/uploadValidation";
 
 const BUCKET_NAME = "template-assets";
 
@@ -33,8 +34,9 @@ export async function POST(request) {
     return NextResponse.json({ error: "file is required" }, { status: 400 });
   }
 
-  if (!file.type?.startsWith("image/")) {
-    return NextResponse.json({ error: "Only image files are allowed" }, { status: 400 });
+  const validationError = validateImageUpload(file, "Ornament");
+  if (validationError) {
+    return NextResponse.json({ error: validationError }, { status: 400 });
   }
 
   if (!hasServiceEnv()) {

@@ -93,6 +93,7 @@ import TemplateCatalogGrid from "./template-admin/TemplateCatalogGrid";
 import OpeningStep from "./template-admin/OpeningStep";
 import GlobalStyleStep from "./template-admin/GlobalStyleStep";
 import useOrnamentTimelineInteractions from "../../hooks/dashboard/useOrnamentTimelineInteractions";
+import { prepareImageForUpload } from "../../lib/imageUpload";
 
 function parseHexColor(color = "") {
   const normalized = color.replace("#", "").trim();
@@ -1135,11 +1136,14 @@ function TemplateAdminPage() {
     }
 
     const assetType = field === "poster" ? "poster" : openingSequenceWidgetConfig.asset?.type || "motion";
+    const prepared = file.type?.startsWith("image/")
+      ? await prepareImageForUpload(file, field === "poster" ? "thumbnail" : "opening")
+      : { file };
     const formData = new FormData();
     formData.append("templateId", templateDraft?.id || "template");
     formData.append("assetType", assetType);
     formData.append("assetRole", field);
-    formData.append("file", file);
+    formData.append("file", prepared.file);
 
     try {
       const response = await fetch("/api/templates/opening-assets/upload", {
@@ -1160,7 +1164,7 @@ function TemplateAdminPage() {
       // Fall back to local data URL preview if storage upload is not available.
     }
 
-    const previewUrl = await readFileAsDataUrl(file);
+    const previewUrl = await readFileAsDataUrl(prepared.file);
     updateOpeningSequenceAsset(field, previewUrl);
   };
 
@@ -1169,7 +1173,8 @@ function TemplateAdminPage() {
       return;
     }
 
-    const previewUrl = await readFileAsDataUrl(file);
+    const prepared = await prepareImageForUpload(file, "opening");
+    const previewUrl = await readFileAsDataUrl(prepared.file);
     updateOpeningRevealWidget(field, previewUrl);
   };
 
@@ -1178,7 +1183,8 @@ function TemplateAdminPage() {
       return;
     }
 
-    const previewUrl = await readFileAsDataUrl(file);
+    const prepared = await prepareImageForUpload(file, "cover");
+    const previewUrl = await readFileAsDataUrl(prepared.file);
     updateTemplateSectionConfig("home", "backgroundImage", previewUrl);
   };
 
@@ -1602,18 +1608,20 @@ function TemplateAdminPage() {
       return;
     }
 
+    const prepared = await prepareImageForUpload(file, "ornament");
+
     if (
-      ["image/png", "image/webp"].includes(file.type) &&
-      file.size > ornamentMaxRasterFileSize
+      ["image/png", "image/webp"].includes(prepared.file.type) &&
+      prepared.file.size > ornamentMaxRasterFileSize
     ) {
       setUploadValidationWarning(
-        `${file.name} berukuran ${(file.size / 1024 / 1024).toFixed(2)} MB. Untuk ornament PNG/WebP, usahakan maksimal 1 MB atau pakai SVG/WebP terkompres.`,
+        `${prepared.file.name} berukuran ${(prepared.file.size / 1024 / 1024).toFixed(2)} MB. Untuk ornament PNG/WebP, usahakan maksimal 1 MB atau pakai SVG/WebP terkompres.`,
       );
     } else {
       setUploadValidationWarning("");
     }
 
-    const previewUrl = await readFileAsDataUrl(file);
+    const previewUrl = await readFileAsDataUrl(prepared.file);
     updateOrnament("src", previewUrl);
     setIsUploadingOrnament(true);
     setManagerMessage("");
@@ -1623,7 +1631,7 @@ function TemplateAdminPage() {
       formData.append("templateId", templateDraft.id);
       formData.append("section", activeDesignSection || "home");
       formData.append("ornamentId", selectedOrnament.id || "ornament");
-      formData.append("file", file);
+      formData.append("file", prepared.file);
 
       const response = await fetch("/api/templates/ornaments/upload", {
         method: "POST",
@@ -1641,7 +1649,7 @@ function TemplateAdminPage() {
       setDynamicOrnamentAssets((currentAssets) => {
         const nextAsset = {
           id: result.data.storagePath || `local-${Date.now()}`,
-          name: file.name?.replace(/\.[^.]+$/, "") || `${selectedOrnament.id || "Ornament"} Upload`,
+          name: prepared.file.name?.replace(/\.[^.]+$/, "") || `${selectedOrnament.id || "Ornament"} Upload`,
           src: assetUrl,
           storagePath: result.data.storagePath || "",
           source: result.source,
@@ -1968,7 +1976,8 @@ function TemplateAdminPage() {
       return;
     }
 
-    const previewUrl = await readFileAsDataUrl(file);
+    const prepared = await prepareImageForUpload(file, "thumbnail");
+    const previewUrl = await readFileAsDataUrl(prepared.file);
     updateTemplateDraft("image", previewUrl);
 
     if (!templateDraft?.id) {
@@ -1981,7 +1990,7 @@ function TemplateAdminPage() {
     try {
       const formData = new FormData();
       formData.append("templateId", templateDraft.id);
-      formData.append("file", file);
+      formData.append("file", prepared.file);
 
       const response = await fetch("/api/templates/thumbnail", {
         method: "POST",

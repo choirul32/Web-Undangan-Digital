@@ -7,6 +7,7 @@ import {
   Field,
   TextInput,
 } from "./FormControls";
+import { prepareImageForUpload } from "../../lib/imageUpload";
 
 export default function BankCatalogManager() {
   const [banks, setBanks] = useState([]);
@@ -41,12 +42,14 @@ export default function BankCatalogManager() {
     }
 
     setIsSaving(true);
-    setMessage("Mengunggah logo bank...");
+    setMessage("Mengoptimalkan logo bank...");
 
     try {
+      const prepared = await prepareImageForUpload(logo, "logo");
       const formData = new FormData();
       formData.append("name", name.trim());
-      formData.append("logo", logo);
+      formData.append("logo", prepared.file);
+      setMessage(prepared.message || "Mengunggah logo bank...");
       const response = await fetch("/api/banks", {
         method: "POST",
         body: formData,

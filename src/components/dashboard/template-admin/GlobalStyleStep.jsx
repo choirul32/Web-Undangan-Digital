@@ -8,6 +8,7 @@ import {
   SelectInput,
   ToggleField,
 } from "../FormControls";
+import { prepareImageForUpload } from "../../../lib/imageUpload";
 
 const spacingLabels = {
   compact: "Rapat",
@@ -175,7 +176,8 @@ export default function GlobalStyleStep({
 
   const updateCoupleCardImage = async (file) => {
     if (!file) return;
-    const previewUrl = await readFileAsDataUrl(file);
+    const prepared = await prepareImageForUpload(file, "default");
+    const previewUrl = await readFileAsDataUrl(prepared.file);
     updateTemplateSectionConfig("couple", "cardBackgroundImage", previewUrl);
   };
 
