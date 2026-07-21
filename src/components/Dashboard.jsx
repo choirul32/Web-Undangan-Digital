@@ -165,7 +165,7 @@ function HeaderPrimaryActions({ activePage, activeInvitationSlug }) {
     ? `/preview?slug=${encodeURIComponent(activeInvitationSlug)}`
     : "/preview";
   const publicUrl = hasActiveOrder
-    ? `/u/${encodeURIComponent(activeInvitationSlug)}`
+    ? `/${encodeURIComponent(activeInvitationSlug)}`
     : "";
 
   if (activePage !== "invitation-detail") {
@@ -216,7 +216,7 @@ function buildDashboardMetrics(data = {}) {
       icon: "invitations",
     },
     {
-      label: "Published",
+      label: "Tayang",
       value: data.published || 0,
       detail: "undangan aktif",
       icon: "published",
@@ -359,18 +359,12 @@ function DashboardMainContent({ activePage, metrics, activeInvitationSlug, stats
   if (activePage === "invitations") {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <div>
           <div>
             <h2 className="text-3xl font-black text-[var(--color-primary)]">Manajemen Undangan</h2>
             <p className="mt-1 text-sm font-semibold text-[var(--color-text)]/80">
-              Kelola daftar undangan digital, status publikasi, dan data klien.
+              Kelola order dari pengerjaan, peninjauan pelanggan, sampai undangan tayang.
             </p>
-          </div>
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            <button type="button" className="whitespace-nowrap rounded-full border border-[var(--color-primary)] bg-[var(--color-primary)]/10 px-4 py-1.5 text-xs font-black text-[var(--color-primary)]">Semua</button>
-            <button type="button" className="whitespace-nowrap rounded-full border border-[var(--color-accent-pale)] px-4 py-1.5 text-xs font-black text-[var(--color-text)]/75 hover:bg-[var(--color-bg)]">Draft</button>
-            <button type="button" className="whitespace-nowrap rounded-full border border-[var(--color-accent-pale)] px-4 py-1.5 text-xs font-black text-[var(--color-text)]/75 hover:bg-[var(--color-bg)]">Review</button>
-            <button type="button" className="whitespace-nowrap rounded-full border border-[var(--color-accent-pale)] px-4 py-1.5 text-xs font-black text-[var(--color-text)]/75 hover:bg-[var(--color-bg)]">Published</button>
           </div>
         </div>
         <div className="grid gap-6 lg:grid-cols-12">

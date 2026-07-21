@@ -31,25 +31,30 @@ function Icon({ name, className = "h-4 w-4" }) {
 }
 
 const statusLabels = {
-  published: "Terpublikasi",
-  archived: "Arsip",
-  review: "Review",
-  revision: "Revisi",
-  draft: "Draft",
-  inquiry: "Inquiry",
+  published: "Tayang",
+  archived: "Diarsipkan",
+  review: "Siap Ditinjau",
+  revision: "Perlu Revisi",
+  draft: "Belum Tayang",
+  inquiry: "Baru Masuk",
   waiting_payment: "Menunggu Pembayaran",
   unpaid: "Belum Bayar",
   waiting_confirmation: "Menunggu Konfirmasi",
   paid: "Lunas",
-  in_progress: "Dikerjakan",
-  approved: "Disetujui",
+  in_progress: "Sedang Dikerjakan",
+  approved: "Disetujui Klien",
   completed: "Selesai",
-  cancelled: "Batal",
+  cancelled: "Dibatalkan",
   refunded: "Refund",
 };
 
 function statusLabel(value) {
   return statusLabels[value] || value || "-";
+}
+
+function visibleWorkStatus(item) {
+  if (item?.orderStatus === "published") return "completed";
+  return item?.orderStatus || (item?.status === "review" ? "review" : "draft");
 }
 
 export function MetricCard({ label, value, detail, icon }) {
@@ -87,7 +92,7 @@ export function OverviewAlertStrip({ pendingCount = 0 }) {
       <div>
         <p className="text-xs font-black uppercase tracking-[0.08em]">Butuh Perhatian</p>
         <p className="mt-1 text-sm font-semibold">
-          Terdapat {pendingCount} undangan dalam status draft/review yang menunggu pengecekan akhir.
+          Terdapat {pendingCount} undangan yang sedang dikerjakan atau siap ditinjau.
         </p>
       </div>
     </motion.div>
@@ -166,7 +171,7 @@ export function InvitationTable({ variant = "full" }) {
       }
 
       const nextStatus = action === "publish" ? "published" : "archived";
-      const nextOrderStatus = action === "publish" ? "published" : item.orderStatus;
+      const nextOrderStatus = item.orderStatus === "published" ? "completed" : item.orderStatus;
 
       setItems((current) =>
         current.map((currentItem) =>
@@ -230,7 +235,7 @@ export function InvitationTable({ variant = "full" }) {
       return;
     }
 
-    const publicUrl = item.slug ? `${window.location.origin}/u/${item.slug}` : "";
+    const publicUrl = item.slug ? `${window.location.origin}/${item.slug}` : "";
     let groomName = "Mempelai Pria";
     let brideName = "Mempelai Wanita";
 
@@ -285,7 +290,7 @@ export function InvitationTable({ variant = "full" }) {
               {!isInvitationsVariant ? <th className="px-6 py-4">Tanggal Acara</th> : <th className="px-6 py-4">Tanggal Acara</th>}
               {isInvitationsVariant ? <th className="px-6 py-4">Payment</th> : null}
               {isInvitationsVariant ? <th className="px-6 py-4">Update Terakhir</th> : null}
-              <th className="px-6 py-4">Status</th>
+              <th className="px-6 py-4">Tahap</th>
               {!isOverviewVariant && !isInvitationsVariant ? (
                 <>
                   <th className="px-6 py-4">Pemesan</th>
@@ -362,9 +367,18 @@ export function InvitationTable({ variant = "full" }) {
                   </td>
                 ) : null}
                 <td className="px-6 py-4">
-                  <span className={`rounded-full px-3 py-1.5 text-xs font-black ${statusStyles[item.orderStatus] || statusStyles[item.status] || statusStyles.draft}`}>
-                    {statusLabel(item.orderStatus || item.status)}
+                  <span className={`rounded-full px-3 py-1.5 text-xs font-black ${statusStyles[visibleWorkStatus(item)] || statusStyles.draft}`}>
+                    {statusLabel(visibleWorkStatus(item))}
                   </span>
+                  <p className={`mt-2 text-xs font-semibold ${
+                    item.status === "published" ? "text-emerald-700" : "text-[var(--dash-muted)]"
+                  }`}>
+                    {item.status === "published"
+                      ? "Link sedang tayang"
+                      : item.status === "archived"
+                        ? "Link diarsipkan"
+                        : "Link belum tayang"}
+                  </p>
                 </td>
                  {!isOverviewVariant && !isInvitationsVariant ? (
                   <>
@@ -433,17 +447,17 @@ export function InvitationTable({ variant = "full" }) {
                       <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--dash-border)] text-[var(--dash-muted)]">
                         <Icon name="archive" className="h-4 w-4" />
                       </span>
-                    ) : (
+                    ) : String(item.status).toLowerCase() === "review" ? (
                       <DashboardButton
                         type="button"
                         size="sm"
                         onClick={() => updateInvitationStatus(item, "publish")}
                         className="h-8 w-8 !p-0"
-                        title="Publikasikan"
+                        title="Tayangkan undangan"
                       >
                         <Icon name="publish" className="h-4 w-4" />
                       </DashboardButton>
-                    )}
+                    ) : null}
                     {isInvitationsVariant ? (
                       <DashboardButton
                         type="button"

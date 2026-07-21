@@ -93,7 +93,7 @@ export default function GuestManager({ invitationSlug = "" }) {
   };
 
   const getGuestLink = (guest) =>
-    `${window.location.origin}/u/${invitationSlug}/to/${guest.slug}`;
+    `${window.location.origin}/${invitationSlug}/to/${guest.slug}`;
 
   const normalizeWhatsappNumber = (phone = "") => {
     const digits = String(phone).replace(/\D/g, "");
@@ -416,7 +416,7 @@ export default function GuestManager({ invitationSlug = "" }) {
           Link personal tamu
         </h2>
         <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
-          Buat link custom seperti /u/{invitationSlug}/to/bapak-andi. Broadcast tetap manual via WhatsApp.
+          Buat link custom seperti /{invitationSlug}/to/bapak-andi. Broadcast tetap manual via WhatsApp.
         </p>
       </div>
 
@@ -598,7 +598,7 @@ export default function GuestManager({ invitationSlug = "" }) {
                   </span>
                 </td>
                 <td className="px-5 py-4 text-sm font-medium text-[var(--dash-muted)]">
-                  /u/{invitationSlug}/to/{guest.slug}
+                  /{invitationSlug}/to/{guest.slug}
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex flex-wrap gap-2">

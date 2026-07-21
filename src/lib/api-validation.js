@@ -29,7 +29,7 @@ export function validateRsvpPayload(payload = {}) {
   const guestSlug = cleanSlug(payload.guestSlug);
   const guestName = cleanString(payload.guestName, { max: 120 });
   const attendance = cleanString(payload.attendance, { max: 20 });
-  const message = cleanString(payload.message, { max: 500 });
+  const message = cleanString(payload.message, { max: 650 });
   const pax = cleanPax(payload.pax);
   const errors = [];
 

@@ -93,13 +93,14 @@ export default function UniversalTemplate({
     return () => media.removeEventListener("change", updateViewportState);
   }, []);
 
-  const startMusic = ({ fadeIn = true, attempt = 0 } = {}) => {
+  const startMusic = async ({ fadeIn = true, attempt = 0 } = {}) => {
     const audio = musicRef.current;
     if (!audio) {
       if (attempt < 8 && typeof window !== "undefined") {
-        window.setTimeout(() => startMusic({ fadeIn, attempt: attempt + 1 }), 80);
+        await new Promise((resolve) => window.setTimeout(resolve, 80));
+        return startMusic({ fadeIn, attempt: attempt + 1 });
       }
-      return;
+      return false;
     }
 
     if (musicFadeRef.current) {
@@ -109,17 +110,18 @@ export default function UniversalTemplate({
 
     const targetVolume = 1;
     if (fadeIn) audio.volume = 0;
+    audio.muted = false;
 
-    const result = audio.play();
-    if (result?.catch) {
-      result.catch(() => {
-        audio.volume = targetVolume;
-      });
+    try {
+      await audio.play();
+    } catch {
+      audio.volume = targetVolume;
+      return false;
     }
 
     if (!fadeIn) {
       audio.volume = targetVolume;
-      return;
+      return true;
     }
 
     const step = 0.06;
@@ -139,6 +141,8 @@ export default function UniversalTemplate({
         musicFadeRef.current = null;
       }
     }, 90);
+
+    return true;
   };
 
   const openInvitation = () => {
@@ -160,37 +164,6 @@ export default function UniversalTemplate({
       document.documentElement.style.overflow = previousHtmlOverflow;
     };
   }, [isRevealOpen, openingOverlayConfig.enabled]);
-
-  useEffect(() => {
-    if (openingOverlayConfig.enabled) return;
-    if (!musicConfig.enabled && !invitation.features?.music) return;
-
-    let hasPlayed = false;
-    const handleInteraction = () => {
-      if (hasPlayed) return;
-      hasPlayed = true;
-      startMusic({ fadeIn: true });
-      window.removeEventListener("scroll", handleInteraction);
-      window.removeEventListener("wheel", handleInteraction);
-      window.removeEventListener("touchstart", handleInteraction);
-      window.removeEventListener("pointerdown", handleInteraction);
-      window.removeEventListener("keydown", handleInteraction);
-    };
-
-    window.addEventListener("scroll", handleInteraction, { once: true, passive: true });
-    window.addEventListener("wheel", handleInteraction, { once: true, passive: true });
-    window.addEventListener("touchstart", handleInteraction, { once: true, passive: true });
-    window.addEventListener("pointerdown", handleInteraction, { once: true, passive: true });
-    window.addEventListener("keydown", handleInteraction, { once: true });
-
-    return () => {
-      window.removeEventListener("scroll", handleInteraction);
-      window.removeEventListener("wheel", handleInteraction);
-      window.removeEventListener("touchstart", handleInteraction);
-      window.removeEventListener("pointerdown", handleInteraction);
-      window.removeEventListener("keydown", handleInteraction);
-    };
-  }, [openingOverlayConfig.enabled, musicConfig.enabled, invitation.features?.music]);
 
   useEffect(() => () => {
     if (musicFadeRef.current) window.clearInterval(musicFadeRef.current);
@@ -253,6 +226,7 @@ export default function UniversalTemplate({
           musicTitle={invitation.musicTitle || "Wedding Music"}
           audioRef={musicRef}
           config={musicConfig}
+          autoPlayOnInteraction={!openingOverlayConfig.enabled || isRevealOpen}
         />
       ) : null}
     </main>

@@ -1182,7 +1182,7 @@ export default function ContentManagers({ invitationSlug = "", section = "all" }
           Acara, Cerita, dan Amplop Digital
         </h2>
         <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
-          Semua panel memakai order aktif /u/{invitationSlug}. Pratinjau publik akan berubah setelah data tersimpan.
+          Semua panel memakai order aktif /{invitationSlug}. Pratinjau publik akan berubah setelah data tersimpan.
         </p>
       </section>
       <MultiEventManager invitationSlug={invitationSlug} />

@@ -144,7 +144,7 @@ export default function AnalyticsManager({ invitationSlug = "" }) {
             Statistik undangan
           </p>
           <h2 className="mt-1 text-2xl font-semibold text-[var(--dash-ink)]">
-            /u/{invitationSlug}
+            /{invitationSlug}
           </h2>
         </div>
         <div className="flex gap-1.5 rounded-lg border border-[var(--dash-border)] p-1">

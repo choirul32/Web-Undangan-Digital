@@ -85,6 +85,7 @@ export default function MusicPlayer({
   audioRef,
   config = {},
   onPlayStateChange,
+  autoPlayOnInteraction = false,
 }) {
   const internalRef = useRef(null);
   const ref = audioRef || internalRef;
@@ -107,18 +108,62 @@ export default function MusicPlayer({
 
   const audioSrc = musicUrl || "/assets/musics/Muara reff.mp3";
 
+  const playAudio = useCallback(async () => {
+    const audio = ref.current;
+    if (!audio) return false;
+
+    audio.muted = false;
+    audio.volume = audio.volume || 1;
+    try {
+      await audio.play();
+      return true;
+    } catch {
+      return false;
+    }
+  }, [ref]);
+
+  const unlockAudio = useCallback(async () => {
+    const audio = ref.current;
+    if (!audio) return false;
+
+    if (!audio.paused) {
+      audio.muted = false;
+      audio.volume = 1;
+      setIsPlaying(true);
+      onPlayStateChange?.(true);
+      return true;
+    }
+
+    const didPlay = await playAudio();
+    if (didPlay) {
+      return true;
+    }
+
+    try {
+      audio.muted = true;
+      audio.volume = 0;
+      await audio.play();
+      audio.muted = false;
+      audio.volume = 1;
+      setIsPlaying(true);
+      onPlayStateChange?.(true);
+      return true;
+    } catch {
+      audio.muted = false;
+      audio.volume = 1;
+      return false;
+    }
+  }, [onPlayStateChange, playAudio, ref]);
+
   const togglePlay = useCallback(() => {
     if (!ref.current) return;
 
     if (isPlaying) {
       ref.current.pause();
     } else {
-      const result = ref.current.play();
-      if (result?.catch) {
-        result.catch(() => {});
-      }
+      playAudio();
     }
-  }, [isPlaying, ref]);
+  }, [isPlaying, playAudio, ref]);
 
   useEffect(() => {
     const audio = ref.current;
@@ -171,6 +216,89 @@ export default function MusicPlayer({
     };
   }, [ref, musicConfig.pulseSync, musicConfig.autoLoop, onPlayStateChange]);
 
+  useEffect(() => {
+    if (!autoPlayOnInteraction || musicConfig.enabled === false || isPlaying) {
+      return undefined;
+    }
+
+    let isTrying = false;
+    let retryTimer = null;
+    const interactionEvents = [
+      "click",
+      "mousedown",
+      "pointerdown",
+      "touchstart",
+      "touchend",
+      "touchmove",
+      "wheel",
+      "scroll",
+      "keydown",
+    ];
+
+    const clearRetry = () => {
+      if (retryTimer) {
+        window.clearInterval(retryTimer);
+        retryTimer = null;
+      }
+    };
+
+    const cleanup = () => {
+      clearRetry();
+      const interactionTargets = [
+        window,
+        document,
+        document.documentElement,
+        document.body,
+      ].filter(Boolean);
+
+      interactionTargets.forEach((target) => {
+        interactionEvents.forEach((eventName) => {
+          target.removeEventListener(eventName, handleInteraction, true);
+        });
+      });
+    };
+
+    const attemptPlay = async () => {
+      if (isTrying) return;
+      isTrying = true;
+      const didPlay = await unlockAudio();
+      isTrying = false;
+      if (didPlay) cleanup();
+    };
+
+    function handleInteraction() {
+      attemptPlay();
+      if (!retryTimer && window.scrollY > 0) {
+        let attempts = 0;
+        retryTimer = window.setInterval(() => {
+          attempts += 1;
+          attemptPlay();
+          if (attempts >= 12 || ref.current?.paused === false) {
+            clearRetry();
+          }
+        }, 350);
+      }
+    }
+
+    const interactionTargets = [
+      window,
+      document,
+      document.documentElement,
+      document.body,
+    ].filter(Boolean);
+
+    interactionTargets.forEach((target) => {
+      interactionEvents.forEach((eventName) => {
+        target.addEventListener(eventName, handleInteraction, {
+          capture: true,
+          passive: true,
+        });
+      });
+    });
+
+    return cleanup;
+  }, [autoPlayOnInteraction, isPlaying, musicConfig.enabled, ref, unlockAudio]);
+
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   // Don't render if explicitly disabled
@@ -188,7 +316,7 @@ export default function MusicPlayer({
   if (musicConfig.variant === "minimal") {
     return (
       <>
-        <audio ref={ref} preload="metadata">
+        <audio ref={ref} preload="metadata" playsInline>
           <source src={audioSrc} />
         </audio>
         <motion.button
@@ -216,7 +344,7 @@ export default function MusicPlayer({
   if (musicConfig.variant === "bar") {
     return (
       <>
-        <audio ref={ref} preload="metadata">
+        <audio ref={ref} preload="metadata" playsInline>
           <source src={audioSrc} />
         </audio>
         <motion.div
@@ -267,7 +395,7 @@ export default function MusicPlayer({
   // Default: floating variant
   return (
     <>
-      <audio ref={ref} preload="metadata">
+      <audio ref={ref} preload="metadata" playsInline>
         <source src={audioSrc} />
       </audio>
       <motion.div

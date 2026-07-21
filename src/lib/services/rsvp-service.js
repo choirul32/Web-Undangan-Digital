@@ -34,6 +34,7 @@ export async function submitRsvp(supabase, payload) {
     attendance: payload.attendance,
     pax: payload.pax,
     message: payload.message,
+    hidden: false,
   };
 
   let existingRsvpId = null;

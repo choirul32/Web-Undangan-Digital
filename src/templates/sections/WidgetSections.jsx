@@ -72,7 +72,7 @@ export function RsvpSection({ designConfig, invitation, personalizedGuestName, g
           Kehadiran & Doa
         </p>
         <h2 className="template-section-title-heading mt-3 font-serif text-4xl font-black leading-tight text-[var(--color-heading)] sm:text-5xl">
-          Doa & Ucapan
+          Konfirmasi Kehadiran
         </h2>
         <p className="mx-auto mt-4 max-w-xl text-base font-semibold leading-7 text-[var(--color-text)]/75">
           Silakan konfirmasi kehadiran dan tuliskan doa terbaik untuk kedua mempelai.

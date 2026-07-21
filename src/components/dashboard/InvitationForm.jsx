@@ -19,24 +19,23 @@ const actionButtonClass =
 const primaryButtonClass =
   "rounded-md bg-[var(--dash-ink)] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--dash-dark)]";
 
-const lifecycleOptions = ["draft", "review", "published", "archived"];
 const lifecycleLabels = {
-  draft: "Draft",
-  review: "Review",
-  published: "Published",
-  archived: "Arsip",
+  draft: "Belum Tayang",
+  review: "Siap Ditinjau",
+  published: "Tayang",
+  archived: "Diarsipkan",
 };
 const orderStatusLabels = {
-  inquiry: "Inquiry",
+  inquiry: "Baru Masuk",
   waiting_payment: "Menunggu Pembayaran",
-  paid: "Dibayar",
-  in_progress: "Dikerjakan",
-  review: "Review",
-  revision: "Revisi",
-  approved: "Disetujui",
-  published: "Published",
+  paid: "Pembayaran Diterima",
+  in_progress: "Sedang Dikerjakan",
+  review: "Siap Ditinjau",
+  revision: "Perlu Revisi",
+  approved: "Disetujui Klien",
+  published: "Tayang",
   completed: "Selesai",
-  cancelled: "Batal",
+  cancelled: "Dibatalkan",
 };
 const paymentStatusLabels = {
   unpaid: "Belum Bayar",
@@ -49,15 +48,24 @@ function statusLabel(labels, value) {
   return labels[value] || value || "-";
 }
 
+function publicationLabel(status) {
+  if (status === "published") return "Tayang";
+  if (status === "archived") return "Diarsipkan";
+  return "Belum Tayang";
+}
+
 function InvitationSaveBar({
   hasUnsavedChanges,
+  isLocked,
   isSaving,
   saveMessage,
   onPreview,
   onSaveDraft,
   onSave,
 }) {
-  const statusText = isSaving
+  const statusText = isLocked
+    ? "Memuat data undangan..."
+    : isSaving
     ? "Menyimpan perubahan..."
     : hasUnsavedChanges
       ? "Ada perubahan belum disimpan."
@@ -71,6 +79,8 @@ function InvitationSaveBar({
             className={`h-2.5 w-2.5 rounded-full ${
               isSaving
                 ? "bg-amber-500"
+                : isLocked
+                ? "bg-slate-400"
                 : hasUnsavedChanges
                   ? "bg-red-500"
                   : "bg-emerald-500"
@@ -83,7 +93,7 @@ function InvitationSaveBar({
             type="button"
             onClick={onPreview}
             variant="secondary"
-            disabled={!onPreview}
+            disabled={!onPreview || isLocked}
           >
             Pratinjau
           </DashboardButton>
@@ -92,10 +102,11 @@ function InvitationSaveBar({
             onClick={onSaveDraft}
             variant="secondary"
             loading={isSaving}
+            disabled={isLocked}
           >
             {isSaving ? "Menyimpan..." : "Simpan Draft"}
           </DashboardButton>
-          <DashboardButton type="button" onClick={onSave} loading={isSaving}>
+          <DashboardButton type="button" onClick={onSave} loading={isSaving} disabled={isLocked}>
             {isSaving ? "Menyimpan..." : "Simpan"}
           </DashboardButton>
         </div>
@@ -127,7 +138,10 @@ function invitationToForm(invitation, templateOptions = []) {
       invitation?.order?.customerName || initialInvitationForm.customerName,
     customerWhatsapp:
       invitation?.order?.customerWhatsapp || initialInvitationForm.customerWhatsapp,
-    orderStatus: invitation?.order?.status || initialInvitationForm.orderStatus,
+    orderStatus:
+      invitation?.order?.status === "published"
+        ? "completed"
+        : invitation?.order?.status || initialInvitationForm.orderStatus,
     paymentStatus:
       invitation?.order?.paymentStatus || initialInvitationForm.paymentStatus,
     orderAmount:
@@ -208,6 +222,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
   const [activeStep, setActiveStep] = useState(0);
   const [templateOptions, setTemplateOptions] = useState([]);
   const [isLoadingTemplates, setIsLoadingTemplates] = useState(true);
+  const [isLoadingInvitation, setIsLoadingInvitation] = useState(Boolean(invitationSlug));
   const [form, setForm] = useState({
     ...initialInvitationForm,
     slug: invitationSlug || initialInvitationForm.slug,
@@ -216,8 +231,11 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [publishErrors, setPublishErrors] = useState([]);
+  const [loadError, setLoadError] = useState("");
+  const isHydratingInvitation = Boolean(invitationSlug) && isLoadingInvitation;
+  const isFormLocked = isHydratingInvitation;
 
-  const publicPath = `/u/${form.slug || "slug-order"}`;
+  const publicPath = `/${form.slug || "slug-order"}`;
   const publicUrl =
     typeof window !== "undefined" && form.slug
       ? `${window.location.origin}${publicPath}`
@@ -236,6 +254,8 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
     setSaveMessage("");
     setHasUnsavedChanges(false);
     setPublishErrors([]);
+    setLoadError("");
+    setIsLoadingInvitation(false);
   }, [invitationSlug]);
 
   useEffect(() => {
@@ -291,32 +311,71 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
   }, []);
 
   useEffect(() => {
+    if (!templateOptions.length) {
+      return;
+    }
+
+    setForm((current) => {
+      const selected = templateOptions.find((template) => template.id === current.templateId);
+
+      if (!selected || selected.name === current.template) {
+        return current;
+      }
+
+      return { ...current, template: selected.name };
+    });
+  }, [form.templateId, form.template, templateOptions]);
+
+  useEffect(() => {
     if (!invitationSlug) {
       return;
     }
 
     let isMounted = true;
+    setIsLoadingInvitation(true);
+    setLoadError("");
+    setSaveMessage("Memuat data undangan...");
 
     fetch(`/api/invitations/${encodeURIComponent(invitationSlug)}`)
-      .then((response) => response.json())
+      .then(async (response) => {
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || "Gagal memuat data undangan.");
+        }
+
+        return result;
+      })
       .then((result) => {
         if (isMounted && result.data) {
           setForm(invitationToForm(result.data, templateOptions));
           setHasUnsavedChanges(false);
+          setSaveMessage("Data siap diedit.");
         }
       })
-      .catch(() => {
+      .catch((error) => {
         if (isMounted) {
           setForm((current) => ({ ...current, slug: invitationSlug }));
+          setLoadError(error.message || "Gagal memuat data undangan.");
+          setSaveMessage("Data undangan gagal dimuat. Jangan simpan sebelum refresh berhasil.");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoadingInvitation(false);
         }
       });
 
     return () => {
       isMounted = false;
     };
-  }, [invitationSlug, templateOptions]);
+  }, [invitationSlug]);
 
   const updateForm = (field, value) => {
+    if (isFormLocked) {
+      return;
+    }
+
     setForm((current) => ({ ...current, [field]: value }));
     setPublishErrors([]);
     setHasUnsavedChanges(true);
@@ -349,7 +408,10 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
   };
 
   const saveDraft = async (overrides = {}) => {
-    if (isSavingDraft) {
+    if (isSavingDraft || isFormLocked) {
+      if (isFormLocked) {
+        setSaveMessage("Tunggu data undangan selesai dimuat sebelum menyimpan.");
+      }
       return null;
     }
 
@@ -394,18 +456,28 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
   };
 
   const markReview = async () => {
-    setSaveMessage("Menandai order sebagai review...");
+    if (isFormLocked) {
+      setSaveMessage("Tunggu data undangan selesai dimuat sebelum menyiapkan pratinjau.");
+      return;
+    }
+
+    setSaveMessage("Menyiapkan undangan untuk ditinjau...");
     const saved = await saveDraft({ status: "review", orderStatus: "review" });
 
     if (saved) {
       setForm((current) => ({ ...current, status: "review", orderStatus: "review" }));
       setHasUnsavedChanges(false);
-      setSaveMessage("Order ditandai sebagai review. Kirim preview ke customer via WhatsApp.");
+      setSaveMessage("Undangan siap ditinjau. Kirim pratinjau ke pelanggan via WhatsApp.");
       redirectToActiveOrder(saved);
     }
   };
 
   const openWaNotification = (type = "review") => {
+    if (isFormLocked) {
+      setSaveMessage("Tunggu data undangan selesai dimuat sebelum mengirim notifikasi.");
+      return;
+    }
+
     const wa = form.customerWhatsapp || "";
     if (!wa) {
       setSaveMessage("Nomor WhatsApp customer belum diisi di Step 0.");
@@ -413,7 +485,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
     }
 
     const slug = form.slug || invitationSlug;
-    const publicUrl = slug ? `${window.location.origin}/u/${slug}` : "(belum ada URL)";
+    const publicUrl = slug ? `${window.location.origin}/${slug}` : "(belum ada URL)";
     const groomName = form.groomNickname || form.groomName || "Mempelai Pria";
     const brideName = form.brideNickname || form.brideName || "Mempelai Wanita";
     const customerName = form.customerName || "Bapak/Ibu";
@@ -431,6 +503,11 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
   };
 
   const publishInvitation = async () => {
+    if (isFormLocked) {
+      setSaveMessage("Tunggu data undangan selesai dimuat sebelum publish.");
+      return;
+    }
+
     const slug = form.slug || invitationSlug;
 
     if (!slug) {
@@ -465,7 +542,10 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
         return;
       }
 
-      setForm((current) => ({ ...current, status: "published" }));
+      setForm((current) => ({
+        ...current,
+        status: "published",
+      }));
       setHasUnsavedChanges(false);
       setPublishErrors([]);
       setSaveMessage(
@@ -481,6 +561,11 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
   };
 
   const archiveInvitation = async () => {
+    if (isFormLocked) {
+      setSaveMessage("Tunggu data undangan selesai dimuat sebelum arsip.");
+      return;
+    }
+
     const slug = form.slug || invitationSlug;
 
     if (!slug) {
@@ -517,6 +602,11 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
   };
 
   const copyPublicLink = async () => {
+    if (isFormLocked) {
+      setSaveMessage("Tunggu data undangan selesai dimuat sebelum copy link.");
+      return;
+    }
+
     if (!form.slug) {
       setSaveMessage("Isi slug publik dulu sebelum copy link.");
       return;
@@ -531,6 +621,11 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
   };
 
   const openInvitationPreview = () => {
+    if (isFormLocked) {
+      setSaveMessage("Tunggu data undangan selesai dimuat sebelum membuka pratinjau.");
+      return;
+    }
+
     if (!form.slug) {
       setSaveMessage("Isi slug publik dulu sebelum membuka pratinjau.");
       return;
@@ -559,33 +654,20 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
               placeholder="62812..."
             />
           </Field>
-          <Field label="Status Order">
+          <Field label="Tahap Pengerjaan">
             <SelectInput
               value={form.orderStatus}
               onChange={(event) => updateForm("orderStatus", event.target.value)}
             >
-              <option value="inquiry">Inquiry</option>
+              <option value="inquiry">Baru Masuk</option>
               <option value="waiting_payment">Menunggu Pembayaran</option>
-              <option value="paid">Dibayar</option>
-              <option value="in_progress">Dikerjakan</option>
-              <option value="review">Review</option>
-              <option value="revision">Revisi</option>
-              <option value="approved">Disetujui</option>
-              <option value="published">Published</option>
+              <option value="paid">Pembayaran Diterima</option>
+              <option value="in_progress">Sedang Dikerjakan</option>
+              <option value="review">Siap Ditinjau</option>
+              <option value="revision">Perlu Revisi</option>
+              <option value="approved">Disetujui Klien</option>
               <option value="completed">Selesai</option>
-              <option value="cancelled">Batal</option>
-            </SelectInput>
-          </Field>
-          <Field label="Lifecycle Undangan">
-            <SelectInput
-              value={form.status || "draft"}
-              onChange={(event) => updateForm("status", event.target.value)}
-            >
-              {lifecycleOptions.map((status) => (
-                <option key={status} value={status}>
-                  {statusLabel(lifecycleLabels, status)}
-                </option>
-              ))}
+              <option value="cancelled">Dibatalkan</option>
             </SelectInput>
           </Field>
           <Field label="Status Pembayaran">
@@ -873,27 +955,30 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
         </div>
         <div className="rounded-[14px] bg-[var(--dash-ink)] p-5 text-white">
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-white/60">
-            Path Publik
+            Link Undangan
           </p>
           <p className="mt-3 break-all text-lg font-semibold">{publicPath}</p>
           <p className="mt-2 text-sm font-medium text-white/68">
-            Status: {statusLabel(lifecycleLabels, form.status || "draft")}
+            Status tayang: {statusLabel(lifecycleLabels, form.status || "draft")}
           </p>
-	          <button
-	            type="button"
-	            onClick={publishInvitation}
-	            className="mt-5 w-full rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-[var(--dash-ink)] hover:bg-[var(--dash-fog)]"
-	          >
-	            Publikasikan
-	          </button>
+	          {form.status !== "published" && form.status !== "archived" ? (
+	            <button
+	              type="button"
+	              onClick={publishInvitation}
+	              disabled={isFormLocked || isSavingDraft}
+	              className="mt-5 w-full rounded-md bg-white px-4 py-2.5 text-sm font-semibold text-[var(--dash-ink)] hover:bg-[var(--dash-fog)] disabled:cursor-not-allowed disabled:opacity-60"
+	            >
+	              Simpan & Tayangkan
+	            </button>
+	          ) : null}
 	          <div className="mt-3 grid grid-cols-2 gap-2">
 	            <a
 	              href={form.slug ? publicPath : undefined}
 	              target="_blank"
 	              rel="noreferrer"
-	              aria-disabled={!form.slug}
+	              aria-disabled={!form.slug || isFormLocked}
 	              className={`rounded-md border border-white/18 px-4 py-2.5 text-center text-sm font-semibold ${
-	                form.slug
+	                form.slug && !isFormLocked
 	                  ? "bg-white/10 text-white hover:bg-white/16"
 	                  : "pointer-events-none bg-white/5 text-white/35"
 	              }`}
@@ -903,7 +988,8 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
 	            <button
 	              type="button"
 	              onClick={copyPublicLink}
-	              className="rounded-md border border-white/18 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/16"
+	              disabled={isFormLocked}
+	              className="rounded-md border border-white/18 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/16 disabled:cursor-not-allowed disabled:opacity-50"
 	            >
 	              Copy Link
 	            </button>
@@ -912,7 +998,8 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
             <button
               type="button"
               onClick={archiveInvitation}
-              className="mt-3 w-full rounded-md border border-white/18 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/16"
+              disabled={isFormLocked || isSavingDraft}
+              className="mt-3 w-full rounded-md border border-white/18 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white hover:bg-white/16 disabled:cursor-not-allowed disabled:opacity-50"
             >
               Arsipkan
             </button>
@@ -921,7 +1008,8 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
             <button
               type="button"
               onClick={() => openWaNotification(form.status)}
-              className="mt-3 w-full rounded-md bg-emerald-600 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-emerald-700 border-none outline-none"
+              disabled={isFormLocked}
+              className="mt-3 w-full rounded-md bg-emerald-600 px-4 py-2.5 text-center text-sm font-semibold text-white hover:bg-emerald-700 border-none outline-none disabled:cursor-not-allowed disabled:opacity-50"
             >
               Kirim Notifikasi WA
             </button>
@@ -951,13 +1039,17 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
           </div>
           <div className="flex flex-wrap gap-2">
             <span className="rounded-md border border-[var(--dash-border)] bg-[var(--dash-fog)] px-3 py-2 text-xs font-semibold text-[var(--dash-muted)]">
-              Order: {statusLabel(orderStatusLabels, form.orderStatus)}
+              Tahap: {statusLabel(orderStatusLabels, form.orderStatus)}
             </span>
             <span className="rounded-md border border-[var(--dash-border)] bg-[var(--dash-fog)] px-3 py-2 text-xs font-semibold text-[var(--dash-muted)]">
               Pembayaran: {statusLabel(paymentStatusLabels, form.paymentStatus)}
             </span>
-            <span className="rounded-md border border-[var(--dash-border)] bg-[var(--dash-fog)] px-3 py-2 text-xs font-semibold text-[var(--dash-muted)]">
-              Status: {statusLabel(lifecycleLabels, form.status || "draft")}
+            <span className={`rounded-md border px-3 py-2 text-xs font-semibold ${
+              form.status === "published"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+                : "border-[var(--dash-border)] bg-[var(--dash-fog)] text-[var(--dash-muted)]"
+            }`}>
+              Publikasi: {publicationLabel(form.status)}
             </span>
             {form.viewCount !== undefined ? (
               <span className="rounded-md border border-[var(--dash-border)] bg-[var(--dash-fog)] px-3 py-2 text-xs font-semibold text-[var(--dash-muted)]">
@@ -972,29 +1064,52 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
       <div className="sticky top-[81px] z-20 border-b border-[var(--dash-border)] bg-[var(--dash-canvas)]/95 px-5 py-3 backdrop-blur-xl">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={markReview}
-              disabled={isSavingDraft}
-              className={`${actionButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
-            >
-              Tandai Review
-            </button>
+            {form.status !== "published" && form.status !== "archived" ? (
+              <button
+                type="button"
+                onClick={publishInvitation}
+                disabled={isSavingDraft || isFormLocked}
+                className={`${primaryButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                Simpan & Tayangkan
+              </button>
+            ) : (
+              <span className="inline-flex items-center rounded-md bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">
+                {form.status === "published" ? "Undangan sedang tayang" : "Undangan diarsipkan"}
+              </span>
+            )}
+            {form.status !== "review" && form.status !== "published" && form.status !== "archived" ? (
+              <button
+                type="button"
+                onClick={markReview}
+                disabled={isSavingDraft || isFormLocked}
+                className={`${actionButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                Siapkan Pratinjau Pelanggan
+              </button>
+            ) : null}
             {(form.status === "review" || form.status === "published") && (
               <button
                 type="button"
                 onClick={() => openWaNotification(form.status)}
-                className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100"
+                disabled={isFormLocked}
+                className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700 transition-colors hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 Kirim WA
               </button>
             )}
           </div>
           <p className="text-sm font-semibold text-[var(--dash-muted)]">
-            {hasUnsavedChanges ? "Preview berubah, data belum disimpan." : saveMessage || "Data siap diedit."}
+            {isFormLocked ? "Memuat data undangan..." : hasUnsavedChanges ? "Preview berubah, data belum disimpan." : saveMessage || "Data siap diedit."}
           </p>
         </div>
       </div>
+
+      {loadError ? (
+        <div className="border-b border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-700">
+          {loadError}
+        </div>
+      ) : null}
 
       <div className="border-b border-[var(--dash-border)] bg-[var(--dash-fog)]/35 px-5 py-4">
         <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--dash-muted)]">
@@ -1005,6 +1120,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
             <button
               key={step}
               type="button"
+              disabled={isFormLocked}
               onClick={() => setActiveStep(index)}
               className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
                 activeStep === index
@@ -1018,7 +1134,22 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
         </div>
       </div>
 
-      <div className="p-5">{renderStep()}</div>
+      <div className="relative">
+        <fieldset disabled={isFormLocked} className={isFormLocked ? "pointer-events-none opacity-55" : ""}>
+          <div className="p-5">{renderStep()}</div>
+        </fieldset>
+        {isFormLocked ? (
+          <div className="absolute inset-0 z-10 flex items-start justify-center bg-white/55 px-5 py-10 backdrop-blur-[1px]">
+            <div className="flex items-center gap-3 rounded-lg border border-[var(--dash-border)] bg-white px-4 py-3 text-sm font-semibold text-[var(--dash-ink)] shadow-sm">
+              <span
+                aria-hidden="true"
+                className="h-4 w-4 animate-spin rounded-full border-2 border-[var(--dash-ink)] border-r-transparent"
+              />
+              Memuat data undangan...
+            </div>
+          </div>
+        ) : null}
+      </div>
 
       {publishErrors.length > 0 ? (
         <div className="border-t border-[var(--dash-border)] bg-[var(--dash-fog)] px-5 py-5">
@@ -1041,7 +1172,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
       <div className="flex items-center justify-between gap-3 border-t border-[var(--dash-border)] px-5 py-4">
         <button
           type="button"
-          disabled={activeStep === 0}
+          disabled={activeStep === 0 || isFormLocked}
           onClick={() => setActiveStep((current) => Math.max(0, current - 1))}
           className="rounded-md border border-[var(--dash-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--dash-muted)] transition-colors hover:bg-[var(--dash-fog)] disabled:cursor-not-allowed disabled:opacity-40"
         >
@@ -1051,10 +1182,11 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
           {activeStep < formSteps.length - 1 ? (
             <button
               type="button"
+              disabled={isFormLocked}
               onClick={() =>
                 setActiveStep((current) => Math.min(formSteps.length - 1, current + 1))
               }
-              className={primaryButtonClass}
+              className={`${primaryButtonClass} disabled:cursor-not-allowed disabled:opacity-60`}
             >
               Lanjut
             </button>
@@ -1064,6 +1196,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
 
       <InvitationSaveBar
         hasUnsavedChanges={hasUnsavedChanges}
+        isLocked={isFormLocked}
         isSaving={isSavingDraft}
         saveMessage={saveMessage}
         onPreview={openInvitationPreview}

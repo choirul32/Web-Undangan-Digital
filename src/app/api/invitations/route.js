@@ -82,6 +82,24 @@ export async function POST(request) {
   };
   const originalSlug = payload.originalSlug || "";
 
+  if (originalSlug) {
+    const { data: currentInvitation, error: currentInvitationError } = await supabase
+      .from("invitations")
+      .select("status")
+      .eq("slug", originalSlug)
+      .maybeSingle();
+
+    if (currentInvitationError) {
+      return NextResponse.json({ error: currentInvitationError.message }, { status: 500 });
+    }
+
+    // Editing content or an operational stage must not silently unpublish a link.
+    // Publication lifecycle changes only through the dedicated PATCH actions.
+    if (["published", "archived"].includes(currentInvitation?.status)) {
+      invitationRow.status = currentInvitation.status;
+    }
+  }
+
   if (originalSlug && originalSlug !== payload.slug) {
     const { data: existingSlug, error: existingSlugError } = await supabase
       .from("invitations")

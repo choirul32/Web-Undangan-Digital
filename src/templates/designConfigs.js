@@ -1,4 +1,11 @@
-export const defaultDesignConfigs = {};
+import { defaultTemplateMetadata } from "../data/templateAdminDefaults";
+
+export const defaultDesignConfigs = Object.fromEntries(
+  defaultTemplateMetadata.map((template) => [
+    template.id,
+    template.designConfig || {},
+  ]),
+);
 
 const emptyDesignConfig = {
   canvas: {},
@@ -23,6 +30,36 @@ export function normalizeDesignConfig(config = {}) {
   };
 }
 
+function mergeNestedConfigGroup(baseGroup = {}, overrideGroup = {}) {
+  const keys = new Set([
+    ...Object.keys(baseGroup || {}),
+    ...Object.keys(overrideGroup || {}),
+  ]);
+
+  return [...keys].reduce((merged, key) => {
+    const baseValue = baseGroup?.[key];
+    const overrideValue = overrideGroup?.[key];
+
+    if (
+      baseValue &&
+      overrideValue &&
+      typeof baseValue === "object" &&
+      typeof overrideValue === "object" &&
+      !Array.isArray(baseValue) &&
+      !Array.isArray(overrideValue)
+    ) {
+      merged[key] = {
+        ...baseValue,
+        ...overrideValue,
+      };
+      return merged;
+    }
+
+    merged[key] = overrideValue ?? baseValue;
+    return merged;
+  }, {});
+}
+
 export function mergeDesignConfigs(baseConfig = {}, overrideConfig = {}) {
   const normalizedBase = normalizeDesignConfig(baseConfig);
   const normalizedOverride = normalizeDesignConfig(overrideConfig);
@@ -35,10 +72,7 @@ export function mergeDesignConfigs(baseConfig = {}, overrideConfig = {}) {
       ...normalizedBase.canvas,
       ...normalizedOverride.canvas,
     },
-    sections: {
-      ...normalizedBase.sections,
-      ...normalizedOverride.sections,
-    },
+    sections: mergeNestedConfigGroup(normalizedBase.sections, normalizedOverride.sections),
     ornaments: {
       ...normalizedBase.ornaments,
       ...normalizedOverride.ornaments,
@@ -47,14 +81,8 @@ export function mergeDesignConfigs(baseConfig = {}, overrideConfig = {}) {
       ...normalizedBase.ornamentExclusions,
       ...normalizedOverride.ornamentExclusions,
     },
-    widgets: {
-      ...normalizedBase.widgets,
-      ...normalizedOverride.widgets,
-    },
-    animations: {
-      ...normalizedBase.animations,
-      ...normalizedOverride.animations,
-    },
+    widgets: mergeNestedConfigGroup(normalizedBase.widgets, normalizedOverride.widgets),
+    animations: mergeNestedConfigGroup(normalizedBase.animations, normalizedOverride.animations),
   };
 }
 

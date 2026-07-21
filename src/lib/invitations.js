@@ -2,6 +2,7 @@ import {
   createServerSupabaseClient,
   createServiceSupabaseClient,
 } from "./supabase/server";
+import { getDesignConfig } from "../templates/designConfigs";
 
 function sortByOrder(items = []) {
   return [...items].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
@@ -10,6 +11,31 @@ function sortByOrder(items = []) {
 function findMediaUrl(mediaList = [], type) {
   const match = sortByOrder(mediaList).find((media) => media.media_type === type);
   return match?.url || null;
+}
+
+function hasConfigContent(config) {
+  return Boolean(
+    config &&
+      typeof config === "object" &&
+      Object.keys(config).some((key) => {
+        const value = config[key];
+        return (
+          value !== null &&
+          value !== undefined &&
+          (!(typeof value === "object") || Object.keys(value).length > 0)
+        );
+      }),
+  );
+}
+
+function resolveInvitationDesignConfig(row, templateRow) {
+  const templateConfig = templateRow?.design_config || {};
+  const invitationConfig = row?.design_config || {};
+  const overrideConfig = hasConfigContent(templateConfig)
+    ? templateConfig
+    : invitationConfig;
+
+  return getDesignConfig(row?.template_id, overrideConfig);
 }
 
 export async function getPlatformSettings(supabase) {
@@ -60,7 +86,7 @@ export function mapSupabaseInvitation(
     id: row.id,
     slug: row.slug,
     templateId: row.template_id,
-    designConfig: templateRow?.design_config || row.design_config || {},
+    designConfig: resolveInvitationDesignConfig(row, templateRow),
     status: row.status,
     package: row.package,
     order: {
@@ -186,10 +212,28 @@ export async function getInvitationBySlug(slug) {
     .single();
 
   if (error) {
+    console.error("[public-invitation] query failed", {
+      slug,
+      code: error.code,
+      message: error.message,
+    });
     return null;
   }
 
-  if (data.status !== "published") {
+  // Keep legacy orders reachable when a successful publish was later
+  // overwritten by an ordinary editor save. Archiving remains authoritative.
+  const hasPublishedHistory = Boolean(data.published_at) && data.status !== "archived";
+  if (
+    data.status !== "published" &&
+    data.order_status !== "published" &&
+    !hasPublishedHistory
+  ) {
+    console.warn("[public-invitation] unpublished", {
+      slug,
+      status: data.status,
+      orderStatus: data.order_status,
+      hasPublishedHistory,
+    });
     return null;
   }
 

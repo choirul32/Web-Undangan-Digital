@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { defaultTemplateMetadata } from "../../../data/templateAdminDefaults";
 import { requireAdminApiSession } from "../../../lib/auth";
 import { createServiceSupabaseClient } from "../../../lib/supabase/server";
+import { getDesignConfig } from "../../../templates/designConfigs";
 
 function hasServiceEnv() {
   return Boolean(
@@ -21,7 +22,7 @@ function mapTemplateRow(row) {
     image: row.thumbnail_url || "",
     previewUrl: row.preview_url || "/preview",
     supportedFeatures: row.supported_features || [],
-    designConfig: row.design_config || {},
+    designConfig: getDesignConfig(row.template_id, row.design_config || {}),
     sortOrder: row.sort_order || 0,
   };
 }

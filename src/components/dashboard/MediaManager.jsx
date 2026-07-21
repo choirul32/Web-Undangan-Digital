@@ -181,7 +181,7 @@ export default function MediaManager({ invitationSlug = "" }) {
           Cover, gallery, dan backsound
         </h2>
         <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
-          Media terikat ke order aktif: /u/{invitationSlug}
+          Media terikat ke order aktif: /{invitationSlug}
         </p>
       </div>
 

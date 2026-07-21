@@ -43,7 +43,7 @@ export const templateSectionRegistry = [
   },
   {
     id: "rsvp",
-    label: "RSVP",
+    label: "Konfirmasi Kehadiran",
     feature: "rsvp",
     previewSection: "rsvp",
   },

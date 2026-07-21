@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { encodeWishMessage, getWishSticker, wishStickerOptions } from "../utils/wishes";
 
 export default function RSVPForm({ invitationSlug, guestSlug, guestName }) {
   const [form, setForm] = useState({
@@ -8,6 +9,7 @@ export default function RSVPForm({ invitationSlug, guestSlug, guestName }) {
     attendance: "",
     pax: 1,
     message: "",
+    sticker: "barakallah",
   });
   const [status, setStatus] = useState("");
 
@@ -18,6 +20,7 @@ export default function RSVPForm({ invitationSlug, guestSlug, guestName }) {
   const submitRSVP = async (event) => {
     event.preventDefault();
     setStatus("Mengirim RSVP...");
+    const encodedMessage = encodeWishMessage(form.message, form.sticker);
 
     try {
       const response = await fetch("/api/rsvps", {
@@ -29,7 +32,7 @@ export default function RSVPForm({ invitationSlug, guestSlug, guestName }) {
           guestName: form.guestName,
           attendance: form.attendance,
           pax: Number(form.pax),
-          message: form.message,
+          message: encodedMessage,
         }),
       });
 
@@ -40,11 +43,27 @@ export default function RSVPForm({ invitationSlug, guestSlug, guestName }) {
       const result = await response.json();
       setStatus(
         result.source === "supabase"
-          ? "RSVP berhasil dikirim."
-          : "RSVP tersimpan sementara. Supabase belum dikonfigurasi.",
+          ? "Konfirmasi berhasil dikirim."
+          : "Konfirmasi tersimpan sementara. Supabase belum dikonfigurasi.",
+      );
+      window.dispatchEvent(
+        new CustomEvent("nusa-invite:wishes-refresh", {
+          detail: {
+            invitationSlug,
+            wish: result.data?.message
+              ? {
+                  id: result.data.id,
+                  name: result.data.guestName || form.guestName || "Tamu",
+                  message: result.data.message,
+                  sticker: getWishSticker(form.sticker),
+                  createdAt: result.data.createdAt || new Date().toISOString(),
+                }
+              : null,
+          },
+        }),
       );
     } catch {
-      setStatus("RSVP gagal dikirim. Coba lagi sebentar.");
+      setStatus("Konfirmasi gagal dikirim. Coba lagi sebentar.");
     }
   };
 
@@ -74,6 +93,34 @@ export default function RSVPForm({ invitationSlug, guestSlug, guestName }) {
           placeholder="Ucapan dan doa"
         />
       </label>
+
+      <div>
+        <p className="mb-2 text-sm font-bold text-[var(--color-text)]/70">
+          Pilih stiker doa
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {wishStickerOptions.map((sticker) => {
+            const isSelected = form.sticker === sticker.id;
+
+            return (
+              <button
+                key={sticker.id}
+                type="button"
+                onClick={() => updateForm("sticker", sticker.id)}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-2 text-sm font-black transition-colors ${
+                  isSelected
+                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-primary)]"
+                    : "border-[var(--color-accent-pale)] bg-white text-[var(--color-text)] hover:border-[var(--color-accent)]"
+                }`}
+                aria-pressed={isSelected}
+              >
+                <span aria-hidden="true">{sticker.icon}</span>
+                {sticker.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <label className="block">
         <span className="sr-only">Konfirmasi Kehadiran</span>

@@ -354,7 +354,7 @@ export default function RSVPManager({ invitationSlug = "" }) {
             ) : null}
           </h2>
           <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
-            Data RSVP untuk order aktif: /u/{invitationSlug}
+            Data RSVP untuk order aktif: /{invitationSlug}
           </p>
           {filteredHint ? (
             <p className="mt-1 text-xs font-medium text-[var(--dash-muted)]">
