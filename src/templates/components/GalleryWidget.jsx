@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 
 export const defaultGalleryWidgetConfig = {
@@ -21,12 +22,17 @@ export function getGalleryWidgetConfig(designConfig = {}) {
 // ===== Fullscreen Viewer with Swipe =====
 function FullscreenViewer({ images, activeIndex, onClose, onNavigate }) {
   const [direction, setDirection] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const touchStart = useRef({ x: 0, y: 0 });
   const touchDelta = useRef(0);
   const isDragging = useRef(false);
 
   const currentImage = images[activeIndex];
   const total = images.length;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const goNext = useCallback(() => {
     if (activeIndex < total - 1) {
@@ -93,26 +99,26 @@ function FullscreenViewer({ images, activeIndex, onClose, onNavigate }) {
     exit: (dir) => ({ x: dir > 0 ? -300 : 300, opacity: 0, scale: 0.92 }),
   };
 
-  return (
+  const viewer = (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       transition={{ duration: 0.25 }}
-      className="fixed inset-0 z-[200] flex flex-col bg-black/92 backdrop-blur-sm"
+      className="fixed inset-0 isolate z-[9999] flex flex-col bg-slate-950/95 backdrop-blur-sm"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
       {/* Header */}
-      <div className="relative z-10 flex items-center justify-between px-5 py-4 pt-[max(1rem,env(safe-area-inset-top))]">
+      <div className="relative z-[10001] flex items-center justify-between px-5 py-4 pt-[max(1rem,env(safe-area-inset-top))]">
         <p className="rounded-full bg-black/40 px-3 py-1.5 text-sm font-black text-white/90 backdrop-blur">
           {activeIndex + 1} / {total}
         </p>
         <button
           type="button"
           onClick={onClose}
-          className="fixed right-4 top-4 z-[220] inline-flex h-11 items-center gap-2 rounded-full border border-white/70 bg-white px-4 text-sm font-black text-slate-950 shadow-2xl shadow-black/35 transition-colors hover:bg-slate-100"
+          className="fixed right-4 top-4 z-[10002] inline-flex h-11 items-center gap-2 rounded-full border border-white/70 bg-white px-4 text-sm font-black text-slate-950 shadow-2xl shadow-black/35 transition-colors hover:bg-slate-100"
           aria-label="Tutup gallery"
         >
           <span>Tutup</span>
@@ -123,7 +129,7 @@ function FullscreenViewer({ images, activeIndex, onClose, onNavigate }) {
       </div>
 
       {/* Image area */}
-      <div className="relative flex flex-1 items-center justify-center overflow-hidden px-4">
+      <div className="relative z-[10000] flex flex-1 items-center justify-center overflow-hidden px-4">
         <AnimatePresence initial={false} custom={direction} mode="wait">
           <motion.img
             key={`viewer-${activeIndex}`}
@@ -135,7 +141,7 @@ function FullscreenViewer({ images, activeIndex, onClose, onNavigate }) {
             transition={{ duration: 0.3, ease: "easeOut" }}
             src={currentImage}
             alt={`Gallery ${activeIndex + 1}`}
-            className="max-h-full max-w-full rounded-lg object-contain"
+            className="relative z-[10000] max-h-full max-w-full rounded-lg object-contain"
             draggable={false}
           />
         </AnimatePresence>
@@ -169,7 +175,7 @@ function FullscreenViewer({ images, activeIndex, onClose, onNavigate }) {
 
       {/* Thumbnail strip */}
       {total > 1 ? (
-        <div className="flex justify-center gap-2 overflow-x-auto px-5 py-4">
+        <div className="relative z-[10001] flex justify-center gap-2 overflow-x-auto px-5 py-4">
           {images.map((image, index) => (
             <button
               key={`thumb-${index}`}
@@ -192,12 +198,18 @@ function FullscreenViewer({ images, activeIndex, onClose, onNavigate }) {
 
       {/* Swipe hint (mobile) */}
       {total > 1 ? (
-        <p className="pb-4 text-center text-xs font-semibold text-white/40 md:hidden">
+        <p className="relative z-[10001] pb-4 text-center text-xs font-semibold text-white/40 md:hidden">
           Geser untuk navigasi
         </p>
       ) : null}
     </motion.div>
   );
+
+  if (!mounted || typeof document === "undefined") {
+    return null;
+  }
+
+  return createPortal(viewer, document.body);
 }
 
 // ===== Swipeable Carousel =====

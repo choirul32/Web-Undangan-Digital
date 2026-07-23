@@ -391,8 +391,14 @@ export default function OrnamentPropertiesPanel({
                 type="button"
                 onClick={() => applyOrnamentAsset(asset)}
                 className="group relative h-16 w-16 shrink-0 overflow-hidden rounded-md border border-[var(--color-accent-pale)] bg-white"
+                title={asset.templateId ? `${asset.name} • ${asset.templateId}` : asset.name}
               >
                 <img src={asset.src} alt="" className="h-full w-full object-cover" />
+                {asset.templateId ? (
+                  <span className="absolute bottom-1 left-1 max-w-[3.3rem] truncate rounded bg-black/60 px-1.5 py-0.5 text-[8px] font-black uppercase text-white">
+                    {asset.isCurrentTemplate ? "Aktif" : asset.templateId}
+                  </span>
+                ) : null}
                 <span className="absolute right-1 top-1 inline-flex h-4 w-4 items-center justify-center rounded-full bg-black/55 text-[10px] font-black text-white opacity-0 transition-opacity group-hover:opacity-100">
                   ×
                 </span>

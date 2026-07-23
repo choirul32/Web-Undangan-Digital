@@ -20,6 +20,7 @@ import MediaManager from "./dashboard/MediaManager";
 import ContentManagers from "./dashboard/ContentManagers";
 import InvitationFormPanel from "./dashboard/InvitationForm";
 import TemplateAdminPage from "./dashboard/TemplateAdmin";
+import OrnamentManager from "./dashboard/OrnamentManager";
 import SettingsPage from "./dashboard/SettingsPage";
 import RsvpNotifications from "./dashboard/RsvpNotifications";
 import AnalyticsManager from "./dashboard/AnalyticsManager";
@@ -35,6 +36,7 @@ function Sidebar({
     { label: "Overview", page: "overview", href: "/dashboard", icon: "dashboard" },
     { label: "Undangan", page: "invitations", href: "/dashboard/invitations", count: invitationCount, icon: "mail" },
     { label: "Template", page: "templates", href: "/dashboard/templates", count: templateCount, icon: "style" },
+    { label: "Ornamen", page: "ornaments", href: "/dashboard/ornaments", icon: "ornament" },
     { label: "Tamu", page: "guests", href: "/dashboard/guests", icon: "group" },
     { label: "Pengaturan", page: "settings", href: "/dashboard/settings", icon: "settings" },
   ];
@@ -44,6 +46,7 @@ function Sidebar({
     if (name === "dashboard") return <svg {...base}><rect x="3" y="3" width="8" height="8" /><rect x="13" y="3" width="8" height="5" /><rect x="13" y="10" width="8" height="11" /><rect x="3" y="13" width="8" height="8" /></svg>;
     if (name === "mail") return <svg {...base}><rect x="3" y="5" width="18" height="14" rx="2" /><path d="m3 7 9 6 9-6" /></svg>;
     if (name === "style") return <svg {...base}><path d="m7 7 10 10" /><path d="M8 15 4 19" /><path d="M16 9 20 5" /><circle cx="6.5" cy="6.5" r="2.5" /><circle cx="17.5" cy="17.5" r="2.5" /></svg>;
+    if (name === "ornament") return <svg {...base}><path d="M12 3c2.5 3.2 4.9 5.4 8 6-1.2 3.5-3.4 5.8-8 12C7.4 14.8 5.2 12.5 4 9c3.1-.6 5.5-2.8 8-6Z" /><path d="M12 3v18" /><path d="M8 10h8" /></svg>;
     if (name === "group") return <svg {...base}><circle cx="9" cy="8" r="3" /><circle cx="17" cy="9" r="2.5" /><path d="M3 19a6 6 0 0 1 12 0" /><path d="M14 19a4.5 4.5 0 0 1 7 0" /></svg>;
     if (name === "settings") return <svg {...base}><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 0 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 0 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 0 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 0 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 0 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 0 1 4 0v.2a1.7 1.7 0 0 0 1 1.5h0a1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 0 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 0 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z" /></svg>;
     return <svg {...base}><circle cx="12" cy="12" r="9" /></svg>;
@@ -253,6 +256,10 @@ const pageMeta = {
     eyebrow: "Template",
     title: "Katalog template admin",
   },
+  ornaments: {
+    eyebrow: "Ornamen",
+    title: "Library ornamen",
+  },
   rsvps: {
     eyebrow: "RSVP",
     title: "Konfirmasi kehadiran",
@@ -378,6 +385,10 @@ function DashboardMainContent({ activePage, metrics, activeInvitationSlug, stats
 
   if (activePage === "templates") {
     return <TemplateAdminPage />;
+  }
+
+  if (activePage === "ornaments") {
+    return <OrnamentManager />;
   }
 
   if (activePage === "rsvps") {

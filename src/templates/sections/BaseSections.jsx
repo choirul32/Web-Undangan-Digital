@@ -178,6 +178,7 @@ export function WishesSection({ designConfig, slug = "", preview = false, framed
   const [wishes, setWishes] = useState(null);
   const [reactions, setReactions] = useState({});
   const [activeReactionWishId, setActiveReactionWishId] = useState("");
+  const [showAllWishes, setShowAllWishes] = useState(false);
   const reactionStorageKey = slug ? `nusa-invite:wish-reactions:${slug}` : "";
 
   useEffect(() => {
@@ -315,6 +316,9 @@ export function WishesSection({ designConfig, slug = "", preview = false, framed
       sticker: wish.sticker || decoded.sticker,
     };
   });
+  const initialWishCount = 3;
+  const visibleWishes = showAllWishes ? list : list.slice(0, initialWishCount);
+  const hiddenWishCount = Math.max(0, list.length - visibleWishes.length);
 
   const content = (
     <div className="relative z-10 mx-auto max-w-4xl text-center">
@@ -331,37 +335,84 @@ export function WishesSection({ designConfig, slug = "", preview = false, framed
             ) : null}
           </div>
         ) : (
-          <div className="mx-auto mt-10 max-w-2xl space-y-4">
-            {list.map((wish, index) => (
+          <div className="mx-auto mt-8 max-w-xl">
+            <div className="mb-3 flex items-center justify-between gap-3 border-b border-[var(--color-accent-pale)] pb-3 text-left">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.08em] text-[var(--color-primary)]">
+                  {list.length} doa terkirim
+                </p>
+                <p className="mt-0.5 text-xs font-semibold text-[var(--color-text)]/55">
+                  Menampilkan ucapan terbaru.
+                </p>
+              </div>
+              {list.length > initialWishCount ? (
+                <button
+                  type="button"
+                  onClick={() => setShowAllWishes((current) => !current)}
+                  className="shrink-0 text-xs font-black text-[var(--color-primary)] underline-offset-4 hover:underline"
+                >
+                  {showAllWishes ? "Ringkas" : `Lihat ${hiddenWishCount} lagi`}
+                </button>
+              ) : null}
+            </div>
+
+            <div className="divide-y divide-[var(--color-accent-pale)]/80 text-left">
+            {visibleWishes.map((wish, index) => (
               <motion.div
                 key={wish.id || `wish-${index}`}
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true, amount: 0.25 }}
                 variants={fadeUp}
-                className="relative rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)] p-5 text-left shadow-lg shadow-[var(--color-primary)]/8"
+                className="relative py-3.5"
               >
-                {wish.sticker ? (
-                  <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[var(--color-accent-pale)] bg-[var(--color-accent)]/12 px-3 py-1.5 text-xs font-black text-[var(--color-primary)]">
-                    <span aria-hidden="true">{wish.sticker.icon}</span>
-                    {wish.sticker.label}
+                <div className="flex items-start gap-3">
+                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-[var(--color-accent-pale)] bg-[var(--color-surface)] text-sm font-black text-[var(--color-primary)]">
+                    {wish.sticker ? (
+                      <span aria-hidden="true">{wish.sticker.icon}</span>
+                    ) : (
+                      (wish.name || "T").trim().slice(0, 1).toUpperCase()
+                    )}
                   </div>
-                ) : null}
-                <p className="text-base font-semibold leading-7 text-[var(--color-text)]">&ldquo;{wish.message}&rdquo;</p>
-                <p className="mt-4 text-sm font-black text-[var(--color-primary)]">— {wish.name}</p>
-                <div className="relative mt-5 flex items-center justify-between gap-3 border-t border-[var(--color-accent-pale)] pt-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <p className="text-sm font-black text-[var(--color-primary)]">{wish.name}</p>
+                      {wish.sticker ? (
+                        <span className="text-[11px] font-bold text-[var(--color-text)]/45">
+                          {wish.sticker.label}
+                        </span>
+                      ) : null}
+                    </div>
+                    <p
+                      className="mt-1 text-sm font-semibold leading-6 text-[var(--color-text)]/85"
+                      style={
+                        showAllWishes
+                          ? undefined
+                          : {
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
+                            }
+                      }
+                    >
+                      {wish.message}
+                    </p>
+                  </div>
+                </div>
+                <div className="relative mt-2 ml-12 flex items-center justify-between gap-3">
                   {(() => {
                     const summary = getReactionSummary(wish.id);
 
                     return (
-                      <div className="flex min-h-8 items-center gap-2 text-xs font-black text-[var(--color-text)]/65">
+                      <div className="flex min-h-7 items-center gap-1.5 text-[11px] font-black text-[var(--color-text)]/55">
                         {summary.total > 0 ? (
                           <>
                             <span className="flex -space-x-1">
                               {summary.icons.map((icon) => (
                                 <span
                                   key={icon}
-                                  className="grid h-6 w-6 place-items-center rounded-full border border-white bg-white text-sm shadow-sm"
+                                  className="grid h-5 w-5 place-items-center rounded-full border border-white bg-white text-xs shadow-sm"
                                   aria-hidden="true"
                                 >
                                   {icon}
@@ -371,7 +422,7 @@ export function WishesSection({ designConfig, slug = "", preview = false, framed
                             <span>{summary.total}</span>
                           </>
                         ) : (
-                          <span>Belum ada reaksi</span>
+                          <span>Reaksi</span>
                         )}
                       </div>
                     );
@@ -383,25 +434,25 @@ export function WishesSection({ designConfig, slug = "", preview = false, framed
                         current === wish.id ? "" : wish.id,
                       )
                     }
-                    className="inline-flex items-center gap-2 rounded-full border border-[var(--color-accent-pale)] bg-white/85 px-3 py-2 text-xs font-black text-[var(--color-primary)] transition-colors hover:border-[var(--color-accent)] hover:bg-[var(--color-accent)]/12"
+                    className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[11px] font-black text-[var(--color-primary)] transition-colors hover:bg-[var(--color-accent)]/12"
                     aria-expanded={activeReactionWishId === wish.id}
                     aria-label={`Beri reaksi untuk ucapan ${wish.name}`}
                   >
                     <span aria-hidden="true">{"\uD83D\uDC4D"}</span>
-                    Reaksi
+                    React
                   </button>
                   {activeReactionWishId === wish.id ? (
                     <motion.div
                       initial={{ opacity: 0, y: 8, scale: 0.96 }}
                       animate={{ opacity: 1, y: 0, scale: 1 }}
-                      className="absolute bottom-14 right-0 z-20 flex gap-1 rounded-full border border-[var(--color-accent-pale)] bg-white px-2 py-1.5 shadow-2xl shadow-[var(--color-primary)]/18"
+                      className="absolute bottom-8 right-0 z-20 flex gap-1 rounded-full border border-[var(--color-accent-pale)] bg-white px-2 py-1.5 shadow-xl shadow-[var(--color-primary)]/12"
                     >
                       {wishReactionOptions.map((reaction) => (
                         <button
                           key={reaction.id}
                           type="button"
                           onClick={() => updateReaction(wish.id, reaction.id)}
-                          className="grid h-10 w-10 place-items-center rounded-full text-xl transition-transform hover:-translate-y-1 hover:scale-110 hover:bg-[var(--color-accent)]/12"
+                          className="grid h-8 w-8 place-items-center rounded-full text-base transition-transform hover:-translate-y-0.5 hover:scale-110 hover:bg-[var(--color-accent)]/12"
                           title={reaction.label}
                           aria-label={`${reaction.label} untuk ucapan ${wish.name}`}
                         >
@@ -413,6 +464,17 @@ export function WishesSection({ designConfig, slug = "", preview = false, framed
                 </div>
               </motion.div>
             ))}
+            </div>
+
+            {list.length > initialWishCount ? (
+              <button
+                type="button"
+                onClick={() => setShowAllWishes((current) => !current)}
+                className="mt-5 text-sm font-black text-[var(--color-primary)] underline-offset-4 hover:underline"
+              >
+                {showAllWishes ? "Tampilkan lebih ringkas" : `Lihat semua ${list.length} ucapan`}
+              </button>
+            ) : null}
           </div>
         )}
       </div>

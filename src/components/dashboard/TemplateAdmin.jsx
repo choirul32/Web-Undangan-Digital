@@ -269,11 +269,16 @@ function TemplateAdminPage() {
     let isMounted = true;
     setIsLoadingOrnamentAssets(true);
 
-    fetch(`/api/templates/ornaments/upload?templateId=${encodeURIComponent(templateDraft.id)}`)
+    fetch(`/api/templates/ornaments/upload?templateId=${encodeURIComponent(templateDraft.id)}&scope=all`)
       .then((response) => response.json())
       .then((result) => {
         if (isMounted && Array.isArray(result.data)) {
-          setDynamicOrnamentAssets(result.data);
+          setDynamicOrnamentAssets(
+            result.data.map((asset) => ({
+              ...asset,
+              isCurrentTemplate: !asset.templateId || asset.templateId === templateDraft.id,
+            })),
+          );
         }
       })
       .catch(() => {
@@ -1652,6 +1657,8 @@ function TemplateAdminPage() {
           name: prepared.file.name?.replace(/\.[^.]+$/, "") || `${selectedOrnament.id || "Ornament"} Upload`,
           src: assetUrl,
           storagePath: result.data.storagePath || "",
+          templateId: templateDraft.id,
+          isCurrentTemplate: true,
           source: result.source,
         };
 
