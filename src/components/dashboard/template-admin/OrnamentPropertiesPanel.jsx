@@ -25,20 +25,20 @@ function MiniInput({ label, value, onChange, type = "text", step }) {
 const ornamentLayerPresets = [
   {
     id: "behind",
-    label: "Belakang konten",
-    description: "Untuk tekstur, frame, atau ornamen dekoratif yang tidak boleh menutup teks.",
+    label: "Belakang teks",
+    description: "Untuk tekstur/frame. Teks tetap berada di atas gambar.",
     zIndex: -1,
   },
   {
     id: "front",
-    label: "Depan konten",
-    description: "Untuk ornamen sudut atau aksen yang boleh tampil di atas isi section.",
+    label: "Di atas teks",
+    description: "Untuk foto/ornamen besar yang tidak boleh ketutup tulisan.",
     zIndex: 1,
   },
   {
     id: "top",
     label: "Paling depan",
-    description: "Untuk aksen utama yang sengaja tampil paling atas.",
+    description: "Untuk aksen utama yang harus menang dari semua layer.",
     zIndex: 10,
   },
 ];

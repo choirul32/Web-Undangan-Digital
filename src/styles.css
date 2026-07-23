@@ -583,10 +583,34 @@ html.music-pulse-active .ornament-pulse-sync[data-pulse="strong"] {
   animation: music-pulse-strong 1.2s ease-in-out infinite;
 }
 
+@keyframes countdown-confetti-burst {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4) rotate(0deg);
+  }
+  12% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform:
+      translate(calc(-50% + var(--confetti-x)), calc(-50% + var(--confetti-y)))
+      scale(1)
+      rotate(var(--confetti-rotate));
+  }
+}
+
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   html.music-pulse-active .ornament-pulse-sync {
     animation: none;
+  }
+
+  [style*="countdown-confetti-burst"] {
+    animation: none !important;
   }
 }
 

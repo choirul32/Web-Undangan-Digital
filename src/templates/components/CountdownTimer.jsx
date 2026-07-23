@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 
 const monthMap = {
   januari: 0,
@@ -26,6 +26,8 @@ const initialTimeLeft = {
     ["00", "Detik"],
   ],
 };
+
+const confettiColors = ["#c8a24a", "#0f1f3d", "#f5d76e", "#ffffff", "#b76e79"];
 
 export const defaultCountdownWidgetConfig = {
   enabled: true,
@@ -79,7 +81,7 @@ function parseIndonesianDate(dateText = "", timeText = "") {
   return new Date(year, month, day, hours, minutes, 0, 0);
 }
 
-function parseTargetDate(event) {
+export function parseCountdownTargetDate(event) {
   const safeEvent = event || {};
   const dateText = safeEvent.date || safeEvent.eventDate || safeEvent.event_date;
   const timeText = safeEvent.time || safeEvent.eventTime || safeEvent.event_time;
@@ -128,6 +130,24 @@ function getTimeLeft(targetDate) {
   };
 }
 
+function createConfettiPiece(index) {
+  const angle = -90 + (Math.random() - 0.5) * 110;
+  const distance = 130 + Math.random() * 120;
+  const x = Math.cos((angle * Math.PI) / 180) * distance;
+  const y = Math.sin((angle * Math.PI) / 180) * distance;
+
+  return {
+    id: `${Date.now()}-${index}`,
+    color: confettiColors[index % confettiColors.length],
+    x,
+    y,
+    rotate: Math.round(Math.random() * 540),
+    delay: Math.random() * 0.12,
+    size: 6 + Math.round(Math.random() * 5),
+    shape: index % 3 === 0 ? "rounded-full" : "rounded-[2px]",
+  };
+}
+
 export default function CountdownTimer({
   event,
   containerClassName = "",
@@ -136,12 +156,18 @@ export default function CountdownTimer({
   labelClassName = "",
   completeText = "Acara sedang berlangsung",
 }) {
-  const targetDate = useMemo(() => parseTargetDate(event), [event]);
+  const targetDate = useMemo(() => parseCountdownTargetDate(event), [event]);
   const [isMounted, setIsMounted] = useState(false);
   const [timeLeft, setTimeLeft] = useState(initialTimeLeft);
+  const [confettiPieces, setConfettiPieces] = useState([]);
+  const previousCompleteRef = useRef(null);
+  const hasBurstRef = useRef(false);
 
   useEffect(() => {
     setIsMounted(true);
+    previousCompleteRef.current = null;
+    hasBurstRef.current = false;
+    setConfettiPieces([]);
     setTimeLeft(getTimeLeft(targetDate));
 
     const interval = window.setInterval(() => {
@@ -151,8 +177,47 @@ export default function CountdownTimer({
     return () => window.clearInterval(interval);
   }, [targetDate]);
 
+  useEffect(() => {
+    if (!isMounted) return undefined;
+
+    const wasComplete = previousCompleteRef.current;
+    previousCompleteRef.current = timeLeft.isComplete;
+
+    if (wasComplete === false && timeLeft.isComplete && !hasBurstRef.current) {
+      hasBurstRef.current = true;
+      setConfettiPieces(Array.from({ length: 34 }, (_, index) => createConfettiPiece(index)));
+
+      const timeout = window.setTimeout(() => {
+        setConfettiPieces([]);
+      }, 1800);
+
+      return () => window.clearTimeout(timeout);
+    }
+
+    return undefined;
+  }, [isMounted, timeLeft.isComplete]);
+
   return (
-    <div>
+    <div className="relative">
+      {confettiPieces.length ? (
+        <div className="pointer-events-none absolute inset-x-0 top-4 z-20 mx-auto h-1 w-1 overflow-visible">
+          {confettiPieces.map((piece) => (
+            <span
+              key={piece.id}
+              className={`absolute left-0 top-0 block ${piece.shape}`}
+              style={{
+                width: piece.size,
+                height: piece.size * 1.35,
+                backgroundColor: piece.color,
+                animation: `countdown-confetti-burst 1.45s ${piece.delay}s ease-out forwards`,
+                "--confetti-x": `${piece.x}px`,
+                "--confetti-y": `${piece.y}px`,
+                "--confetti-rotate": `${piece.rotate}deg`,
+              }}
+            />
+          ))}
+        </div>
+      ) : null}
       <div className={containerClassName}>
         {timeLeft.items.map(([value, label]) => (
           <div key={label} className={itemClassName}>

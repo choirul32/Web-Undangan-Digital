@@ -80,6 +80,7 @@ export default function MediaManager({ invitationSlug = "" }) {
   const [message, setMessage] = useState("");
   const [replaceId, setReplaceId] = useState("");
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [previewItem, setPreviewItem] = useState(null);
   const mediaTabs = [
     { id: "cover", label: "Cover" },
     { id: "groom", label: "Foto Pria" },
@@ -170,6 +171,24 @@ export default function MediaManager({ invitationSlug = "" }) {
       isMounted = false;
     };
   }, [filteredMediaItems, mediaFileSizes]);
+
+  useEffect(() => {
+    if (!previewItem) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setPreviewItem(null);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [previewItem]);
 
   const uploadMedia = async () => {
     if (!file) {
@@ -471,22 +490,32 @@ export default function MediaManager({ invitationSlug = "" }) {
               </div>
             ) : (
               <>
-                <img
-                  src={item.url}
-                  alt={item.title || "Media undangan"}
-                  onLoad={(event) => {
-                    const key = item.id || item.url;
-                    const width = event.currentTarget.naturalWidth;
-                    const height = event.currentTarget.naturalHeight;
-                    if (!key || !width || !height) return;
+                <button
+                  type="button"
+                  onClick={() => setPreviewItem(item)}
+                  className="group relative block w-full overflow-hidden bg-[var(--dash-fog)] text-left"
+                  aria-label={`Lihat gambar penuh ${item.title || item.mediaType}`}
+                >
+                  <img
+                    src={item.url}
+                    alt={item.title || "Media undangan"}
+                    onLoad={(event) => {
+                      const key = item.id || item.url;
+                      const width = event.currentTarget.naturalWidth;
+                      const height = event.currentTarget.naturalHeight;
+                      if (!key || !width || !height) return;
 
-                    setMediaDimensions((current) => ({
-                      ...current,
-                      [key]: { width, height },
-                    }));
-                  }}
-                  className="aspect-[4/3] w-full bg-[var(--dash-fog)] object-cover"
-                />
+                      setMediaDimensions((current) => ({
+                        ...current,
+                        [key]: { width, height },
+                      }));
+                    }}
+                    className="aspect-[4/3] w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
+                  <span className="absolute bottom-3 right-3 rounded-full bg-black/65 px-3 py-1.5 text-xs font-black text-white opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                    Lihat full
+                  </span>
+                </button>
                 <div className="p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
                     {item.mediaType}
@@ -532,6 +561,43 @@ export default function MediaManager({ invitationSlug = "" }) {
           </div>
         ) : null}
       </div>
+
+        {previewItem ? (
+          <div
+            className="fixed inset-0 z-[220] flex items-center justify-center bg-slate-950/88 p-4 backdrop-blur-sm"
+            role="dialog"
+            aria-modal="true"
+            onClick={() => setPreviewItem(null)}
+          >
+            <div
+              className="flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-white/15 bg-white shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="flex items-center justify-between gap-4 border-b border-[var(--dash-border)] px-4 py-3">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-black text-[var(--dash-ink)]">
+                    {previewItem.title || readableMediaType(previewItem.mediaType)}
+                  </p>
+                  <p className="mt-0.5 text-xs font-semibold text-[var(--dash-muted)]">
+                    {[readableMediaType(previewItem.mediaType), mediaDimensions[previewItem.id || previewItem.url] ? `${mediaDimensions[previewItem.id || previewItem.url].width} x ${mediaDimensions[previewItem.id || previewItem.url].height}px` : "", formatMediaFileSize(previewItem)]
+                      .filter(Boolean)
+                      .join(" • ")}
+                  </p>
+                </div>
+                <DashboardButton type="button" size="sm" variant="secondary" onClick={() => setPreviewItem(null)}>
+                  Tutup
+                </DashboardButton>
+              </div>
+              <div className="min-h-0 flex-1 bg-slate-950 p-3">
+                <img
+                  src={previewItem.url}
+                  alt={previewItem.title || "Preview media"}
+                  className="mx-auto max-h-[78vh] w-full object-contain"
+                />
+              </div>
+            </div>
+          </div>
+        ) : null}
 
         <ConfirmDialog
           open={Boolean(confirmDelete)}

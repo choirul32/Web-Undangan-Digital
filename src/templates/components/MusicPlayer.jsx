@@ -94,6 +94,7 @@ export default function MusicPlayer({
   const [duration, setDuration] = useState(0);
   const [isExpanded, setIsExpanded] = useState(false);
   const progressInterval = useRef(null);
+  const hasUserPausedRef = useRef(false);
 
   const musicConfig = {
     variant: "floating",
@@ -108,10 +109,13 @@ export default function MusicPlayer({
 
   const audioSrc = musicUrl || "/assets/musics/Muara reff.mp3";
 
-  const playAudio = useCallback(async () => {
+  const playAudio = useCallback(async ({ userInitiated = false } = {}) => {
     const audio = ref.current;
     if (!audio) return false;
 
+    if (userInitiated) {
+      hasUserPausedRef.current = false;
+    }
     audio.muted = false;
     audio.volume = audio.volume || 1;
     try {
@@ -159,9 +163,11 @@ export default function MusicPlayer({
     if (!ref.current) return;
 
     if (isPlaying) {
+      hasUserPausedRef.current = true;
       ref.current.pause();
     } else {
-      playAudio();
+      hasUserPausedRef.current = false;
+      playAudio({ userInitiated: true });
     }
   }, [isPlaying, playAudio, ref]);
 
@@ -217,7 +223,12 @@ export default function MusicPlayer({
   }, [ref, musicConfig.pulseSync, musicConfig.autoLoop, onPlayStateChange]);
 
   useEffect(() => {
-    if (!autoPlayOnInteraction || musicConfig.enabled === false || isPlaying) {
+    if (
+      !autoPlayOnInteraction ||
+      musicConfig.enabled === false ||
+      isPlaying ||
+      hasUserPausedRef.current
+    ) {
       return undefined;
     }
 
@@ -259,6 +270,10 @@ export default function MusicPlayer({
     };
 
     const attemptPlay = async () => {
+      if (hasUserPausedRef.current) {
+        cleanup();
+        return;
+      }
       if (isTrying) return;
       isTrying = true;
       const didPlay = await unlockAudio();
@@ -267,6 +282,10 @@ export default function MusicPlayer({
     };
 
     function handleInteraction() {
+      if (hasUserPausedRef.current) {
+        cleanup();
+        return;
+      }
       attemptPlay();
       if (!retryTimer && window.scrollY > 0) {
         let attempts = 0;
