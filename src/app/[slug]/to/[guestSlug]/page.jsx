@@ -2,8 +2,19 @@ import InvitationRenderer from "../../../../templates/InvitationRenderer";
 import { InvitationErrorState } from "../../../../components/InvitationLoadingState";
 import { getInvitationAndGuest } from "../../../../lib/invitations";
 import ViewTracker from "../../../../components/ViewTracker";
+import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
+
+function fallbackGuestFromSlug(guestSlug = "") {
+  const name = decodeURIComponent(String(guestSlug || ""))
+    .replace(/[-_]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+
+  return name ? { name, slug: guestSlug } : null;
+}
 
 export async function generateMetadata({ params }) {
   const { invitation, guest } = await getInvitationAndGuest(
@@ -13,14 +24,15 @@ export async function generateMetadata({ params }) {
 
   if (!invitation) return { title: "Undangan tidak ditemukan" };
 
+  const resolvedGuest = guest || fallbackGuestFromSlug(params.guestSlug);
   const coupleName = `${invitation.couple?.groomNickname || "Mempelai"} & ${
     invitation.couple?.brideNickname || "Mempelai"
   }`;
 
   return {
-    title: guest?.name ? `${coupleName} untuk ${guest.name}` : coupleName,
-    description: guest?.name
-      ? `Undangan digital personal untuk ${guest.name}.`
+    title: resolvedGuest?.name ? `${coupleName} untuk ${resolvedGuest.name}` : coupleName,
+    description: resolvedGuest?.name
+      ? `Undangan digital personal untuk ${resolvedGuest.name}.`
       : "Undangan digital personal.",
   };
 }
@@ -32,6 +44,11 @@ export default async function ShortPublicGuestInvitationPage({ params }) {
   );
 
   if (!invitation) return <InvitationErrorState />;
+  const resolvedGuest = guest || fallbackGuestFromSlug(params.guestSlug);
+
+  if (!guest && resolvedGuest?.name) {
+    redirect(`/${encodeURIComponent(params.slug)}?to=${encodeURIComponent(resolvedGuest.name)}`);
+  }
 
   return (
     <div className="min-h-screen bg-[#e8edf2] lg:px-8">
@@ -39,8 +56,8 @@ export default async function ShortPublicGuestInvitationPage({ params }) {
       <div className="mx-auto min-h-screen w-full overflow-hidden bg-[var(--color-bg)] lg:min-h-[915px] lg:max-w-[412px] lg:border-x lg:border-black/10 lg:shadow-[0_24px_80px_rgba(15,23,42,0.18)]">
         <InvitationRenderer
           data={invitation}
-          guestName={guest?.name}
-          guestSlug={guest?.slug}
+          guestName={resolvedGuest?.name}
+          guestSlug={resolvedGuest?.slug}
           framedPreview
         />
       </div>

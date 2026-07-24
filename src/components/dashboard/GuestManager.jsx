@@ -15,7 +15,11 @@ import {
 const defaultBroadcastTemplate =
   "Assalamualaikum Wr. Wb.\n\nYth. {guest_name},\nKami mengundang Bapak/Ibu/Saudara/i untuk hadir di acara pernikahan kami.\n\nBuka undangan personal:\n{guest_link}\n\nTerima kasih.";
 
-export default function GuestManager({ invitationSlug = "" }) {
+export default function GuestManager({
+  invitationSlug = "",
+  panelTitle = "Link personal tamu",
+  panelDescription,
+}) {
   const [guests, setGuests] = useState([]);
   const [guestName, setGuestName] = useState("");
   const [guestGroup, setGuestGroup] = useState("Keluarga");
@@ -267,6 +271,16 @@ export default function GuestManager({ invitationSlug = "" }) {
     }
   };
 
+  const copyCustomerGuestManagerLink = async () => {
+    try {
+      const url = `${window.location.origin}/guest-manager/${encodeURIComponent(invitationSlug)}`;
+      await window.navigator.clipboard.writeText(url);
+      setCopyMessage("Link Guest Manager lokal untuk pelanggan disalin.");
+    } catch (error) {
+      setCopyMessage(error.message || "Gagal menyalin link pelanggan.");
+    }
+  };
+
   const openWhatsappMessage = (guest) => {
     window.open(getWhatsappShareUrl(guest), "_blank", "noopener,noreferrer");
     setCopyMessage(`WhatsApp ${guest.name} dibuka. Kirim tetap manual.`);
@@ -413,10 +427,11 @@ export default function GuestManager({ invitationSlug = "" }) {
           Guest Manager
         </p>
         <h2 className="mt-1 text-2xl font-semibold text-[var(--dash-ink)]">
-          Link personal tamu
+          {panelTitle}
         </h2>
         <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">
-          Buat link custom seperti /{invitationSlug}/to/bapak-andi. Broadcast tetap manual via WhatsApp.
+          {panelDescription ||
+            `Buat link custom seperti /${invitationSlug}/to/bapak-andi. Broadcast tetap manual via WhatsApp.`}
         </p>
       </div>
 
@@ -478,6 +493,14 @@ export default function GuestManager({ invitationSlug = "" }) {
             Bulk Manual Broadcast
           </p>
           <div className="mt-4 space-y-2">
+            <DashboardButton
+              type="button"
+              onClick={copyCustomerGuestManagerLink}
+              variant="secondary"
+              className="w-full justify-start"
+            >
+              Copy link pelanggan lokal
+            </DashboardButton>
             <DashboardButton
               type="button"
               onClick={copyBulkLinks}
