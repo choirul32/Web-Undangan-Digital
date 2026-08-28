@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAdminApiSession } from "../../../lib/auth";
+import { mapGuest } from "../../../lib/invitations";
 import { createServiceSupabaseClient } from "../../../lib/supabase/server";
 
 function hasServiceEnv() {
@@ -16,18 +17,6 @@ async function getInvitation(supabase, slug) {
     .single();
 
   return { data, error };
-}
-
-function mapGuest(guest) {
-  return {
-    id: guest.id,
-    name: guest.name,
-    slug: guest.slug,
-    group: guest.guest_group,
-    phone: guest.phone,
-    rsvpStatus: guest.rsvp_status,
-    pax: guest.pax,
-  };
 }
 
 export async function GET(request) {

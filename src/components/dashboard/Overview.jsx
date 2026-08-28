@@ -61,7 +61,7 @@ export function MetricCard({ label, value, detail, icon }) {
   return (
     <motion.div
       variants={fadeUp}
-      className="relative h-32 overflow-hidden rounded-[14px] border border-[var(--dash-border)] bg-white p-4 shadow-[var(--dash-shadow)]"
+      className="relative min-h-32 overflow-hidden rounded-[14px] border border-[var(--dash-border)] bg-white p-4 shadow-[var(--dash-shadow)]"
     >
       <div className="absolute -right-5 -top-5 h-24 w-24 rounded-full bg-[var(--dash-fog)]" />
       <div className="relative flex items-start justify-between gap-2">
@@ -394,7 +394,7 @@ export function InvitationTable({ variant = "full" }) {
                         </p>
                       ) : null}
                     </td>
-                    <td className="px-6 py-4 font-semibold text-[var(--dash-ink)]">{item.rsvp}</td>
+                    <td className="px-6 py-4 font-semibold text-[var(--dash-ink)]">{item.rsvp ?? "-"}</td>
                     <td className="px-6 py-4">
                       <span className={`rounded-full px-3 py-1.5 text-sm font-black ${statusStyles[item.paymentStatus] || statusStyles.draft}`}>
                         {statusLabel(item.paymentStatus || "unpaid")}
@@ -408,6 +408,7 @@ export function InvitationTable({ variant = "full" }) {
                       href={`/dashboard/invitations/${item.slug}`}
                       className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--dash-border)] text-[var(--dash-muted)] hover:bg-[var(--dash-fog)] hover:text-[var(--dash-ink)]"
                       title="Edit"
+                      aria-label={`Ubah undangan ${item.slug}`}
                     >
                       <Icon name="edit" className="h-4 w-4" />
                     </a>
@@ -417,6 +418,7 @@ export function InvitationTable({ variant = "full" }) {
                       rel="noreferrer"
                       className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--dash-border)] text-[var(--dash-muted)] hover:bg-[var(--dash-fog)] hover:text-[var(--dash-ink)]"
                       title="Pratinjau"
+                      aria-label={`Pratinjau undangan ${item.slug}`}
                     >
                       <Icon name="preview" className="h-4 w-4" />
                     </a>
@@ -428,6 +430,7 @@ export function InvitationTable({ variant = "full" }) {
                         onClick={() => sendWaNotification(item)}
                         className="h-8 w-8 !p-0 !text-emerald-600 hover:!bg-emerald-50 hover:border-emerald-200"
                         title="Kirim WA"
+                        aria-label={`Kirim link undangan ${item.slug} via WhatsApp`}
                       >
                         <Icon name="whatsapp" className="h-4 w-4" />
                       </DashboardButton>
@@ -440,6 +443,7 @@ export function InvitationTable({ variant = "full" }) {
                         onClick={() => updateInvitationStatus(item, "archive")}
                         className="h-8 w-8 !p-0"
                         title="Arsipkan"
+                        aria-label={`Arsipkan undangan ${item.slug}`}
                       >
                         <Icon name="archive" className="h-4 w-4" />
                       </DashboardButton>
@@ -454,6 +458,7 @@ export function InvitationTable({ variant = "full" }) {
                         onClick={() => updateInvitationStatus(item, "publish")}
                         className="h-8 w-8 !p-0"
                         title="Tayangkan undangan"
+                        aria-label={`Tayangkan undangan ${item.slug}`}
                       >
                         <Icon name="publish" className="h-4 w-4" />
                       </DashboardButton>
@@ -466,6 +471,7 @@ export function InvitationTable({ variant = "full" }) {
                         onClick={() => setDeleteTarget(item)}
                         className="h-8 w-8 !p-0"
                         title="Hapus"
+                        aria-label={`Hapus undangan ${item.slug}`}
                       >
                         <Icon name="trash" className="h-4 w-4" />
                       </DashboardButton>
@@ -518,16 +524,16 @@ export function RSVPSnapshotCard({ stats }) {
   return (
     <motion.section variants={fadeUp}>
       <DashboardCard>
-      <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[var(--color-text)]/80">RSVP Snapshot</h3>
+      <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[var(--dash-muted)]">RSVP Snapshot</h3>
       <div className="mt-4 flex items-center justify-center">
-        <div className="flex h-28 w-28 items-center justify-center rounded-full border-[12px] border-[var(--color-muted)]">
+        <div className="flex h-28 w-28 items-center justify-center rounded-full border-[12px] border-[var(--dash-fog)]">
           <div className="text-center">
-            <p className="text-2xl font-black text-[var(--color-primary)]">{hadirPercent}%</p>
-            <p className="text-xs font-semibold text-[var(--color-text)]/70">Hadir</p>
+            <p className="text-2xl font-black text-[var(--dash-ink)]">{hadirPercent}%</p>
+            <p className="text-xs font-semibold text-[var(--dash-muted)]">Hadir</p>
           </div>
         </div>
       </div>
-      <div className="mt-4 space-y-2 text-sm font-semibold text-[var(--color-text)]">
+      <div className="mt-4 space-y-2 text-sm font-semibold text-[var(--dash-ink)]">
         <div className="flex items-center justify-between"><span>Hadir</span><span>{hadir}</span></div>
         <div className="flex items-center justify-between"><span>Tidak Hadir</span><span>{tidakHadir}</span></div>
         <div className="flex items-center justify-between"><span>Belum RSVP</span><span>{belum}</span></div>
@@ -547,7 +553,7 @@ export function QuickActionsCard() {
   return (
     <motion.section variants={fadeUp}>
       <DashboardCard>
-      <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[var(--color-text)]/80">Aksi Cepat</h3>
+      <h3 className="text-sm font-black uppercase tracking-[0.08em] text-[var(--dash-muted)]">Aksi Cepat</h3>
       <div className="mt-3 grid grid-cols-2 gap-2">
         {actions.map((action) => (
           <a
@@ -621,14 +627,14 @@ export function ActivityFeed() {
   return (
     <motion.section
       variants={fadeUp}
-      className="rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)] p-6 shadow-lg shadow-[var(--color-primary)]/8"
+      className="rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-5 shadow-[var(--dash-shadow)]"
     >
-      <h2 className="text-2xl font-black text-[var(--color-primary)]">Aktivitas</h2>
-      <div className="mt-5 space-y-4">
+      <h2 className="text-base font-semibold text-[var(--dash-ink)]">Aktivitas</h2>
+      <div className="mt-4 space-y-4">
         {activities.map((activity) => (
           <div key={activity} className="flex gap-3">
             <span className="mt-2 h-2.5 w-2.5 shrink-0 rounded-full bg-[var(--color-accent)]" />
-            <p className="text-base font-semibold leading-7 text-[var(--color-text)]">{activity}</p>
+            <p className="text-sm font-medium leading-6 text-[var(--dash-muted)]">{activity}</p>
           </div>
         ))}
       </div>

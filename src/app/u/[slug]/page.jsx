@@ -2,21 +2,11 @@ import InvitationRenderer from "../../../templates/InvitationRenderer";
 import { InvitationErrorState } from "../../../components/InvitationLoadingState";
 import { getInvitationBySlug } from "../../../lib/invitations";
 import ViewTracker from "../../../components/ViewTracker";
+import { guestNameFromQuery } from "../../../lib/guestLinks";
 
 // Always read the latest data: an invitation can be published/updated at any
 // time, so this page must never serve a stale (e.g. pre-publish) cached result.
 export const dynamic = "force-dynamic";
-
-function guestNameFromQuery(value = "") {
-  const rawValue = Array.isArray(value) ? value[0] : value;
-  const normalizedValue = String(rawValue || "").replace(/\+/g, " ");
-
-  try {
-    return decodeURIComponent(normalizedValue).replace(/\s+/g, " ").trim();
-  } catch {
-    return normalizedValue.replace(/\s+/g, " ").trim();
-  }
-}
 
 export default async function PublicInvitationPage({ params, searchParams }) {
   const invitation = await getInvitationBySlug(params.slug);

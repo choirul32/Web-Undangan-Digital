@@ -1,5 +1,25 @@
 # Context Project (Current State and Production Direction)
 
+## 0. Target Market & Positioning (disepakati via grill-with-docs, 2026-08-28)
+
+**Target market**: anak muda 20-40 yang menikah dan butuh undangan untuk disebar online. Customer adalah pasangan yang memesan; Tamu adalah end-user yang membuka undangan, RSVP, dan berinteraksi.
+
+**Model bisnis**: admin-managed manual order service. Customer melihat katalog template → konfirmasi via WhatsApp → admin menyiapkan → admin minta data → selesai → customer terima link + isi daftar tamu → share ke WA/medsos. Pembayaran manual via transfer, dibantu QRIS statis.
+
+**Positioning unggulan**: template reusable tanpa batas (posisi, warna, ornament, gaya, fitur, widget bisa diedit) dengan kombinasi **animasi ornament + fitur buka undangan** yang terasa premium.
+
+**Target perangkat**: HP entry-level Android (RAM 2-3GB) harus tetap mulus. Semua keputusan animasi/fitur harus menghormati batas ini.
+
+**Keputusan fitur** (hasil validasi):
+- Prioritas tinggi: opening reveal + ornament animasi, nama tamu personal, music ambience, cinematic video cover.
+- Photobox online (baru): tamu foto langsung di web, tambah stiker, frame photobox, hasil tampil di galeri photobox undangan. Live saat acara + setelahnya. Tampil instan, admin bisa hapus. Diaktifkan admin per undangan. Jadi pembeda tier Exclusive. Diposisikan sebagai "photo wall" — tamu foto kapan saja (sebelum/saat/sesudah acara), bukan booth real-time yang harus antre.
+- QRIS statis untuk pembayaran (fondasi sudah ada di `qrisImage`).
+- QR Check In: **dihapus** dari landing page dan roadmap — tidak diimplementasikan dan friction tinggi.
+- Love story panjang: prioritas diturunkan.
+- Nama tamu personal + RSVP: standar di semua tier pricing (bukan upsell).
+- Harga Basic tetap Rp 45.000 (fitur standar = harga masuk undangan digital modern). Pembeda tier pindah ke: jumlah revisi, durasi aktif, video cover, photobox, template exclusive.
+- Performa: Lottie dan video BUKAN default opening. Default tetap animasi CSS/motion ringan (useReducedMotion + fallback poster). Video/lottie jadi opsi premium yang dipilih sadar — melindungi performa HP entry-level.
+
 ## 1. Product Context
 NusaInvite adalah aplikasi undangan digital dengan workflow utama saat ini:
 - User pesan dan konsultasi via WhatsApp.

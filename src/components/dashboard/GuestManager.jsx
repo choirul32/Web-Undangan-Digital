@@ -7,10 +7,12 @@ import ConfirmDialog from "./ConfirmDialog";
 import {
   DashboardButton,
   DashboardPanel,
+  Field,
   SelectInput,
   TextAreaInput,
   TextInput,
 } from "./FormControls";
+import { buildGuestUrl, createGuestSlug } from "../../lib/guestLinks";
 
 const defaultBroadcastTemplate =
   "Assalamualaikum Wr. Wb.\n\nYth. {guest_name},\nKami mengundang Bapak/Ibu/Saudara/i untuk hadir di acara pernikahan kami.\n\nBuka undangan personal:\n{guest_link}\n\nTerima kasih.";
@@ -59,13 +61,7 @@ export default function GuestManager({
     };
   }, [invitationSlug]);
 
-  const createSlug = (name) =>
-    name
-      .toLowerCase()
-      .trim()
-      .replace(/&/g, "dan")
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "");
+  const createSlug = createGuestSlug;
 
   const groupOptions = useMemo(
     () => Array.from(new Set(["Keluarga", "Teman", "Kantor", "VIP", ...guests.map((guest) => guest.group).filter(Boolean)])),
@@ -96,8 +92,7 @@ export default function GuestManager({
     setEditingSlug("");
   };
 
-  const getGuestLink = (guest) =>
-    `${window.location.origin}/${invitationSlug}/to/${guest.slug}`;
+  const getGuestLink = (guest) => buildGuestUrl(invitationSlug, guest.slug, true);
 
   const normalizeWhatsappNumber = (phone = "") => {
     const digits = String(phone).replace(/\D/g, "");
@@ -436,25 +431,31 @@ export default function GuestManager({
       </div>
 
       <div className="grid gap-3 border-b border-[var(--dash-border)] p-5 lg:grid-cols-[1fr_180px_180px_auto_auto]">
-        <TextInput
-          value={guestName}
-          onChange={(event) => setGuestName(event.target.value)}
-          placeholder="Nama tamu, contoh: Bapak Andi"
-        />
-        <SelectInput
-          value={guestGroup}
-          onChange={(event) => setGuestGroup(event.target.value)}
-        >
-          <option>Keluarga</option>
-          <option>Teman</option>
-          <option>Kantor</option>
-          <option>VIP</option>
-        </SelectInput>
-        <TextInput
-          value={guestPhone}
-          onChange={(event) => setGuestPhone(event.target.value)}
-          placeholder="WA tamu"
-        />
+        <Field label="Nama tamu">
+          <TextInput
+            value={guestName}
+            onChange={(event) => setGuestName(event.target.value)}
+            placeholder="Contoh: Bapak Andi"
+          />
+        </Field>
+        <Field label="Grup">
+          <SelectInput
+            value={guestGroup}
+            onChange={(event) => setGuestGroup(event.target.value)}
+          >
+            <option>Keluarga</option>
+            <option>Teman</option>
+            <option>Kantor</option>
+            <option>VIP</option>
+          </SelectInput>
+        </Field>
+        <Field label="No. WhatsApp">
+          <TextInput
+            value={guestPhone}
+            onChange={(event) => setGuestPhone(event.target.value)}
+            placeholder="Contoh: 62812..."
+          />
+        </Field>
         <DashboardButton
           type="button"
           onClick={saveGuest}

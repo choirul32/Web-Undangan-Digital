@@ -159,7 +159,7 @@ export const defaultTemplateMetadata = [
           autoPlayMusic: true,
         },
         countdown: { enabled: true, variant: "minimal" },
-        events: { enabled: true, variant: "elegant", showMaps: true, showIcon: false },
+        events: { enabled: true, variant: "cards", showMaps: true, showIcon: false },
         story: { enabled: true, variant: "stacked", animation: "zoom-in" },
         gallery: { enabled: true, variant: "masonry", limit: 8, includeCover: true },
       },

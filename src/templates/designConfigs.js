@@ -1,4 +1,9 @@
 import { defaultTemplateMetadata } from "../data/templateAdminDefaults";
+import { defaultCountdownWidgetConfig, getCountdownWidgetConfig } from "./components/CountdownTimer";
+import { defaultEventWidgetConfig, getEventWidgetConfig } from "./components/EventWidget";
+import { defaultGalleryWidgetConfig, getGalleryWidgetConfig } from "./components/GalleryWidget";
+import { defaultStoryWidgetConfig, getStoryWidgetConfig } from "./components/StoryWidget";
+import { getMusicWidgetConfig } from "./components/MusicPlayer";
 
 export const defaultDesignConfigs = Object.fromEntries(
   defaultTemplateMetadata.map((template) => [
@@ -6,6 +11,44 @@ export const defaultDesignConfigs = Object.fromEntries(
     template.designConfig || {},
   ]),
 );
+
+// --- Single source of truth untuk default widget configs ---
+// Renderer memakai getter ini (via widget component files), editor (TemplateAdmin)
+// memakai yang sama supaya tidak ada dua daftar default yang bisa drift.
+
+export {
+  defaultCountdownWidgetConfig,
+  getCountdownWidgetConfig,
+  defaultEventWidgetConfig,
+  getEventWidgetConfig,
+  defaultGalleryWidgetConfig,
+  getGalleryWidgetConfig,
+  defaultStoryWidgetConfig,
+  getStoryWidgetConfig,
+};
+
+// Musik: MusicPlayer meng-hardcode defaults di dalam komponen; getter-nya tetap dipakai.
+export { getMusicWidgetConfig };
+
+// Editor-only defaults: key ini TIDAK dibaca oleh renderer public —
+// cuma dipakai panel editor untuk validasi/pra-isi. Tetap ditaruh di sini
+// agar semua default widget berada di satu tempat.
+export const defaultGiftWidgetConfig = {
+  enabled: true,
+  variant: "cards",
+  copyButton: true,
+  showQr: false,
+  hasFallbackAccounts: true,
+};
+
+export const defaultRsvpWidgetConfig = {
+  enabled: true,
+  variant: "form",
+  showPax: true,
+  showMessage: true,
+  requireGuestName: false,
+  hasInvitationSlug: true,
+};
 
 const emptyDesignConfig = {
   canvas: {},

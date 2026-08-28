@@ -177,8 +177,7 @@ export default function HomeSection({
             } font-black uppercase text-[var(--color-accent)]`}
           >
             The Wedding Of
-          </p>
-          <h1
+          </p>          <h1
             className={`mt-2 font-serif font-black leading-[0.94] text-[var(--color-heading)] ${
               isCompactHomePreview ? "text-[22px] sm:text-[26px]" : "text-4xl sm:text-7xl"
             }`}
@@ -190,7 +189,7 @@ export default function HomeSection({
             <div className={isCompactHomePreview ? "mt-3" : "mt-6 sm:mt-8"}>
               <p
                 className={`font-black uppercase tracking-[0.2em] text-[var(--color-accent)] ${
-                  isCompactHomePreview ? "text-[8px]" : "text-[10px] sm:text-xs"
+                  isCompactHomePreview ? "text-[8px]" : "text-xs"
                 }`}
               >
                 Save The Date
@@ -225,7 +224,7 @@ export default function HomeSection({
             >
               <p
                 className={`font-black uppercase tracking-[0.16em] text-[var(--color-accent)] ${
-                  isCompactHomePreview ? "text-[9px]" : "text-[10px] sm:text-sm"
+                  isCompactHomePreview ? "text-[9px]" : "text-xs"
                 }`}
               >
                 Kepada Yth.
@@ -248,7 +247,7 @@ export default function HomeSection({
       >
         <span
           className={`font-black uppercase tracking-[0.2em] text-[var(--color-accent)] ${
-            isCompactHomePreview ? "text-[7px]" : "text-[9px] sm:text-[10px]"
+            isCompactHomePreview ? "text-[7px]" : "text-[10px] sm:text-xs"
           }`}
         >
           Scroll

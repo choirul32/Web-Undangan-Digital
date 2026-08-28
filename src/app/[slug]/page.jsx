@@ -2,21 +2,11 @@ import InvitationRenderer from "../../templates/InvitationRenderer";
 import { InvitationErrorState } from "../../components/InvitationLoadingState";
 import { getInvitationBySlug } from "../../lib/invitations";
 import ViewTracker from "../../components/ViewTracker";
+import { guestNameFromQuery } from "../../lib/guestLinks";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
-
-function guestNameFromQuery(value = "") {
-  const rawValue = Array.isArray(value) ? value[0] : value;
-  const normalizedValue = String(rawValue || "").replace(/\+/g, " ");
-
-  try {
-    return decodeURIComponent(normalizedValue).replace(/\s+/g, " ").trim();
-  } catch {
-    return normalizedValue.replace(/\s+/g, " ").trim();
-  }
-}
 
 export default async function ShortPublicInvitationPage({ params, searchParams }) {
   const invitation = await getInvitationBySlug(params.slug);

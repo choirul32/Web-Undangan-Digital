@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useEffect, useMemo, useState } from "react";
-import { motion } from "framer-motion";
-import { fadeUp } from "./dashboard/config";
 
 // Page components
 import {
@@ -56,28 +54,31 @@ function Sidebar({
     <aside
       className={`sticky top-0 hidden h-screen shrink-0 overflow-y-auto border-r border-[var(--dash-border)] bg-[var(--dash-canvas)] py-5 text-[var(--dash-ink)] lg:block ${collapsed ? "w-20 px-2" : "w-56 px-3"}`}
     >
-      <button
-        type="button"
-        onClick={onToggleCollapse}
-        className="absolute -right-4 top-6 z-20 flex h-9 w-6 items-center justify-center rounded-r-xl rounded-l-md border border-[var(--dash-border)] bg-[var(--dash-canvas)] text-[var(--dash-muted)] shadow-[0_4px_14px_rgba(15,23,42,0.12)] transition-all hover:w-7 hover:text-[var(--dash-ink)] hover:bg-[var(--dash-fog)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dash-ink)]/20"
-        title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-        aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-      >
-        {collapsed ? (
-          <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m8 4 6 6-6 6" />
-          </svg>
-        ) : (
-          <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-            <path d="m12 4-6 6 6 6" />
-          </svg>
-        )}
-      </button>
-      <a href="/" className={`block text-xl font-semibold ${collapsed ? "text-center text-base" : ""}`}>
-        {collapsed ? "N" : "NusaInvite"}
-      </a>
+      <div className={`flex items-center ${collapsed ? "justify-center" : "justify-between"} gap-2 px-1`}>
+        <a href="/" className={`text-xl font-semibold ${collapsed ? "text-base" : ""}`}>
+          {collapsed ? "N" : "NusaInvite"}
+        </a>
+        <button
+          type="button"
+          onClick={onToggleCollapse}
+          className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[var(--dash-border)] bg-[var(--dash-canvas)] text-[var(--dash-muted)] transition-colors hover:bg-[var(--dash-fog)] hover:text-[var(--dash-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--dash-ink)]/20"
+          title={collapsed ? "Buka sidebar" : "Ciutkan sidebar"}
+          aria-label={collapsed ? "Buka sidebar" : "Ciutkan sidebar"}
+          aria-expanded={!collapsed}
+        >
+          {collapsed ? (
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m9 6 6 6-6 6" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m15 6-6 6 6 6" />
+            </svg>
+          )}
+        </button>
+      </div>
       {!collapsed ? (
-        <p className="mt-1 text-xs font-medium text-[var(--dash-muted)]">Admin Workspace</p>
+        <p className="mt-1 px-1 text-xs font-medium text-[var(--dash-muted)]">Admin Workspace</p>
       ) : null}
 
       <nav className="mt-8 space-y-1">
@@ -622,7 +623,7 @@ export default function Dashboard({
           templateCount={templateCount}
         />
         <section className="min-w-0 flex-1">
-      <header className="border-b border-[var(--dash-border)] bg-[var(--dash-canvas)] px-5 py-3 sm:px-6">
+          <header className="border-b border-[var(--dash-border)] bg-[var(--dash-canvas)] px-5 py-3 sm:px-6">
             <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4">
               <div>
                 <p className="text-xs font-semibold uppercase text-[var(--dash-muted)]">
@@ -646,15 +647,32 @@ export default function Dashboard({
                 <LogoutButton session={session} />
               </div>
             </div>
+            {/* Mobile navigation — sidebar is hidden below lg */}
+            <nav className="mx-auto mt-3 flex max-w-[1440px] gap-1 overflow-x-auto pb-0.5 lg:hidden" aria-label="Navigasi utama">
+              {[
+                { label: "Overview", page: "overview", href: "/dashboard" },
+                { label: "Undangan", page: "invitations", href: "/dashboard/invitations" },
+                { label: "Template", page: "templates", href: "/dashboard/templates" },
+                { label: "Ornamen", page: "ornaments", href: "/dashboard/ornaments" },
+                { label: "Tamu", page: "guests", href: "/dashboard/guests" },
+                { label: "Pengaturan", page: "settings", href: "/dashboard/settings" },
+              ].map((item) => (
+                <a
+                  key={item.page}
+                  href={item.href}
+                  className={`whitespace-nowrap rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
+                    activePage === item.page
+                      ? "bg-[var(--dash-ink)] text-white"
+                      : "text-[var(--dash-muted)] hover:bg-[var(--dash-fog)] hover:text-[var(--dash-ink)]"
+                  }`}
+                >
+                  {item.label}
+                </a>
+              ))}
+            </nav>
           </header>
 
-          <motion.div
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: {},
-              visible: { transition: { staggerChildren: 0.08 } },
-            }}
+          <div
             className={`mx-auto grid max-w-[1440px] gap-5 px-5 py-6 sm:px-6 ${
               showAside ? "lg:grid-cols-[1fr_360px]" : ""
             }`}
@@ -672,7 +690,7 @@ export default function Dashboard({
                 <DashboardAside activePage={activePage} />
               </aside>
             ) : null}
-          </motion.div>
+          </div>
         </section>
       </div>
     </main>

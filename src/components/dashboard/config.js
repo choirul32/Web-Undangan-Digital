@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Dashboard Configuration & Constants
  * Extracted from Dashboard.jsx for better maintainability
  */
@@ -28,23 +28,13 @@ export const templateCategories = [
 ];
 
 // ===== ORNAMENT OPTIONS =====
-export const ornamentSlots = [
-  "fill",
-  "top-left",
-  "top-right",
-  "bottom-left",
-  "bottom-right",
-  "center-top",
-  "center-bottom",
-  "side-left",
-  "side-right",
-  "center",
-];
+// Slots dan parallax bersumber dari ornamentModel (satu vocabulary
+// dengan renderer). Jangan definisikan ulang di sini.
+export { ornamentSlots, ornamentParallaxOptions } from "../../templates/ornamentModel";
 export const ornamentObjectFitOptions = ["contain", "cover", "fill"];
 export const ornamentAnimationOptions = ["none", "fade", "float", "sway", "pulse", "slow-rotate"];
 export const ornamentLoopModeOptions = ["infinite", "once", "once-hide"];
 export const ornamentExitAnimationOptions = ["fade-out", "zoom-out", "slide-left", "slide-down", "scale-down"];
-export const ornamentParallaxOptions = ["none", "slow", "medium", "fast"];
 export const ornamentParallaxDirectionOptions = ["vertical", "horizontal"];
 export const ornamentEntranceOptions = [
   "none",
@@ -60,9 +50,12 @@ export const ornamentTimelineTrackOptions = [0, 1, 2, 3];
 export const ornamentMaxRasterFileSize = 1024 * 1024;
 
 // ===== WIDGET VARIANT OPTIONS =====
+// Hanya varian yang benar-benar diimplementasikan renderer public.
+// EventWidget public tidak branching variant (hanya cards/list); StoryWidget hanya
+// chapter-scroll & chat-style; sisanya fallback ke classes default.
 export const countdownVariantOptions = ["cards", "minimal", "circle", "flip-clock", "ring", "neon-glow"];
-export const eventVariantOptions = ["cards", "list", "elegant", "minimal", "corner-bracket"];
-export const storyVariantOptions = ["card", "timeline", "stacked", "photo-album", "chapter-scroll", "chat-style"];
+export const eventVariantOptions = ["cards", "list"];
+export const storyVariantOptions = ["card", "timeline", "stacked", "chapter-scroll", "chat-style"];
 export const storyAnimationOptions = ["fade-up", "zoom-in", "slide-left", "stagger", "heartbeat", "blur-to-clear", "scale-bounce", "flip"];
 export const galleryVariantOptions = ["grid", "carousel", "masonry", "cinematic-slideshow"];
 
@@ -327,7 +320,7 @@ export const templateStylePresets = [
       openingReveal: { enabled: true, animation: "curtain", backgroundMode: "color", backgroundColor: "#fbf7ef" },
       openingSequence: { preset: "cinematic-soft" },
       countdown: { variant: "minimal" },
-      events: { variant: "elegant", showIcon: true, showMaps: true },
+      events: { variant: "cards", showIcon: true, showMaps: true },
       story: { variant: "timeline", animation: "fade-up" },
       gallery: { variant: "grid", includeCover: true },
     },
@@ -366,7 +359,7 @@ export const templateStylePresets = [
       openingReveal: { enabled: true, animation: "gate", backgroundMode: "color", backgroundColor: "#101a2f" },
       openingSequence: { preset: "royal-gate" },
       countdown: { variant: "circle" },
-      events: { variant: "elegant", showIcon: true, showMaps: true },
+      events: { variant: "cards", showIcon: true, showMaps: true },
       story: { variant: "card", animation: "zoom-in" },
       gallery: { variant: "carousel", includeCover: true },
     },
@@ -517,7 +510,7 @@ export const templateStylePresets = [
       openingReveal: { enabled: true, animation: "curtain" },
       openingSequence: { preset: "cinematic-soft" },
       countdown: { variant: "minimal" },
-      events: { variant: "elegant", showIcon: true, showMaps: true },
+      events: { variant: "cards", showIcon: true, showMaps: true },
       story: { variant: "timeline", animation: "fade-up" },
       gallery: { variant: "grid", includeCover: true },
     },
@@ -577,7 +570,7 @@ export const templateStylePresets = [
       openingReveal: { enabled: true, animation: "paper" },
       openingSequence: { preset: "floral-bloom" },
       countdown: { variant: "circle" },
-      events: { variant: "elegant", showIcon: false, showMaps: true },
+      events: { variant: "cards", showIcon: false, showMaps: true },
       story: { variant: "stacked", animation: "fade-up" },
       gallery: { variant: "carousel", includeCover: true },
     },
@@ -607,7 +600,7 @@ export const templateStylePresets = [
       openingReveal: { enabled: true, animation: "curtain" },
       openingSequence: { preset: "wayang-shadow" },
       countdown: { variant: "cards" },
-      events: { variant: "elegant", showIcon: true, showMaps: true },
+      events: { variant: "cards", showIcon: true, showMaps: true },
       story: { variant: "timeline", animation: "slide-left" },
       gallery: { variant: "grid", includeCover: true },
     },
@@ -638,7 +631,7 @@ export const templateStylePresets = [
       openingReveal: { enabled: true, animation: "gate" },
       openingSequence: { preset: "royal-gate" },
       countdown: { variant: "circle" },
-      events: { variant: "elegant", showIcon: true, showMaps: true },
+      events: { variant: "cards", showIcon: true, showMaps: true },
       story: { variant: "card", animation: "zoom-in" },
       gallery: { variant: "carousel", includeCover: true },
     },
@@ -699,7 +692,7 @@ export const templateStylePresets = [
       openingReveal: { enabled: true, animation: "curtain", backgroundMode: "color" },
       openingSequence: { preset: "cinematic-soft" },
       countdown: { variant: "minimal" },
-      events: { variant: "elegant", showIcon: false, showMaps: true },
+      events: { variant: "cards", showIcon: false, showMaps: true },
       story: { variant: "timeline", animation: "fade-up" },
       gallery: { variant: "grid", includeCover: true },
     },

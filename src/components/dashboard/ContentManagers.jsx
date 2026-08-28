@@ -382,10 +382,10 @@ function MultiEventManager({ invitationSlug = "" }) {
             <p className="mt-3 font-semibold text-[var(--dash-ink)]">{event.venue}</p>
             <p className="mt-1 text-sm font-medium text-[var(--dash-muted)]">{event.address}</p>
             <div className="mt-4 flex gap-2">
-              <DashboardButton type="button" size="sm" variant="secondary" onClick={() => reorderEvent(event, "up")}>Up</DashboardButton>
-              <DashboardButton type="button" size="sm" variant="secondary" onClick={() => reorderEvent(event, "down")}>Down</DashboardButton>
-              <DashboardButton type="button" size="sm" variant="secondary" onClick={() => editEvent(event)}>Edit</DashboardButton>
-              <DashboardButton type="button" size="sm" variant="danger" onClick={() => setConfirmDelete(event)}>Delete</DashboardButton>
+              <DashboardButton type="button" size="sm" variant="secondary" onClick={() => reorderEvent(event, "up")}>Naik</DashboardButton>
+              <DashboardButton type="button" size="sm" variant="secondary" onClick={() => reorderEvent(event, "down")}>Turun</DashboardButton>
+              <DashboardButton type="button" size="sm" variant="secondary" onClick={() => editEvent(event)}>Ubah</DashboardButton>
+              <DashboardButton type="button" size="sm" variant="danger" onClick={() => setConfirmDelete(event)}>Hapus</DashboardButton>
             </div>
           </article>
         ))}
@@ -651,10 +651,10 @@ function StoryManager({ invitationSlug = "" }) {
             <h3 className="mt-2 text-xl font-semibold text-[var(--dash-ink)]">{story.title}</h3>
             <p className="mt-3 text-sm font-medium leading-6 text-[var(--dash-muted)]">{story.desc || story.description}</p>
             <div className="mt-4 flex gap-2">
-              <DashboardButton type="button" size="sm" variant="secondary" onClick={() => reorderStory(story, "up")}>Up</DashboardButton>
-              <DashboardButton type="button" size="sm" variant="secondary" onClick={() => reorderStory(story, "down")}>Down</DashboardButton>
-              <DashboardButton type="button" size="sm" variant="secondary" onClick={() => editStory(story)}>Edit</DashboardButton>
-              <DashboardButton type="button" size="sm" variant="danger" onClick={() => setConfirmDelete(story)}>Delete</DashboardButton>
+              <DashboardButton type="button" size="sm" variant="secondary" onClick={() => reorderStory(story, "up")}>Naik</DashboardButton>
+              <DashboardButton type="button" size="sm" variant="secondary" onClick={() => reorderStory(story, "down")}>Turun</DashboardButton>
+              <DashboardButton type="button" size="sm" variant="secondary" onClick={() => editStory(story)}>Ubah</DashboardButton>
+              <DashboardButton type="button" size="sm" variant="danger" onClick={() => setConfirmDelete(story)}>Hapus</DashboardButton>
             </div>
           </article>
         ))}
@@ -1124,8 +1124,8 @@ function BankAccountManager({ invitationSlug = "" }) {
             <h3 className="mt-2 text-2xl font-semibold text-[var(--dash-ink)]">{account.number}</h3>
             <p className="mt-2 text-sm font-medium text-[var(--dash-muted)]">a.n. {account.name}</p>
             <div className="mt-4 flex gap-2">
-              <DashboardButton type="button" size="sm" variant="secondary" onClick={() => editAccount(account)}>Edit</DashboardButton>
-              <DashboardButton type="button" size="sm" variant="danger" onClick={() => setConfirmDelete(account)}>Delete</DashboardButton>
+              <DashboardButton type="button" size="sm" variant="secondary" onClick={() => editAccount(account)}>Ubah</DashboardButton>
+              <DashboardButton type="button" size="sm" variant="danger" onClick={() => setConfirmDelete(account)}>Hapus</DashboardButton>
             </div>
           </article>
         ))}

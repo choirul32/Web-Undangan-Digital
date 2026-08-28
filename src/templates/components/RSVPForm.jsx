@@ -154,7 +154,7 @@ export default function RSVPForm({ invitationSlug, guestSlug, guestName }) {
         </label>
       ) : null}
 
-      <button className="min-w-32 rounded-xl bg-[var(--color-primary)] px-7 py-3 text-base font-black text-white shadow-md transition-transform hover:-translate-y-0.5">
+      <button type="submit" className="min-w-32 rounded-xl bg-[var(--color-primary)] px-7 py-3 text-base font-black text-white shadow-md transition-transform hover:-translate-y-0.5">
         Kirim
       </button>
 

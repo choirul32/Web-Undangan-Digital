@@ -6,6 +6,7 @@ import {
   DashboardPanel,
   TextAreaInput,
 } from "../dashboard/FormControls";
+import { buildGuestUrl, createGuestSlug } from "../../lib/guestLinks";
 
 const messageTemplates = [
   {
@@ -56,6 +57,7 @@ function uniqueGuestsFromText(text = "") {
     .filter(Boolean)
     .map((name) => ({
       name,
+      slug: createGuestSlug(name),
       key: name.toLowerCase().replace(/\s+/g, " ").trim(),
     }))
     .filter((guest) => {
@@ -94,10 +96,7 @@ export default function LocalGuestManager({ invitationSlug = "" }) {
 
   const guests = useMemo(() => uniqueGuestsFromText(namesText), [namesText]);
 
-  const getGuestLink = (guest) =>
-    typeof window === "undefined"
-      ? `/${invitationSlug}?to=${encodeURIComponent(guest.name)}`
-      : `${window.location.origin}/${invitationSlug}?to=${encodeURIComponent(guest.name)}`;
+  const getGuestLink = (guest) => buildGuestUrl(invitationSlug, guest.slug, true);
 
   const buildMessage = (guest) =>
     messageTemplate
@@ -143,7 +142,7 @@ export default function LocalGuestManager({ invitationSlug = "" }) {
     <DashboardPanel
       eyebrow="Guest Manager"
       title="Buat link tamu dari daftar nama"
-      description={`Data hanya tersimpan lokal di browser ini. Link mengarah ke /${invitationSlug}?to=Nama%20Tamu.`}
+      description={`Data hanya tersimpan lokal di browser ini. Link mengarah ke /${invitationSlug}/to/slug-tamu.`}
       bodyClassName="p-0"
     >
       <div className="grid gap-5 border-b border-[var(--dash-border)] p-5 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.8fr)]">
@@ -229,10 +228,10 @@ export default function LocalGuestManager({ invitationSlug = "" }) {
               <tr key={guest.key} className="hover:bg-[var(--dash-fog)]/60">
                 <td className="px-5 py-4">
                   <p className="text-sm font-black text-[var(--dash-ink)]">{guest.name}</p>
-                  <p className="mt-1 text-xs font-semibold text-[var(--dash-muted)]">Nama dari query link</p>
+                  <p className="mt-1 text-xs font-semibold text-[var(--dash-muted)]">Slug dari nama tamu</p>
                 </td>
                 <td className="px-5 py-4 text-sm font-semibold text-[var(--dash-muted)]">
-                  /{invitationSlug}?to={encodeURIComponent(guest.name)}
+                  /{invitationSlug}/to/{guest.slug}
                 </td>
                 <td className="px-5 py-4">
                   <div className="flex flex-wrap gap-2">

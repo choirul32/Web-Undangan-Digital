@@ -1,4 +1,9 @@
 ﻿import React, { useMemo, useState } from "react";
+import {
+  getOrnamentLayerPresetId,
+  getParallaxSpeed,
+  ornamentLayerPresets,
+} from "../../../templates/ornamentModel";
 
 function MiniInput({ label, value, onChange, type = "text", step }) {
   return (
@@ -22,33 +27,6 @@ function MiniInput({ label, value, onChange, type = "text", step }) {
   );
 }
 
-const ornamentLayerPresets = [
-  {
-    id: "behind",
-    label: "Belakang teks",
-    description: "Untuk tekstur/frame. Teks tetap berada di atas gambar.",
-    zIndex: -1,
-  },
-  {
-    id: "front",
-    label: "Di atas teks",
-    description: "Untuk foto/ornamen besar yang tidak boleh ketutup tulisan.",
-    zIndex: 1,
-  },
-  {
-    id: "top",
-    label: "Paling depan",
-    description: "Untuk aksen utama yang harus menang dari semua layer.",
-    zIndex: 10,
-  },
-];
-
-function ornamentLayerPresetId(zIndex = 0) {
-  if (Number(zIndex) < 0) return "behind";
-  if (Number(zIndex) >= 10) return "top";
-  return "front";
-}
-
 export default function OrnamentPropertiesPanel({
   selectedOrnament,
   updateOrnament,
@@ -64,11 +42,7 @@ export default function OrnamentPropertiesPanel({
   const [showAllAssets, setShowAllAssets] = useState(false);
   const parallaxNumeric = useMemo(() => {
     if (!selectedOrnament) return 0;
-    if (typeof selectedOrnament.parallax === "number") return selectedOrnament.parallax;
-    if (selectedOrnament.parallax === "slow") return 0.08;
-    if (selectedOrnament.parallax === "medium") return 0.16;
-    if (selectedOrnament.parallax === "fast") return 0.24;
-    return 0;
+    return getParallaxSpeed(selectedOrnament.parallax || 0);
   }, [selectedOrnament]);
 
   if (!selectedOrnament) {
@@ -82,7 +56,7 @@ export default function OrnamentPropertiesPanel({
   const displayedAssets = showAllAssets
     ? dynamicOrnamentAssets
     : dynamicOrnamentAssets.slice(0, 6);
-  const activeLayerPreset = ornamentLayerPresetId(selectedOrnament.zIndex ?? 0);
+  const activeLayerPreset = getOrnamentLayerPresetId(selectedOrnament.zIndex ?? 0);
   const activeLayer = ornamentLayerPresets.find((preset) => preset.id === activeLayerPreset);
 
   return (

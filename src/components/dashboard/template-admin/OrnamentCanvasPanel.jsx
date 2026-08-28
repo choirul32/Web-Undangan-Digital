@@ -1,4 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
+import {
+  buildReplayMessage,
+  buildSnapshotMessage,
+  PREVIEW_MESSAGE,
+} from "../../../templates/previewProtocol";
 
 const previewViewport = {
   width: 412,
@@ -23,10 +28,7 @@ export default function OrnamentCanvasPanel({
     }
 
     iframeRef.current.contentWindow.postMessage(
-      {
-        type: "nusa-invite:editor-preview-update",
-        payload: previewSnapshot,
-      },
+      buildSnapshotMessage(previewSnapshot),
       window.location.origin,
     );
   };
@@ -45,7 +47,7 @@ export default function OrnamentCanvasPanel({
         return;
       }
 
-      if (event.data?.type === "nusa-invite:editor-preview-ready") {
+      if (event.data?.type === PREVIEW_MESSAGE.ready) {
         setIsPreviewLoading(false);
       }
     };
@@ -60,9 +62,7 @@ export default function OrnamentCanvasPanel({
     }
 
     iframeRef.current.contentWindow.postMessage(
-      {
-        type: "nusa-invite:editor-preview-replay",
-      },
+      buildReplayMessage(),
       window.location.origin,
     );
   }, [previewEntranceKey]);

@@ -130,7 +130,7 @@ export function GiftSection({ accounts = [], designConfig, qrisImage = "" }) {
                 className="shrink-0 rounded-full border border-[var(--color-accent-pale)] bg-white px-3 py-2 text-xs font-black uppercase tracking-[0.08em] text-[var(--color-primary)]"
                 aria-hidden="true"
               >
-                {isQrisOpen ? "Hidden" : "Show"}
+                {isQrisOpen ? "Tutup" : "Buka"}
               </span>
             </button>
             {isQrisOpen ? (

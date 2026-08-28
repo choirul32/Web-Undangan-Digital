@@ -70,6 +70,18 @@ export async function getBankLogoLookup(supabase) {
   );
 }
 
+export function mapGuest(guest) {
+  return {
+    id: guest.id,
+    name: guest.name,
+    slug: guest.slug,
+    group: guest.guest_group,
+    phone: guest.phone,
+    rsvpStatus: guest.rsvp_status,
+    pax: guest.pax,
+  };
+}
+
 export function mapSupabaseInvitation(
   row,
   templateRow = null,
@@ -147,15 +159,7 @@ export function mapSupabaseInvitation(
       name: account.account_name,
       number: account.account_number,
     })),
-    guests: (row.guests || []).map((guest) => ({
-      id: guest.id,
-      name: guest.name,
-      slug: guest.slug,
-      group: guest.guest_group,
-      phone: guest.phone,
-      rsvpStatus: guest.rsvp_status,
-      pax: guest.pax,
-    })),
+    guests: (row.guests || []).map(mapGuest),
     features,
   };
 }
@@ -278,7 +282,6 @@ export function mapInvitationListItem(row, templateLookup = new Map()) {
     customerName: row.customer_name,
     customerWhatsapp: row.customer_whatsapp,
     date: row.created_at ? new Date(row.created_at).toLocaleDateString("id-ID") : "-",
-    rsvp: 0,
     package: row.package,
     viewCount: row.view_count || 0,
     lastViewedAt: row.last_viewed_at || null,

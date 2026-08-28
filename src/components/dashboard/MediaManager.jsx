@@ -484,8 +484,8 @@ export default function MediaManager({ invitationSlug = "" }) {
                   <source src={item.url} />
                 </audio>
                 <div className="mt-4 flex gap-2">
-                  <DashboardButton type="button" size="sm" variant="secondary" onClick={() => startReplace(item)}>Replace</DashboardButton>
-                  <DashboardButton type="button" size="sm" variant="danger" onClick={() => setConfirmDelete(item)}>Delete</DashboardButton>
+                  <DashboardButton type="button" size="sm" variant="secondary" onClick={() => startReplace(item)}>Ganti</DashboardButton>
+                  <DashboardButton type="button" size="sm" variant="danger" onClick={() => setConfirmDelete(item)}>Hapus</DashboardButton>
                 </div>
               </div>
             ) : (
@@ -547,8 +547,8 @@ export default function MediaManager({ invitationSlug = "" }) {
                     ) : null}
                   </div>
                   <div className="mt-4 flex gap-2">
-                    <DashboardButton type="button" size="sm" variant="secondary" onClick={() => startReplace(item)}>Replace</DashboardButton>
-                    <DashboardButton type="button" size="sm" variant="danger" onClick={() => deleteMedia(item)}>Delete</DashboardButton>
+                    <DashboardButton type="button" size="sm" variant="secondary" onClick={() => startReplace(item)}>Ganti</DashboardButton>
+                    <DashboardButton type="button" size="sm" variant="danger" onClick={() => deleteMedia(item)}>Hapus</DashboardButton>
                   </div>
                 </div>
               </>

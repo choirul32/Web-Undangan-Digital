@@ -2,19 +2,10 @@ import InvitationRenderer from "../../../../templates/InvitationRenderer";
 import { InvitationErrorState } from "../../../../components/InvitationLoadingState";
 import { getInvitationAndGuest } from "../../../../lib/invitations";
 import ViewTracker from "../../../../components/ViewTracker";
+import { fallbackGuestFromSlug } from "../../../../lib/guestLinks";
 import { redirect } from "next/navigation";
 
 export const dynamic = "force-dynamic";
-
-function fallbackGuestFromSlug(guestSlug = "") {
-  const name = decodeURIComponent(String(guestSlug || ""))
-    .replace(/[-_]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\b\w/g, (letter) => letter.toUpperCase());
-
-  return name ? { name, slug: guestSlug } : null;
-}
 
 export async function generateMetadata({ params }) {
   const { invitation, guest } = await getInvitationAndGuest(

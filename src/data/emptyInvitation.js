@@ -27,8 +27,6 @@ export const emptyInvitation = {
     guestName: true,
   },
   musicUrl: "",
-  musicTitle: "",
   guests: [],
-  rsvps: [],
   designConfig: null,
 };

@@ -1,60 +1,17 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
-
-const slotClasses = {
-  fill: "inset-0",
-  "top-left": "left-0 top-0",
-  "top-right": "right-0 top-0",
-  "bottom-left": "bottom-0 left-0",
-  "bottom-right": "bottom-0 right-0",
-  "center-top": "left-1/2 top-0",
-  "center-bottom": "bottom-0 left-1/2",
-  "side-left": "left-0 top-1/2",
-  "side-right": "right-0 top-1/2",
-  "middle-left": "left-0 top-1/2",
-  "middle-right": "right-0 top-1/2",
-  center: "left-1/2 top-1/2",
-};
-
-const slotTransforms = {
-  "center-top": "translateX(-50%)",
-  "center-bottom": "translateX(-50%)",
-  "side-left": "translateY(-50%)",
-  "side-right": "translateY(-50%)",
-  "middle-left": "translateY(-50%)",
-  "middle-right": "translateY(-50%)",
-  center: "translate(-50%, -50%)",
-};
-
-// Parallax speed presets
-const PARALLAX_SPEEDS = {
-  none: 0,
-  slow: 0.15,
-  medium: 0.3,
-  fast: 0.5,
-};
-
-function sizeValue(value) {
-  if (typeof value === "number") {
-    return `${value}px`;
-  }
-
-  if (!value) return undefined;
-
-  // If it's a string with unit (%, px, rem, etc), use as-is
-  if (typeof value === "string" && /[%a-z]/i.test(value)) {
-    return value;
-  }
-
-  // Numeric string without unit → treat as px
-  const num = Number(value);
-  if (Number.isFinite(num)) {
-    return `${num}px`;
-  }
-
-  return value;
-}
+import {
+  getParallaxSpeed,
+  isForegroundLayer,
+  mirrorSlotMap,
+  sizeValue,
+  slotClasses,
+  slotTransforms,
+  STAGGER_STEP,
+  TRACK_BASE_DELAY,
+  TRACK_COUNT,
+} from "../ornamentModel";
 
 function secondsValue(value, fallback) {
   const number = Number(value);
@@ -154,11 +111,7 @@ function OnceHideWrapper({ children, visibleDuration = 3, exitAnimation = "fade-
   );
 }
 
-// Track-based timeline configuration
-const TRACK_COUNT = 4; // 4 tracks (0-3)
-const TRACK_BASE_DELAY = 0.5; // Gap between tracks in seconds
-const STAGGER_STEP = 0.2; // Delay between ornaments in same track
-
+// Track-based timeline configuration (constants dari ornamentModel)
 function useParallax(hasParallaxOrnaments) {
   const containerRef = useRef(null);
   const scrollY = useRef(0);
@@ -272,8 +225,8 @@ export default function OrnamentLayer({ ornaments = [], className = "", pulseSyn
   }
 
   // Split ornaments so non-negative zIndex can render above the content layer.
-  const backgroundOrnaments = processedOrnaments.filter((o) => (o.zIndex ?? 0) < 0);
-  const foregroundOrnaments = processedOrnaments.filter((o) => (o.zIndex ?? 0) >= 0);
+  const backgroundOrnaments = processedOrnaments.filter((o) => !isForegroundLayer(o.zIndex));
+  const foregroundOrnaments = processedOrnaments.filter((o) => isForegroundLayer(o.zIndex));
 
   const renderOrnamentList = (list) => list.flatMap((ornament) => {
     const sequence = ornament.sequence || {};
@@ -294,7 +247,7 @@ export default function OrnamentLayer({ ornaments = [], className = "", pulseSyn
 
     // Parallax config
     const parallaxPreset = ornament.parallax || "none";
-    const parallaxSpeed = PARALLAX_SPEEDS[parallaxPreset] ?? (typeof parallaxPreset === "number" ? parallaxPreset : 0);
+    const parallaxSpeed = getParallaxSpeed(parallaxPreset);
     const parallaxDirection = ornament.parallaxDirection || "vertical";
     const hasParallax = parallaxSpeed > 0;
 
@@ -358,18 +311,6 @@ export default function OrnamentLayer({ ornaments = [], className = "", pulseSyn
 
     // Mirror duplicate: render a second copy on the opposite horizontal side
     if (ornament.mirrorDuplicate) {
-      const mirrorSlotMap = {
-        "top-left": "top-right",
-        "top-right": "top-left",
-        "bottom-left": "bottom-right",
-        "bottom-right": "bottom-left",
-        "side-left": "side-right",
-        "side-right": "side-left",
-        "center-top": "center-top",
-        "center-bottom": "center-bottom",
-        center: "center",
-        fill: "fill",
-      };
       // Mirror entrance animation (flip horizontal direction)
       const mirrorEntranceMap = {
         "slide-left": "slide-right",

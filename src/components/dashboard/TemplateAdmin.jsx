@@ -11,11 +11,25 @@ import {
 } from "../../data/templateAdminDefaults";
 import InvitationRenderer from "../../templates/InvitationRenderer";
 import {
+  buildPreviewSnapshot,
+  buildPreviewUrl,
+  buildSnapshotMessage,
+  PREVIEW_MESSAGE,
+  SNAPSHOT_STORAGE_KEY,
+} from "../../templates/previewProtocol";
+import {
+  defaultGiftWidgetConfig,
+  defaultRsvpWidgetConfig,
+  getCountdownWidgetConfig,
   getCoupleSectionConfig,
   getCoverSectionConfig,
+  getEventWidgetConfig,
+  getGalleryWidgetConfig,
+  getMusicWidgetConfig,
   getOpeningRevealConfig,
   getOpeningSequenceConfig,
   getSectionStyleConfig,
+  getStoryWidgetConfig,
   normalizeDesignConfig,
 } from "../../templates/designConfigs";
 import {
@@ -83,6 +97,7 @@ import OrnamentLayerPanel from "./template-admin/OrnamentLayerPanel";
 import OrnamentPropertiesPanel from "./template-admin/OrnamentPropertiesPanel";
 import OrnamentTimelinePanel from "./template-admin/OrnamentTimelinePanel";
 import OrnamentCanvasPanel from "./template-admin/OrnamentCanvasPanel";
+import useDesignConfig from "./template-admin/useDesignConfig";
 import StepNavigator from "./template-admin/StepNavigator";
 import PublishStepPanel from "./template-admin/PublishStepPanel";
 import TemplateSaveBar from "./template-admin/TemplateSaveBar";
@@ -171,7 +186,6 @@ function TemplateAdminPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [editingTemplateId, setEditingTemplateId] = useState(null);
   const [templateDraft, setTemplateDraft] = useState(null);
-  const [designConfigText, setDesignConfigText] = useState("");
   const [activeDesignSection, setActiveDesignSection] = useState("home");
   const [selectedOrnamentIndex, setSelectedOrnamentIndex] = useState(0);
   const [managerMessage, setManagerMessage] = useState("");
@@ -207,6 +221,27 @@ function TemplateAdminPage() {
   const previousStepId = currentStepIndex > 0 ? editorStepIds[currentStepIndex - 1] : null;
   const nextStepId =
     currentStepIndex < totalEditorSteps - 1 ? editorStepIds[currentStepIndex + 1] : null;
+
+  const {
+    designConfigText,
+    setDesignConfigText,
+    parsedDesignConfig,
+    writeDesignConfig,
+    patchWidget,
+    patchSection,
+    patchGlobalSectionStyle,
+    patchSectionAnimation,
+    patchOrnament,
+    patchOrnamentAtIndex,
+    patchOrnaments,
+    toggleGlobalOrnamentExclusion,
+    patchOpeningSequenceAsset,
+    writeDesignConfigPreset,
+  } = useDesignConfig({
+    activeDesignSection,
+    selectedOrnamentIndex,
+    setManagerMessage,
+  });
 
   useEffect(() => {
     let isMounted = true;
@@ -323,14 +358,6 @@ function TemplateAdminPage() {
     [items],
   );
 
-  const parsedDesignConfig = useMemo(() => {
-    try {
-      return normalizeDesignConfig(designConfigText.trim() ? JSON.parse(designConfigText) : {});
-    } catch {
-      return null;
-    }
-  }, [designConfigText]);
-
   const designSectionNames = useMemo(() => {
     const names = Array.from(
       new Set([
@@ -422,29 +449,12 @@ function TemplateAdminPage() {
     });
 
     const openingConfig = {
-      enabled: false,
-      animation: "fade",
+      ...getOpeningRevealConfig(parsedDesignConfig),
       sequencePreset: parsedDesignConfig.widgets?.openingSequence?.preset,
-      ...(parsedDesignConfig.widgets?.openingReveal || {}),
     };
-    const openingAssetConfig = {
-      type: "motion",
-      duration: 4,
-      delay: 0,
-      loop: false,
-      skippable: true,
-      ...(parsedDesignConfig.widgets?.openingSequence?.asset || {}),
-    };
-    const galleryConfig = {
-      enabled: true,
-      limit: 6,
-      ...(parsedDesignConfig.widgets?.gallery || {}),
-    };
-    const countdownConfig = {
-      enabled: true,
-      eventIndex: 0,
-      ...(parsedDesignConfig.widgets?.countdown || {}),
-    };
+    const openingAssetConfig = getOpeningSequenceConfig(parsedDesignConfig).asset;
+    const galleryConfig = getGalleryWidgetConfig(parsedDesignConfig);
+    const countdownConfig = getCountdownWidgetConfig(parsedDesignConfig);
 
     if (
       openingConfig.enabled &&
@@ -509,19 +519,16 @@ function TemplateAdminPage() {
     }
 
     const giftConfig = {
-      enabled: true,
-      hasFallbackAccounts: true,
+      ...defaultGiftWidgetConfig,
       ...(parsedDesignConfig.widgets?.gift || {}),
     };
     const rsvpConfig = {
-      enabled: true,
-      hasInvitationSlug: true,
+      ...defaultRsvpWidgetConfig,
       ...(parsedDesignConfig.widgets?.rsvp || {}),
     };
     const musicConfig = {
-      enabled: true,
+      ...getMusicWidgetConfig(parsedDesignConfig),
       hasAudio: true,
-      ...(parsedDesignConfig.widgets?.music || {}),
     };
 
     if (giftConfig.enabled && giftConfig.hasFallbackAccounts === false) {
@@ -568,59 +575,17 @@ function TemplateAdminPage() {
 
     return warnings;
   }, [parsedDesignConfig, templateDraft, validationWarnings]);
-  const countdownWidgetConfig = {
-    enabled: true,
-    eventIndex: 0,
-    variant: "cards",
-    completeText: "Acara sedang berlangsung",
-    ...(parsedDesignConfig?.widgets?.countdown || {}),
-  };
-  const eventWidgetConfig = {
-    enabled: true,
-    variant: "cards",
-    showMaps: true,
-    showIcon: true,
-    ...(parsedDesignConfig?.widgets?.events || {}),
-  };
-  const storyWidgetConfig = {
-    enabled: true,
-    variant: "card",
-    animation: "fade-up",
-    ...(parsedDesignConfig?.widgets?.story || {}),
-  };
-  const galleryWidgetConfig = {
-    enabled: true,
-    variant: "grid",
-    limit: 6,
-    includeCover: false,
-    ...(parsedDesignConfig?.widgets?.gallery || {}),
-  };
-  const musicWidgetConfig = {
-    enabled: true,
-    variant: "floating",
-    position: "bottom-right",
-    showTrackInfo: true,
-    showProgress: true,
-    pulseSync: false,
-    pulseIntensity: "subtle",
-    autoLoop: true,
-    ...(parsedDesignConfig?.widgets?.music || {}),
-  };
+  const countdownWidgetConfig = getCountdownWidgetConfig(parsedDesignConfig || {});
+  const eventWidgetConfig = getEventWidgetConfig(parsedDesignConfig || {});
+  const storyWidgetConfig = getStoryWidgetConfig(parsedDesignConfig || {});
+  const galleryWidgetConfig = getGalleryWidgetConfig(parsedDesignConfig || {});
+  const musicWidgetConfig = getMusicWidgetConfig(parsedDesignConfig || {});
   const giftWidgetConfig = {
-    enabled: true,
-    variant: "cards",
-    copyButton: true,
-    showQr: false,
-    hasFallbackAccounts: true,
+    ...defaultGiftWidgetConfig,
     ...(parsedDesignConfig?.widgets?.gift || {}),
   };
   const rsvpWidgetConfig = {
-    enabled: true,
-    variant: "form",
-    showPax: true,
-    showMessage: true,
-    requireGuestName: false,
-    hasInvitationSlug: true,
+    ...defaultRsvpWidgetConfig,
     ...(parsedDesignConfig?.widgets?.rsvp || {}),
   };
   const coverSectionConfig = getCoverSectionConfig(parsedDesignConfig || {});
@@ -648,21 +613,18 @@ function TemplateAdminPage() {
     () => mapDesignSectionToPreviewSection(activeDesignSection),
     [activeDesignSection],
   );
-  const templatePreviewSrc = useMemo(() => {
-    const previewTemplateId = templateDraft?.id || "standard";
-    const guestQuery =
-      previewGuestMode === "withGuest"
-        ? `&previewGuest=${encodeURIComponent("Bapak/Ibu Preview")}`
-        : "";
-
-    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&embeddedEditorPreview=1&focusSection=${encodeURIComponent(previewFocusSection)}&previewTick=${templatePreviewTick}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
-  }, [
-    previewDataMode,
-    previewFocusSection,
-    previewGuestMode,
-    templateDraft?.id,
-    templatePreviewTick,
-  ]);
+  const templatePreviewSrc = useMemo(
+    () =>
+      buildPreviewUrl({
+        templateId: templateDraft?.id,
+        mode: "editor",
+        focusSection: previewFocusSection,
+        previewTick: templatePreviewTick,
+        previewDataMode,
+        withGuest: previewGuestMode === "withGuest",
+      }),
+    [previewDataMode, previewFocusSection, previewGuestMode, templateDraft?.id, templatePreviewTick],
+  );
   const previewConfigVersion = useMemo(() => {
     let hash = 0;
     for (let index = 0; index < designConfigText.length; index += 1) {
@@ -670,49 +632,54 @@ function TemplateAdminPage() {
     }
     return hash.toString(36);
   }, [designConfigText]);
-  const coverSectionPreviewSrc = useMemo(() => {
-    const previewTemplateId = templateDraft?.id || "standard";
-    const guestQuery =
-      previewGuestMode === "withGuest"
-        ? `&previewGuest=${encodeURIComponent("Bapak/Ibu Preview")}`
-        : "";
-
-    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&embeddedEditorPreview=1&focusSection=home&previewSectionOnly=1&disableOpeningOverlay=1&previewTick=${templatePreviewTick}-${previewConfigVersion}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
-  }, [
-    previewDataMode,
-    previewConfigVersion,
-    previewGuestMode,
-    templateDraft?.id,
-    templatePreviewTick,
-  ]);
+  const coverSectionPreviewSrc = useMemo(
+    () =>
+      buildPreviewUrl({
+        templateId: templateDraft?.id,
+        mode: "cover",
+        previewTick: templatePreviewTick,
+        previewConfigVersion,
+        previewDataMode,
+        withGuest: previewGuestMode === "withGuest",
+      }),
+    [previewDataMode, previewConfigVersion, previewGuestMode, templateDraft?.id, templatePreviewTick],
+  );
   const fullTemplatePreviewSrc = `${templatePreviewSrc.replace(
     "&embeddedEditorPreview=1",
     "",
   )}&viewport=${encodeURIComponent(previewViewport)}`;
-  const openingSectionPreviewSrc = useMemo(() => {
-    const previewTemplateId = templateDraft?.id || "standard";
-    const guestQuery =
-      previewGuestMode === "withGuest"
-        ? `&previewGuest=${encodeURIComponent("Bapak/Ibu Preview")}`
-        : "";
-    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&embeddedEditorPreview=1&previewOpening=1&focusSection=home&previewSectionOnly=1&previewTick=${templatePreviewTick}-${previewConfigVersion}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
-  }, [previewConfigVersion, previewDataMode, previewGuestMode, templateDraft?.id, templatePreviewTick]);
-  const ornamentSectionPreviewSrc = useMemo(() => {
-    const previewTemplateId = templateDraft?.id || "standard";
-    const guestQuery =
-      previewGuestMode === "withGuest"
-        ? `&previewGuest=${encodeURIComponent("Bapak/Ibu Preview")}`
-        : "";
-
-    return `/preview?templateId=${encodeURIComponent(previewTemplateId)}&editorPreview=1&embeddedEditorPreview=1&mobileFrame=1&focusSection=${encodeURIComponent(previewFocusSection)}&disableOpeningOverlay=1&previewTick=${templatePreviewTick}-${previewConfigVersion}&previewDataMode=${encodeURIComponent(previewDataMode)}${guestQuery}`;
-  }, [
-    previewConfigVersion,
-    previewDataMode,
-    previewFocusSection,
-    previewGuestMode,
-    templateDraft?.id,
-    templatePreviewTick,
-  ]);
+  const openingSectionPreviewSrc = useMemo(
+    () =>
+      buildPreviewUrl({
+        templateId: templateDraft?.id,
+        mode: "opening",
+        previewTick: templatePreviewTick,
+        previewConfigVersion,
+        previewDataMode,
+        withGuest: previewGuestMode === "withGuest",
+      }),
+    [previewConfigVersion, previewDataMode, previewGuestMode, templateDraft?.id, templatePreviewTick],
+  );
+  const ornamentSectionPreviewSrc = useMemo(
+    () =>
+      buildPreviewUrl({
+        templateId: templateDraft?.id,
+        mode: "ornament",
+        focusSection: previewFocusSection,
+        previewTick: templatePreviewTick,
+        previewConfigVersion,
+        previewDataMode,
+        withGuest: previewGuestMode === "withGuest",
+      }),
+    [
+      previewConfigVersion,
+      previewDataMode,
+      previewFocusSection,
+      previewGuestMode,
+      templateDraft?.id,
+      templatePreviewTick,
+    ],
+  );
   const ornamentCanvasPreviewSrc =
     activeDesignSection === "opening"
       ? openingSectionPreviewSrc
@@ -759,11 +726,11 @@ function TemplateAdminPage() {
   const editorPreviewSnapshot = useMemo(
     () =>
       templateDraft
-        ? {
+        ? buildPreviewSnapshot({
             id: templateDraft.id,
             image: templateDraft.image,
             designConfig: parsedDesignConfig || {},
-          }
+          })
         : null,
     [parsedDesignConfig, templateDraft],
   );
@@ -774,10 +741,7 @@ function TemplateAdminPage() {
     }
 
     fullPreviewIframeRef.current.contentWindow.postMessage(
-      {
-        type: "nusa-invite:editor-preview-update",
-        payload: editorPreviewSnapshot,
-      },
+      buildSnapshotMessage(editorPreviewSnapshot),
       window.location.origin,
     );
   };
@@ -792,15 +756,12 @@ function TemplateAdminPage() {
     }
 
     try {
-      const previewSnapshot = {
+      const previewSnapshot = buildPreviewSnapshot({
         id: templateDraft.id,
         image: templateDraft.image,
         designConfig: parsedDesignConfig || {},
-      };
-      window.sessionStorage.setItem(
-        "nusa-invite:editor-preview-template",
-        JSON.stringify(previewSnapshot),
-      );
+      });
+      window.sessionStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(previewSnapshot));
     } catch {
       return;
     }
@@ -824,15 +785,12 @@ function TemplateAdminPage() {
     }
 
     try {
-      const previewSnapshot = {
+      const previewSnapshot = buildPreviewSnapshot({
         id: templateDraft.id,
         image: templateDraft.image,
         designConfig: nextConfig,
-      };
-      window.sessionStorage.setItem(
-        "nusa-invite:editor-preview-template",
-        JSON.stringify(previewSnapshot),
-      );
+      });
+      window.sessionStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(previewSnapshot));
     } catch {
       setManagerMessage("Gagal menyiapkan editor preview.");
       return;
@@ -840,11 +798,6 @@ function TemplateAdminPage() {
 
     const previewUrl = `/preview?templateId=${encodeURIComponent(templateDraft.id)}&editorPreview=1`;
     window.open(previewUrl, "_blank", "noopener,noreferrer");
-  };
-
-  const writeDesignConfig = (nextConfig) => {
-    setDesignConfigText(JSON.stringify(nextConfig, null, 2));
-    setManagerMessage("");
   };
 
   const ensurePresetSections = (templateId, config = {}) => {
@@ -887,252 +840,38 @@ function TemplateAdminPage() {
     };
   };
 
-  const updateOrnament = (field, value) => {
-    if (!parsedDesignConfig || !selectedOrnament) {
-      return;
-    }
-
-    const ornaments = {
-      ...(parsedDesignConfig.ornaments || {}),
-      [activeDesignSection]: [...activeOrnaments],
-    };
-    const index = Math.min(selectedOrnamentIndex, ornaments[activeDesignSection].length - 1);
-    ornaments[activeDesignSection][index] = {
-      ...ornaments[activeDesignSection][index],
-      [field]: value,
-    };
-
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      ornaments,
-    });
-  };
-
-  const updateOrnamentAtIndex = (index, patch) => {
-    if (!parsedDesignConfig) return;
-    const sectionOrnaments = [...activeOrnaments];
-    if (!sectionOrnaments[index]) return;
-    sectionOrnaments[index] = { ...sectionOrnaments[index], ...patch };
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      ornaments: {
-        ...(parsedDesignConfig.ornaments || {}),
-        [activeDesignSection]: sectionOrnaments,
-      },
-    });
-  };
-
-  const toggleGlobalOrnamentExclusion = (sectionName) => {
-    if (!parsedDesignConfig || !sectionName) return;
-
-    const currentExclusions = parsedDesignConfig.ornamentExclusions || {};
-    const globalExclusions = Array.isArray(currentExclusions.global)
-      ? currentExclusions.global
-      : [];
-    const nextGlobalExclusions = globalExclusions.includes(sectionName)
-      ? globalExclusions.filter((item) => item !== sectionName)
-      : [...globalExclusions, sectionName];
-
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      ornamentExclusions: {
-        ...currentExclusions,
-        global: nextGlobalExclusions,
-      },
-    });
-  };
+  const updateOrnament = patchOrnament;
+  const updateOrnamentAtIndex = patchOrnamentAtIndex;
 
   useOrnamentTimelineInteractions({
     timelineInteraction,
     setTimelineInteraction,
     timelineSnapEnabled,
     timelineSnapUnit,
-    updateOrnamentAtIndex,
+    updateOrnamentAtIndex: patchOrnamentAtIndex,
     editorStep,
     selectedOrnament,
     selectedOrnamentIndex,
     activeOrnaments,
   });
 
-  const updateCountdownWidget = (field, value) => {
-    if (!parsedDesignConfig) {
-      return;
-    }
+  const updateOpeningRevealWidget = (field, value) => patchWidget("openingReveal", { [field]: value });
+  const updateCountdownWidget = (field, value) => patchWidget("countdown", { [field]: value });
+  const updateEventWidget = (field, value) => patchWidget("events", { [field]: value });
+  const updateStoryWidget = (field, value) => patchWidget("story", { [field]: value });
+  const updateGalleryWidget = (field, value) => patchWidget("gallery", { [field]: value });
+  const updateMusicWidget = (field, value) => patchWidget("music", { [field]: value });
+  const updateGiftWidget = (field, value) => patchWidget("gift", { [field]: value });
+  const updateRsvpWidget = (field, value) => patchWidget("rsvp", { [field]: value });
 
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      widgets: {
-        ...(parsedDesignConfig.widgets || {}),
-        countdown: {
-          ...countdownWidgetConfig,
-          [field]: value,
-        },
-      },
-    });
-  };
-
-  const updateEventWidget = (field, value) => {
-    if (!parsedDesignConfig) {
-      return;
-    }
-
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      widgets: {
-        ...(parsedDesignConfig.widgets || {}),
-        events: {
-          ...eventWidgetConfig,
-          [field]: value,
-        },
-      },
-    });
-  };
-
-  const updateStoryWidget = (field, value) => {
-    if (!parsedDesignConfig) {
-      return;
-    }
-
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      widgets: {
-        ...(parsedDesignConfig.widgets || {}),
-        story: {
-          ...storyWidgetConfig,
-          [field]: value,
-        },
-      },
-    });
-  };
-
-  const updateGalleryWidget = (field, value) => {
-    if (!parsedDesignConfig) {
-      return;
-    }
-
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      widgets: {
-        ...(parsedDesignConfig.widgets || {}),
-        gallery: {
-          ...galleryWidgetConfig,
-          [field]: value,
-        },
-      },
-    });
-  };
-
-  const updateMusicWidget = (field, value) => {
-    if (!parsedDesignConfig) {
-      return;
-    }
-
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      widgets: {
-        ...(parsedDesignConfig.widgets || {}),
-        music: {
-          ...musicWidgetConfig,
-          [field]: value,
-        },
-      },
-    });
-  };
-
-  const updateGiftWidget = (field, value) => {
-    if (!parsedDesignConfig) {
-      return;
-    }
-
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      widgets: {
-        ...(parsedDesignConfig.widgets || {}),
-        gift: {
-          ...giftWidgetConfig,
-          [field]: value,
-        },
-      },
-    });
-  };
-
-  const updateRsvpWidget = (field, value) => {
-    if (!parsedDesignConfig) {
-      return;
-    }
-
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      widgets: {
-        ...(parsedDesignConfig.widgets || {}),
-        rsvp: {
-          ...rsvpWidgetConfig,
-          [field]: value,
-        },
-      },
-    });
-  };
-
-  const updateOpeningRevealWidget = (field, value) => {
-    if (!parsedDesignConfig) {
-      return;
-    }
-
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      widgets: {
-        ...(parsedDesignConfig.widgets || {}),
-        openingReveal: {
-          ...openingRevealWidgetConfig,
-          [field]: value,
-        },
-      },
-    });
-  };
-
-  const updateOpeningSequenceWidget = (field, value) => {
-    if (!parsedDesignConfig) {
-      return;
-    }
-
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      widgets: {
-        ...(parsedDesignConfig.widgets || {}),
-        openingSequence: {
-          ...openingSequenceWidgetConfig,
-          [field]: value,
-        },
-      },
-    });
-  };
+  const updateOpeningSequenceWidget = (field, value) => patchWidget("openingSequence", { [field]: value });
 
   const updateOpeningSequenceAsset = (field, value) => {
-    if (!parsedDesignConfig) {
-      return;
-    }
-
-    updateOpeningSequenceAssetFields({ [field]: value });
+    patchOpeningSequenceAsset({ [field]: value });
   };
 
   const updateOpeningSequenceAssetFields = (fields) => {
-    if (!parsedDesignConfig) {
-      return;
-    }
-
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      widgets: {
-        ...(parsedDesignConfig.widgets || {}),
-        openingSequence: {
-          ...openingSequenceWidgetConfig,
-          asset: {
-            ...(openingSequenceWidgetConfig.asset || {}),
-            ...fields,
-          },
-        },
-      },
-    });
+    patchOpeningSequenceAsset(fields);
   };
 
   const updateOpeningSequenceAssetFile = async (field, file) => {
@@ -1194,24 +933,11 @@ function TemplateAdminPage() {
   };
 
   const updateTemplateSectionConfig = (section, field, value) => {
-    if (!parsedDesignConfig) {
-      return;
-    }
-
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      sections: {
-        ...(parsedDesignConfig.sections || {}),
-        [section]: {
-          ...(parsedDesignConfig.sections?.[section] || {}),
-          [field]: value,
-        },
-      },
-    });
+    patchSection(section, { [field]: value });
   };
 
   const updateGlobalSectionStyle = (field, value) => {
-    updateTemplateSectionConfig("global", field, value);
+    patchGlobalSectionStyle({ [field]: value });
   };
 
   const applyColorPalette = (palette) => {
@@ -1254,23 +980,7 @@ function TemplateAdminPage() {
   };
 
   const updateSectionAnimation = (field, value) => {
-    if (!parsedDesignConfig) {
-      return;
-    }
-
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      animations: {
-        ...(parsedDesignConfig.animations || {}),
-        sections: {
-          ...(parsedDesignConfig.animations?.sections || {}),
-          [activeDesignSection]: {
-            ...sectionAnimationConfig,
-            [field]: value,
-          },
-        },
-      },
-    });
+    patchSectionAnimation({ [field]: value });
   };
 
   const applySectionAnimationPreset = (presetId) => {

@@ -13,6 +13,12 @@ import {
   InvitationErrorState,
   InvitationLoadingState,
 } from "../../components/InvitationLoadingState";
+import {
+  buildReadyMessage,
+  PREVIEW_MESSAGE,
+  parsePreviewQuery,
+  SNAPSHOT_STORAGE_KEY,
+} from "../../templates/previewProtocol";
 import InvitationRenderer from "../../templates/InvitationRenderer";
 
 const IMAGE_URL_PATTERN = /\.(avif|gif|jpe?g|png|svg|webp)(\?.*)?$/i;
@@ -84,7 +90,7 @@ function readEditorPreviewSnapshot(templateId) {
   }
 
   try {
-    const rawSnapshot = window.sessionStorage.getItem("nusa-invite:editor-preview-template");
+    const rawSnapshot = window.sessionStorage.getItem(SNAPSHOT_STORAGE_KEY);
     const snapshot = rawSnapshot ? JSON.parse(rawSnapshot) : null;
 
     if (snapshot?.id === templateId) {
@@ -182,18 +188,20 @@ function applyPreviewSettings(invitation, settings = {}) {
 
 export default function PreviewPageClient() {
   const searchParams = useSearchParams();
-  const slug = searchParams.get("slug");
-  const templateId = searchParams.get("templateId");
-  const editorPreview = searchParams.get("editorPreview") === "1";
-  const embeddedEditorPreview = searchParams.get("embeddedEditorPreview") === "1";
-  const previewSectionOnly = searchParams.get("previewSectionOnly") === "1";
-  const previewFocusSection = searchParams.get("focusSection") || null;
-  const mobileFramePreview = searchParams.get("mobileFrame") === "1";
-  const disableOpeningOverlay =
-    searchParams.get("disableOpeningOverlay") === "1" || previewSectionOnly;
-  const previewOpening = searchParams.get("previewOpening") === "1";
-  const previewGuest = searchParams.get("previewGuest") || "";
-  const previewDataMode = searchParams.get("previewDataMode") || "filled";
+  const previewQuery = parsePreviewQuery(searchParams);
+  const {
+    slug,
+    templateId,
+    editorPreview,
+    embeddedEditorPreview,
+    previewSectionOnly,
+    previewFocusSection,
+    mobileFramePreview,
+    disableOpeningOverlay,
+    previewOpening,
+    previewGuest,
+    previewDataMode,
+  } = previewQuery;
   const framedDesktopPreview = !embeddedEditorPreview && !previewSectionOnly;
   const shouldLoadBeforeRender = Boolean(slug || templateId);
   const [data, setData] = useState(() => (
@@ -361,13 +369,13 @@ export default function PreviewPageClient() {
       if (!message || typeof message !== "object") {
         return;
       }
-      if (message.type === "nusa-invite:editor-preview-replay") {
+      if (message.type === PREVIEW_MESSAGE.replay) {
         window.scrollTo(0, 0);
         setReplayKey((current) => current + 1);
         return;
       }
 
-      if (message.type !== "nusa-invite:editor-preview-update") {
+      if (message.type !== PREVIEW_MESSAGE.update) {
         return;
       }
 
@@ -397,10 +405,7 @@ export default function PreviewPageClient() {
     }
 
     window.parent?.postMessage(
-      {
-        type: "nusa-invite:editor-preview-ready",
-        templateId: data.templateId,
-      },
+      buildReadyMessage(data.templateId),
       window.location.origin,
     );
   }, [data.templateId, isLoading, loadError, replayKey]);
