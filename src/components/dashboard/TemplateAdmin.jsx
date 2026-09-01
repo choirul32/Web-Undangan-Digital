@@ -612,10 +612,24 @@ function TemplateAdminPage() {
   const selectedBadgeOption = templateBadgeOptions.includes(templateDraft?.badge)
     ? templateDraft?.badge
     : "Custom";
-  const previewFocusSection = useMemo(
-    () => mapDesignSectionToPreviewSection(activeDesignSection),
-    [activeDesignSection],
-  );
+  // Untuk section "global", preview diarahkan ke section pertama yang TIDAK
+  // dikecualikan dari ornamen global — supaya ornamen global selalu terlihat
+  // di canvas editor (kalau home dikecualikan, jangan fokus ke home).
+  const previewFocusSection = useMemo(() => {
+    const mapped = mapDesignSectionToPreviewSection(activeDesignSection);
+
+    if (activeDesignSection === "global") {
+      const excluded = new Set(parsedDesignConfig?.ornamentExclusions?.global || []);
+      const candidate = designSectionNames.find(
+        (sectionName) => sectionName !== "global" && !excluded.has(sectionName),
+      );
+      if (candidate) {
+        return mapDesignSectionToPreviewSection(candidate);
+      }
+    }
+
+    return mapped;
+  }, [activeDesignSection, designSectionNames, parsedDesignConfig]);
   const templatePreviewSrc = useMemo(
     () =>
       buildPreviewUrl({
