@@ -192,6 +192,30 @@ async function getTemplateRowById(supabase, templateId) {
 }
 
 export async function getInvitationBySlug(slug) {
+  // Tolak slug teknis yang sering diminta browser/robot (favicon, robots, sitemap)
+  // sebelum menyentuh database — mencegah error PGRST116 dari .single().
+  if (!slug || typeof slug !== "string") {
+    return null;
+  }
+
+  const normalizedSlug = slug.toLowerCase();
+  const technicalSlugs = new Set([
+    "favicon.ico",
+    "favicon",
+    "robots.txt",
+    "sitemap.xml",
+    "manifest.json",
+    "apple-touch-icon.png",
+    "site.webmanifest",
+    "browserconfig.xml",
+    "sw.js",
+    "service-worker.js",
+    "workbox-*.js",
+  ]);
+  if (technicalSlugs.has(normalizedSlug) || normalizedSlug.startsWith("_next/")) {
+    return null;
+  }
+
   if (!hasSupabaseEnv() && !hasServiceEnv()) {
     return null;
   }

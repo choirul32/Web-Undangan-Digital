@@ -53,7 +53,7 @@ const flowbiteSelectTheme = {
 };
 
 const dashboardButtonTheme = {
-  base: "relative inline-flex items-center justify-center rounded-md text-center font-semibold transition-colors focus:outline-none focus:ring-4",
+  base: "relative inline-flex items-center justify-center rounded-md text-center font-semibold transition-all active:scale-[0.96] focus:outline-none focus:ring-4",
   size: {
     sm: "min-h-9 px-3 py-2 text-sm",
     md: "min-h-10 px-4 py-2.5 text-sm",
@@ -308,25 +308,8 @@ export function DateInput({
   const readableDate = formatReadableDate(value);
   const inputRef = useRef(null);
 
-  const openPicker = () => {
-    const input = inputRef.current;
-    if (!input) {
-      return;
-    }
-
-    if (typeof input.showPicker === "function") {
-      input.showPicker();
-      return;
-    }
-
-    input.focus();
-    input.click();
-  };
-
   return (
-    <button
-      type="button"
-      onClick={openPicker}
+    <label
       className={`group relative flex min-h-[46px] cursor-pointer items-center justify-between gap-3 rounded-xl border border-[var(--dash-border)] bg-white px-3 py-2.5 text-sm transition-colors hover:border-[var(--color-accent-pale)] focus-within:border-[var(--color-accent)] focus-within:ring-2 focus-within:ring-[var(--color-accent)]/20 ${className}`}
     >
       <span className="min-w-0">
@@ -354,17 +337,18 @@ export function DateInput({
         <rect x="3" y="4" width="18" height="18" rx="2" />
         <path d="M16 2v4M8 2v4M3 10h18" />
       </svg>
+      {/* Input date native: menutupi seluruh area (focusable + clickable),
+          transparan supaya tampilan custom tetap terlihat. */}
       <input
         {...props}
         ref={inputRef}
         type="date"
         value={value || ""}
         onChange={onChange}
-        className="sr-only"
-        tabIndex={-1}
         aria-label={placeholder}
+        className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
       />
-    </button>
+    </label>
   );
 }
 
@@ -505,7 +489,11 @@ export function ToggleField({ checked, label, desc, onChange }) {
       </span>
       <ToggleSwitch
         checked={checked}
+        // Label ToggleSwitch dibiarkan kosong: teks sudah ditampilkan
+        // di sisi kiri ToggleField. Mengirim label ke Flowbite akan
+        // merender teks dobel di dalam toggle.
         label=""
+        aria-label={label}
         onChange={onChange}
         className="mt-0.5 shrink-0"
         theme={{

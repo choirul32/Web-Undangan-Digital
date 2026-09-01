@@ -365,7 +365,7 @@ export function OpeningSequenceAtmosphere({ config = {}, isOpening = false }) {
   );
 }
 
-export default function OpeningSequence({ config = {}, isOpening = false, className = "", children }) {
+export default function OpeningSequence({ config = {}, isOpening = false, className = "", style, children }) {
   const shouldReduceMotion = useReducedMotion();
   const preset = getOpeningSequencePreset(config);
   const safePreset = shouldReduceMotion
@@ -385,6 +385,7 @@ export default function OpeningSequence({ config = {}, isOpening = false, classN
       animate={isOpening ? safePreset.exit : safePreset.animate}
       transition={{ duration: safePreset.duration, ease: safePreset.ease }}
       className={className}
+      style={style}
     >
       {children}
     </motion.div>

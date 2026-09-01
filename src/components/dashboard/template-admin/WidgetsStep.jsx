@@ -15,6 +15,27 @@ import {
   TextInput,
   ToggleField,
 } from "../FormControls";
+import VisualChoiceControl from "./VisualChoiceControl";
+import {
+  previewLayoutCards,
+  previewLayoutMinimal,
+  previewLayoutStacked,
+  previewLayoutTimeline,
+  previewLayoutGrid,
+  previewLayoutCarousel,
+  previewLayoutMasonry,
+  previewLayoutSlider,
+  previewLayoutChat,
+  previewLayoutCircle,
+  previewLayoutFlipClock,
+  previewLayoutRing,
+  previewLayoutNeon,
+  previewLayoutBar,
+  previewLayoutFloating,
+  previewLayoutForm,
+  previewLayoutCard,
+  previewPosition,
+} from "./choicePreviews";
 import { prepareImageForUpload } from "../../../lib/imageUpload";
 
 const optionLabels = {
@@ -56,6 +77,39 @@ const optionLabels = {
 
 function optionLabel(value) {
   return optionLabels[value] || value;
+}
+
+const variantPreviewMap = {
+  cards: previewLayoutCards,
+  minimal: previewLayoutMinimal,
+  stacked: previewLayoutStacked,
+  timeline: previewLayoutTimeline,
+  grid: previewLayoutGrid,
+  carousel: previewLayoutCarousel,
+  masonry: previewLayoutMasonry,
+  slider: previewLayoutSlider,
+  "chat-style": previewLayoutChat,
+  "chapter-scroll": previewLayoutTimeline,
+  card: previewLayoutCard,
+  circle: previewLayoutCircle,
+  "flip-clock": previewLayoutFlipClock,
+  ring: previewLayoutRing,
+  "neon-glow": previewLayoutNeon,
+  bar: previewLayoutBar,
+  floating: previewLayoutFloating,
+  form: previewLayoutForm,
+  compact: previewLayoutMinimal,
+};
+
+function buildVisualOptions(values, extraPreviews = {}) {
+  return values.map((value) => {
+    const previewBuilder = extraPreviews[value] || variantPreviewMap[value];
+    return {
+      value,
+      label: optionLabel(value),
+      preview: previewBuilder ? previewBuilder(value) : null,
+    };
+  });
 }
 
 function MiniInput({ label, value, onChange, type = "text" }) {
@@ -198,7 +252,8 @@ export default function WidgetsStep({
   if (!visible) return null;
 
   return (
-    <>
+    <div className="scroll-mt-24 md:col-span-2">
+      <div className="space-y-5">
       <div id="template-widgets" className="scroll-mt-24 md:col-span-2">
         <WidgetPanel
           eyebrow="Hitung Mundur"
@@ -225,16 +280,13 @@ export default function WidgetsStep({
                 </SelectInput>
               </Field>
               <Field label="Gaya Tampilan">
-                <SelectInput
+                <VisualChoiceControl
                   value={countdownWidgetConfig.variant}
-                  onChange={(event) => updateCountdownWidget("variant", event.target.value)}
-                >
-                  {countdownVariantOptions.map((variant) => (
-                    <option key={variant} value={variant}>
-                      {optionLabel(variant)}
-                    </option>
-                  ))}
-                </SelectInput>
+                  options={buildVisualOptions(countdownVariantOptions)}
+                  onChange={(value) => updateCountdownWidget("variant", value)}
+                  columns={3}
+                  ariaLabel="Gaya tampilan hitung mundur"
+                />
               </Field>
               <MiniInput
                 label="Teks Selesai"
@@ -260,16 +312,13 @@ export default function WidgetsStep({
           <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start">
             <div className="grid gap-4 md:grid-cols-2">
               <Field label="Gaya Tampilan">
-                <SelectInput
+                <VisualChoiceControl
                   value={storyWidgetConfig.variant}
-                  onChange={(event) => updateStoryWidget("variant", event.target.value)}
-                >
-                  {storyVariantOptions.map((variant) => (
-                    <option key={variant} value={variant}>
-                      {optionLabel(variant)}
-                    </option>
-                  ))}
-                </SelectInput>
+                  options={buildVisualOptions(storyVariantOptions)}
+                  onChange={(value) => updateStoryWidget("variant", value)}
+                  columns={3}
+                  ariaLabel="Gaya tampilan cerita"
+                />
               </Field>
               <Field label="Animasi Item">
                 <SelectInput
@@ -311,16 +360,13 @@ export default function WidgetsStep({
           <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start">
             <div className="grid gap-4 md:grid-cols-3">
               <Field label="Gaya Galeri">
-                <SelectInput
+                <VisualChoiceControl
                   value={galleryWidgetConfig.variant}
-                  onChange={(event) => updateGalleryWidget("variant", event.target.value)}
-                >
-                  {galleryVariantOptions.map((variant) => (
-                    <option key={variant} value={variant}>
-                      {optionLabel(variant)}
-                    </option>
-                  ))}
-                </SelectInput>
+                  options={buildVisualOptions(galleryVariantOptions)}
+                  onChange={(value) => updateGalleryWidget("variant", value)}
+                  columns={3}
+                  ariaLabel="Gaya tampilan galeri"
+                />
               </Field>
               <MiniInput
                 label="Jumlah Foto"
@@ -351,16 +397,13 @@ export default function WidgetsStep({
           <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start">
             <div className="grid gap-4 md:grid-cols-3">
               <Field label="Gaya Tampilan">
-                <SelectInput
+                <VisualChoiceControl
                   value={eventWidgetConfig.variant}
-                  onChange={(event) => updateEventWidget("variant", event.target.value)}
-                >
-                  {eventVariantOptions.map((variant) => (
-                    <option key={variant} value={variant}>
-                      {optionLabel(variant)}
-                    </option>
-                  ))}
-                </SelectInput>
+                  options={buildVisualOptions(eventVariantOptions)}
+                  onChange={(value) => updateEventWidget("variant", value)}
+                  columns={3}
+                  ariaLabel="Gaya tampilan acara"
+                />
               </Field>
               <BooleanToggle
                 label="Tampilkan tombol maps"
@@ -402,28 +445,27 @@ export default function WidgetsStep({
             <div>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <Field label="Gaya Tombol">
-                  <SelectInput
+                  <VisualChoiceControl
                     value={musicWidgetConfig.variant}
-                    onChange={(event) => updateMusicWidget("variant", event.target.value)}
-                  >
-                    {musicVariantOptions.map((variant) => (
-                      <option key={variant} value={variant}>
-                        {optionLabel(variant)}
-                      </option>
-                    ))}
-                  </SelectInput>
+                    options={buildVisualOptions(musicVariantOptions)}
+                    onChange={(value) => updateMusicWidget("variant", value)}
+                    columns={3}
+                    ariaLabel="Gaya tombol musik"
+                  />
                 </Field>
                 <Field label="Posisi Tombol">
-                  <SelectInput
+                  <VisualChoiceControl
                     value={musicWidgetConfig.position}
-                    onChange={(event) => updateMusicWidget("position", event.target.value)}
-                  >
-                    {musicPositionOptions.map((pos) => (
-                      <option key={pos} value={pos}>
-                        {optionLabel(pos)}
-                      </option>
-                    ))}
-                  </SelectInput>
+                    options={buildVisualOptions(musicPositionOptions, {
+                      "bottom-right": previewPosition,
+                      "bottom-left": previewPosition,
+                      "top-right": previewPosition,
+                      "top-left": previewPosition,
+                    })}
+                    onChange={(value) => updateMusicWidget("position", value)}
+                    columns={4}
+                    ariaLabel="Posisi tombol musik"
+                  />
                 </Field>
                 <Field label="Kekuatan Efek">
                   <SelectInput
@@ -489,14 +531,13 @@ export default function WidgetsStep({
           <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start">
             <div className="grid gap-4 md:grid-cols-3">
               <Field label="Gaya Tampilan">
-                <SelectInput
+                <VisualChoiceControl
                   value={giftWidgetConfig.variant}
-                  onChange={(event) => updateGiftWidget("variant", event.target.value)}
-                >
-                  <option value="cards">{optionLabel("cards")}</option>
-                  <option value="minimal">{optionLabel("minimal")}</option>
-                  <option value="stacked">{optionLabel("stacked")}</option>
-                </SelectInput>
+                  options={buildVisualOptions(["cards", "minimal", "stacked"])}
+                  onChange={(value) => updateGiftWidget("variant", value)}
+                  columns={3}
+                  ariaLabel="Gaya tampilan amplop digital"
+                />
               </Field>
               <BooleanToggle
                 label="Tombol salin rekening"
@@ -527,14 +568,13 @@ export default function WidgetsStep({
           <div className="mt-5 grid gap-5 lg:grid-cols-[1fr_320px] lg:items-start">
             <div className="grid gap-4 md:grid-cols-3">
               <Field label="Gaya Form">
-                <SelectInput
+                <VisualChoiceControl
                   value={rsvpWidgetConfig.variant}
-                  onChange={(event) => updateRsvpWidget("variant", event.target.value)}
-                >
-                  <option value="form">{optionLabel("form")}</option>
-                  <option value="compact">{optionLabel("compact")}</option>
-                  <option value="card">{optionLabel("card")}</option>
-                </SelectInput>
+                  options={buildVisualOptions(["form", "compact", "card"])}
+                  onChange={(value) => updateRsvpWidget("variant", value)}
+                  columns={3}
+                  ariaLabel="Gaya form RSVP"
+                />
               </Field>
               <BooleanToggle
                 label="Input jumlah tamu"
@@ -554,6 +594,7 @@ export default function WidgetsStep({
             />
           </div>
       </WidgetPanel>
-    </>
+      </div>
+    </div>
   );
 }

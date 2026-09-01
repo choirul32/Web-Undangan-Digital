@@ -235,6 +235,38 @@ export const defaultTemplateMetadata = [
 export const templateOverridesStorageKey = "nusa-invite:template-overrides";
 export const deletedTemplateIdsStorageKey = "nusa-invite:deleted-template-ids";
 
+function readStorageJson(key, fallback) {
+  if (typeof window === "undefined") {
+    return fallback;
+  }
+
+  try {
+    const raw = window.localStorage.getItem(key);
+    if (!raw) {
+      return fallback;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeStorageJson(key, value) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore localStorage access issues (private mode / quota)
+  }
+}
+
+// Catatan: override lokal adalah FALLBACK saat Supabase belum dikonfigurasi.
+// Begitu Supabase aktif, data disimpan di DB dan override lokal bisa dibersihkan
+// lewat clearLegacyTemplateLocalCache() tanpa kehilangan template.
 export function clearLegacyTemplateLocalCache() {
   if (typeof window === "undefined") {
     return;
@@ -249,17 +281,42 @@ export function clearLegacyTemplateLocalCache() {
 }
 
 export function getStoredTemplateOverrides() {
-  clearLegacyTemplateLocalCache();
-  return [];
+  return readStorageJson(templateOverridesStorageKey, []);
 }
 
 export function mergeTemplateOverrides(items = []) {
-  clearLegacyTemplateLocalCache();
-  return items;
+  const overrides = getStoredTemplateOverrides();
+  if (overrides.length === 0) {
+    return items;
+  }
+
+  const overrideById = new Map(overrides.map((item) => [item.id, item]));
+  return items.map((item) => {
+    const override = overrideById.get(item.id);
+    if (!override) {
+      return item;
+    }
+    return {
+      ...item,
+      ...override,
+      image: override.image || item.image,
+      previewUrl: override.previewUrl || item.previewUrl || "/preview",
+      supportedFeatures: override.supportedFeatures || item.supportedFeatures || [],
+    };
+  });
 }
 
 export function upsertStoredTemplateOverride(template) {
-  clearLegacyTemplateLocalCache();
+  if (!template?.id) {
+    return;
+  }
+
+  const overrides = getStoredTemplateOverrides();
+  const nextOverrides = [
+    template,
+    ...overrides.filter((item) => item.id !== template.id),
+  ];
+  writeStorageJson(templateOverridesStorageKey, nextOverrides);
 }
 
 export function getStoredTemplateOverride(templateId) {
@@ -267,15 +324,39 @@ export function getStoredTemplateOverride(templateId) {
 }
 
 export function getStoredDeletedTemplateIds() {
-  clearLegacyTemplateLocalCache();
-  return [];
+  return readStorageJson(deletedTemplateIdsStorageKey, []);
 }
 
 export function addStoredDeletedTemplateId(templateId) {
-  clearLegacyTemplateLocalCache();
+  if (!templateId) {
+    return;
+  }
+
+  const deletedIds = getStoredDeletedTemplateIds();
+  if (deletedIds.includes(templateId)) {
+    return;
+  }
+  writeStorageJson(deletedTemplateIdsStorageKey, [...deletedIds, templateId]);
 }
 
 export function applyStoredTemplateOverrideToInvitation(invitation) {
-  clearLegacyTemplateLocalCache();
-  return invitation;
+  // Kalau sudah ada designConfig dari sumber yang lebih fresh (snapshot
+  // editor via sessionStorage), jangan timpa dengan override lama.
+  if (invitation?.designConfig) {
+    return invitation;
+  }
+
+  const override = invitation?.templateId
+    ? getStoredTemplateOverride(invitation.templateId)
+    : null;
+  if (!override) {
+    return invitation;
+  }
+
+  return {
+    ...invitation,
+    templateId: override.id,
+    coverImage: override.image || invitation.coverImage,
+    designConfig: override.designConfig || invitation.designConfig,
+  };
 }

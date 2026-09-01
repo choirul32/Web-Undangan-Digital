@@ -49,10 +49,10 @@ export function CoupleSection({ designConfig, couple, coupleConfig, profileImage
   const articleClass =
     coupleConfig.cardEnabled === false
       ? "text-center"
-      : "relative overflow-hidden rounded-[8px] border border-[var(--color-accent-pale)] p-7 text-center shadow-xl shadow-[var(--color-primary)]/8";
+      : "card-surface relative overflow-hidden text-center";
 
   return (
-    <SectionFrame section="couple" designConfig={designConfig} baseClassName="bg-[var(--color-surface)]">
+    <SectionFrame section="couple" designConfig={designConfig}>
       <div className="relative z-10 mx-auto max-w-6xl">
         <SectionTitle
           title="BRIDE & GROOM"
@@ -100,7 +100,7 @@ export function GiftSection({ accounts = [], designConfig, qrisImage = "" }) {
   if (!accounts.length && !qrisImage) return null;
 
   return (
-    <SectionFrame section="gift" designConfig={designConfig} baseClassName="bg-[var(--color-surface)]">
+    <SectionFrame section="gift" designConfig={designConfig}>
       <div className="relative z-10 mx-auto max-w-5xl">
         <SectionTitle eyebrow="Amplop Digital" title="Doa restu adalah hadiah terbaik." desc="Bagi keluarga dan sahabat yang ingin mengirimkan tanda kasih, rekening dan QRIS tersedia di bawah ini." />
         {qrisImage ? (
@@ -109,7 +109,7 @@ export function GiftSection({ accounts = [], designConfig, qrisImage = "" }) {
             whileInView="visible"
             viewport={{ once: true, amount: 0.3 }}
             variants={fadeUp}
-            className="mx-auto mt-10 max-w-sm overflow-hidden rounded-[8px] border border-[var(--color-accent-pale)] bg-white text-center shadow-lg shadow-[var(--color-primary)]/8"
+            className="card-surface mx-auto mt-10 max-w-sm overflow-hidden text-center"
           >
             <button
               type="button"
@@ -150,7 +150,7 @@ export function GiftSection({ accounts = [], designConfig, qrisImage = "" }) {
         {accounts.length ? (
         <div className="mt-10 grid gap-5 md:grid-cols-2">
           {accounts.map((account) => (
-            <motion.div key={`${account.bank}-${account.number}`} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={fadeUp} className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-6 shadow-lg shadow-[var(--color-primary)]/8">
+            <motion.div key={`${account.bank}-${account.number}`} initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={fadeUp} className="card-surface">
               <div className="flex min-h-12 items-center justify-between gap-4">
                 <p className="text-sm font-black uppercase tracking-[0.16em] text-[var(--color-accent)]">{account.bank}</p>
                 {account.logoUrl ? (
@@ -485,7 +485,7 @@ export function WishesSection({ designConfig, slug = "", preview = false, framed
   }
 
   return (
-    <SectionFrame section="doa-ucapan" designConfig={designConfig} baseClassName="bg-[var(--color-section-soft)]">
+    <SectionFrame section="doa-ucapan" designConfig={designConfig}>
       {content}
     </SectionFrame>
   );

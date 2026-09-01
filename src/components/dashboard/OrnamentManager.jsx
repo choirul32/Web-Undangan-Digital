@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { prepareImageForUpload } from "../../lib/imageUpload";
+import AiOrnamentGenerator from "./AiOrnamentGenerator";
 import {
   ConfirmationModal,
   DashboardButton,
@@ -28,6 +29,74 @@ const CATEGORY_OPTIONS = [
   { value: "badge-emblem", label: "Badge / Emblem" },
   { value: "custom", label: "Custom / Lainnya" },
 ];
+
+// ---- Metadata AI untuk template generator ----
+// Vocabulary sama dengan yang dipakai backend (src/app/api/templates/ornaments/upload/route.js)
+export const ORNAMENT_THEME_OPTIONS = [
+  "jawa",
+  "wayang",
+  "bali",
+  "sunda",
+  "islami",
+  "floral",
+  "tropical",
+  "modern",
+  "minimal",
+  "klasik",
+  "royal",
+  "watercolor",
+  "rustic",
+  "elegant",
+  "nature",
+];
+
+export const ORNAMENT_VISUAL_PROP_OPTIONS = [
+  "gelap",
+  "terang",
+  "tebal",
+  "halus",
+  "tradisional",
+  "modern",
+  "mewah",
+  "sederhana",
+];
+
+const ORNAMENT_SLOT_OPTIONS = [
+  "fill",
+  "top-left",
+  "top-right",
+  "bottom-left",
+  "bottom-right",
+  "center-top",
+  "center-bottom",
+  "side-left",
+  "side-right",
+  "middle-left",
+  "middle-right",
+  "center",
+];
+
+const ORNAMENT_VISUAL_PROP_LABELS = {
+  gelap: "Gelap (cocok di bg terang)",
+  terang: "Terang (cocok di bg gelap)",
+  tebal: "Tebal / pekat",
+  halus: "Halus / tipis",
+  tradisional: "Tradisional / adat",
+  modern: "Modern / geometris",
+  mewah: "Mewah / gold-royal",
+  sederhana: "Sederhana / minimal",
+};
+
+function splitComma(value = "") {
+  return String(value)
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function joinComma(values = []) {
+  return (values || []).join(", ");
+}
 
 function getCategoryLabel(value) {
   return CATEGORY_OPTIONS.find((option) => option.value === value)?.label || value || "Custom / Lainnya";
@@ -126,12 +195,18 @@ export default function OrnamentManager() {
   const [uploadName, setUploadName] = useState("");
   const [uploadCategory, setUploadCategory] = useState("corner");
   const [uploadTags, setUploadTags] = useState("");
+  const [uploadTheme, setUploadTheme] = useState("");
+  const [uploadSlots, setUploadSlots] = useState("");
+  const [uploadVisualProps, setUploadVisualProps] = useState("");
   const [uploadTemplateId, setUploadTemplateId] = useState("ornament-library");
   const [uploadFile, setUploadFile] = useState(null);
   const [editTarget, setEditTarget] = useState(null);
   const [editName, setEditName] = useState("");
   const [editCategory, setEditCategory] = useState("custom");
   const [editTags, setEditTags] = useState("");
+  const [editTheme, setEditTheme] = useState("");
+  const [editSlots, setEditSlots] = useState("");
+  const [editVisualProps, setEditVisualProps] = useState("");
   const [editFile, setEditFile] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [message, setMessage] = useState(null);
@@ -227,6 +302,9 @@ export default function OrnamentManager() {
       formData.append("ornamentId", slugify(uploadName || fileForUpload.name));
       formData.append("name", uploadName || fileForUpload.name);
       formData.append("tags", uploadTags);
+      formData.append("theme", uploadTheme);
+      formData.append("suggestedSlots", uploadSlots);
+      formData.append("visualProps", uploadVisualProps);
       formData.append("file", fileForUpload);
 
       const response = await fetch("/api/templates/ornaments/upload", {
@@ -247,11 +325,17 @@ export default function OrnamentManager() {
         mimeType: fileForUpload.type,
         createdAt: new Date().toISOString(),
         tags: uploadTags,
+        theme: result.data.theme || splitComma(uploadTheme),
+        suggestedSlots: result.data.suggestedSlots || splitComma(uploadSlots),
+        visualProps: result.data.visualProps || splitComma(uploadVisualProps),
         src: result.data.url,
       };
       setAssets((current) => [uploaded, ...current]);
       setUploadName("");
       setUploadTags("");
+      setUploadTheme("");
+      setUploadSlots("");
+      setUploadVisualProps("");
       setUploadFile(null);
       setUploadHint(prepared.message || "");
       form.reset();
@@ -266,6 +350,27 @@ export default function OrnamentManager() {
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleAiOrnamentSaved = (saved) => {
+    if (!saved) return;
+
+    const newAsset = {
+      id: saved.storagePath,
+      src: saved.url,
+      storagePath: saved.storagePath,
+      name: saved.name,
+      section: "ai-generated",
+      theme: saved.theme || [],
+      suggestedSlots: saved.suggestedSlots || [],
+      visualProps: saved.visualProps || [],
+      tags: (saved.theme || []).join(", "),
+      mimeType: "image/png",
+      createdAt: new Date().toISOString(),
+      source: "ai",
+    };
+    setAssets((current) => [newAsset, ...current]);
+    setMessage({ tone: "success", text: "Ornamen AI tersimpan ke library." });
   };
 
   const handleDelete = async () => {
@@ -297,6 +402,9 @@ export default function OrnamentManager() {
     setEditName(asset.name || "");
     setEditCategory(asset.section || "custom");
     setEditTags(asset.explicitTags?.join(", ") || "");
+    setEditTheme(joinComma(asset.theme));
+    setEditSlots(joinComma(asset.suggestedSlots));
+    setEditVisualProps(joinComma(asset.visualProps));
     setEditFile(null);
   };
 
@@ -317,6 +425,9 @@ export default function OrnamentManager() {
         requestBody.append("name", editName);
         requestBody.append("category", editCategory);
         requestBody.append("tags", editTags);
+        requestBody.append("theme", editTheme);
+        requestBody.append("suggestedSlots", editSlots);
+        requestBody.append("visualProps", editVisualProps);
         requestBody.append("mimeType", editTarget.mimeType || "");
         requestBody.append("file", prepared.file);
       } else {
@@ -326,6 +437,9 @@ export default function OrnamentManager() {
           name: editName,
           category: editCategory,
           tags: editTags,
+          theme: editTheme,
+          suggestedSlots: editSlots,
+          visualProps: editVisualProps,
           mimeType: editTarget.mimeType,
         });
       }
@@ -351,6 +465,9 @@ export default function OrnamentManager() {
                 name: result.data.name,
                 section: result.data.section,
                 tags: result.data.tags,
+                theme: result.data.theme || splitComma(editTheme),
+                suggestedSlots: result.data.suggestedSlots || splitComma(editSlots),
+                visualProps: result.data.visualProps || splitComma(editVisualProps),
                 src: nextSrc,
                 fileSize: result.data.fileSize || asset.fileSize,
                 mimeType: result.data.mimeType || asset.mimeType,
@@ -395,60 +512,128 @@ export default function OrnamentManager() {
         />
       ) : null}
 
+      <AiOrnamentGenerator templates={templates} onSaved={handleAiOrnamentSaved} />
+
       <DashboardCard>
-        <form onSubmit={handleUpload} className="grid gap-4 lg:grid-cols-12">
-          <div className="lg:col-span-3">
-            <Field label="Upload ornamen">
-              <input
-                type="file"
-                accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                onChange={(event) => {
-                  setUploadFile(event.target.files?.[0] || null);
-                  setUploadHint("");
-                }}
-                className="block w-full rounded-xl border border-dashed border-[var(--dash-border)] bg-[var(--dash-fog)] px-3 py-3 text-sm font-semibold text-[var(--dash-ink)] file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-bold file:text-[var(--dash-ink)]"
-              />
-              <p className="mt-2 text-xs font-semibold leading-5 text-[var(--dash-muted)]">
-                PNG/JPG/WEBP akan dikompres otomatis maksimal 5MB. SVG tetap disimpan asli.
-              </p>
-              {uploadHint ? (
-                <p className="mt-1 text-xs font-bold text-emerald-700">{uploadHint}</p>
-              ) : null}
-            </Field>
+        <form onSubmit={handleUpload} className="space-y-4">
+          <div className="grid gap-4 lg:grid-cols-12">
+            <div className="lg:col-span-3">
+              <Field label="Upload ornamen">
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                  onChange={(event) => {
+                    setUploadFile(event.target.files?.[0] || null);
+                    setUploadHint("");
+                  }}
+                  className="block w-full rounded-xl border border-dashed border-[var(--dash-border)] bg-[var(--dash-fog)] px-3 py-3 text-sm font-semibold text-[var(--dash-ink)] file:mr-3 file:rounded-lg file:border-0 file:bg-white file:px-3 file:py-2 file:text-sm file:font-bold file:text-[var(--dash-ink)]"
+                />
+                <p className="mt-2 text-xs font-semibold leading-5 text-[var(--dash-muted)]">
+                  PNG/JPG/WEBP akan dikompres otomatis maksimal 5MB. SVG tetap disimpan asli.
+                </p>
+                {uploadHint ? (
+                  <p className="mt-1 text-xs font-bold text-emerald-700">{uploadHint}</p>
+                ) : null}
+              </Field>
+            </div>
+            <div className="lg:col-span-2">
+              <Field label="Nama">
+                <TextInput value={uploadName} onChange={(event) => setUploadName(event.target.value)} placeholder="corner floral" />
+              </Field>
+            </div>
+            <div className="lg:col-span-2">
+              <Field label="Kategori">
+                <SelectInput value={uploadCategory} onChange={(event) => setUploadCategory(event.target.value)}>
+                  {CATEGORY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
+                </SelectInput>
+              </Field>
+            </div>
+            <div className="lg:col-span-2">
+              <Field label="Simpan di">
+                <SelectInput value={uploadTemplateId} onChange={(event) => setUploadTemplateId(event.target.value)}>
+                  <option value="ornament-library">Library global</option>
+                  {templates.map((template) => (
+                    <option key={template.id} value={template.id}>{template.name || template.id}</option>
+                  ))}
+                </SelectInput>
+              </Field>
+            </div>
+            <div className="lg:col-span-2">
+              <Field label="Tag">
+                <TextInput value={uploadTags} onChange={(event) => setUploadTags(event.target.value)} placeholder="gold, floral" />
+              </Field>
+            </div>
+            <div className="flex items-end lg:col-span-1">
+              <DashboardButton type="submit" loading={uploading} className="w-full">
+                Tambah
+              </DashboardButton>
+            </div>
           </div>
-          <div className="lg:col-span-2">
-            <Field label="Nama">
-              <TextInput value={uploadName} onChange={(event) => setUploadName(event.target.value)} placeholder="corner floral" />
-            </Field>
-          </div>
-          <div className="lg:col-span-2">
-            <Field label="Kategori">
-              <SelectInput value={uploadCategory} onChange={(event) => setUploadCategory(event.target.value)}>
-                {CATEGORY_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
-              </SelectInput>
-            </Field>
-          </div>
-          <div className="lg:col-span-2">
-            <Field label="Simpan di">
-              <SelectInput value={uploadTemplateId} onChange={(event) => setUploadTemplateId(event.target.value)}>
-                <option value="ornament-library">Library global</option>
-                {templates.map((template) => (
-                  <option key={template.id} value={template.id}>{template.name || template.id}</option>
-                ))}
-              </SelectInput>
-            </Field>
-          </div>
-          <div className="lg:col-span-2">
-            <Field label="Tag">
-              <TextInput value={uploadTags} onChange={(event) => setUploadTags(event.target.value)} placeholder="gold, floral" />
-            </Field>
-          </div>
-          <div className="flex items-end lg:col-span-1">
-            <DashboardButton type="submit" loading={uploading} className="w-full">
-              Tambah
-            </DashboardButton>
+
+          <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-fog)]/50 p-4">
+            <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--dash-muted)]">
+              Metadata AI Template Generator
+            </p>
+            <p className="mt-1 text-xs font-semibold leading-5 text-[var(--dash-muted)]">
+              Dipakai AI untuk mencocokkan ornamen dengan prompt. Isi agar hasil generate lebih akurat.
+            </p>
+            <div className="mt-3 grid gap-4 lg:grid-cols-3">
+              <Field label="Tema (pilih 1 atau lebih)">
+                <SelectInput
+                  value={uploadTheme}
+                  onChange={(event) => setUploadTheme(event.target.value)}
+                >
+                  <option value="">Pilih tema...</option>
+                  {ORNAMENT_THEME_OPTIONS.map((theme) => (
+                    <option key={theme} value={theme}>{theme}</option>
+                  ))}
+                </SelectInput>
+              </Field>
+              <Field label="Slot yang cocok (pisahkan koma)">
+                <TextInput
+                  value={uploadSlots}
+                  onChange={(event) => setUploadSlots(event.target.value)}
+                  placeholder="top-left, bottom-right"
+                />
+                <div className="mt-1.5 flex flex-wrap gap-1">
+                  {ORNAMENT_SLOT_OPTIONS.map((slot) => (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => {
+                        const current = splitComma(uploadSlots);
+                        const next = current.includes(slot)
+                          ? current.filter((item) => item !== slot)
+                          : [...current, slot];
+                        setUploadSlots(joinComma(next));
+                      }}
+                      className={`rounded-full border px-2 py-0.5 text-[10px] font-bold transition-colors ${
+                        splitComma(uploadSlots).includes(slot)
+                          ? "border-[var(--color-accent)] bg-white text-[var(--dash-ink)]"
+                          : "border-[var(--dash-border)] bg-white/60 text-[var(--dash-muted)] hover:bg-white"
+                      }`}
+                    >
+                      {slot}
+                    </button>
+                  ))}
+                </div>
+              </Field>
+              <Field label="Sifat visual (pilih 1 atau lebih)">
+                <SelectInput
+                  value={uploadVisualProps}
+                  onChange={(event) => setUploadVisualProps(event.target.value)}
+                >
+                  <option value="">Pilih sifat...</option>
+                  {ORNAMENT_VISUAL_PROP_OPTIONS.map((prop) => (
+                    <option key={prop} value={prop}>
+                      {ORNAMENT_VISUAL_PROP_LABELS[prop] || prop}
+                    </option>
+                  ))}
+                </SelectInput>
+              </Field>
+            </div>
           </div>
         </form>
       </DashboardCard>
@@ -558,6 +743,29 @@ export default function OrnamentManager() {
                     ))}
                   </div>
 
+                  {(asset.theme?.length || asset.suggestedSlots?.length || asset.visualProps?.length) ? (
+                    <div className="space-y-1.5 rounded-xl border border-[var(--dash-border)] bg-[var(--dash-fog)]/40 p-3">
+                      {asset.theme?.length ? (
+                        <p className="text-xs font-semibold text-[var(--dash-muted)]">
+                          <span className="font-black text-[var(--dash-ink)]">Tema:</span>{" "}
+                          {asset.theme.join(", ")}
+                        </p>
+                      ) : null}
+                      {asset.suggestedSlots?.length ? (
+                        <p className="text-xs font-semibold text-[var(--dash-muted)]">
+                          <span className="font-black text-[var(--dash-ink)]">Slot:</span>{" "}
+                          {asset.suggestedSlots.join(", ")}
+                        </p>
+                      ) : null}
+                      {asset.visualProps?.length ? (
+                        <p className="text-xs font-semibold text-[var(--dash-muted)]">
+                          <span className="font-black text-[var(--dash-ink)]">Visual:</span>{" "}
+                          {asset.visualProps.join(", ")}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
+
                   <div className="rounded-xl border border-[var(--dash-border)] p-3">
                     <p className="text-xs font-bold uppercase tracking-[0.08em] text-[var(--dash-muted)]">
                       Dipakai di template
@@ -649,6 +857,66 @@ export default function OrnamentManager() {
                     placeholder="gold, floral, classic"
                   />
                 </Field>
+                <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-fog)]/50 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--dash-muted)]">
+                    Metadata AI Template Generator
+                  </p>
+                  <div className="mt-3 space-y-4">
+                    <Field label="Tema (pilih 1 atau lebih)">
+                      <SelectInput
+                        value={editTheme}
+                        onChange={(event) => setEditTheme(event.target.value)}
+                      >
+                        <option value="">Pilih tema...</option>
+                        {ORNAMENT_THEME_OPTIONS.map((theme) => (
+                          <option key={theme} value={theme}>{theme}</option>
+                        ))}
+                      </SelectInput>
+                    </Field>
+                    <Field label="Slot yang cocok (pisahkan koma)">
+                      <TextInput
+                        value={editSlots}
+                        onChange={(event) => setEditSlots(event.target.value)}
+                        placeholder="top-left, bottom-right"
+                      />
+                      <div className="mt-1.5 flex flex-wrap gap-1">
+                        {ORNAMENT_SLOT_OPTIONS.map((slot) => (
+                          <button
+                            key={slot}
+                            type="button"
+                            onClick={() => {
+                              const current = splitComma(editSlots);
+                              const next = current.includes(slot)
+                                ? current.filter((item) => item !== slot)
+                                : [...current, slot];
+                              setEditSlots(joinComma(next));
+                            }}
+                            className={`rounded-full border px-2 py-0.5 text-[10px] font-bold transition-colors ${
+                              splitComma(editSlots).includes(slot)
+                                ? "border-[var(--color-accent)] bg-white text-[var(--dash-ink)]"
+                                : "border-[var(--dash-border)] bg-white/60 text-[var(--dash-muted)] hover:bg-white"
+                            }`}
+                          >
+                            {slot}
+                          </button>
+                        ))}
+                      </div>
+                    </Field>
+                    <Field label="Sifat visual (pilih 1 atau lebih)">
+                      <SelectInput
+                        value={editVisualProps}
+                        onChange={(event) => setEditVisualProps(event.target.value)}
+                      >
+                        <option value="">Pilih sifat...</option>
+                        {ORNAMENT_VISUAL_PROP_OPTIONS.map((prop) => (
+                          <option key={prop} value={prop}>
+                            {ORNAMENT_VISUAL_PROP_LABELS[prop] || prop}
+                          </option>
+                        ))}
+                      </SelectInput>
+                    </Field>
+                  </div>
+                </div>
                 <Field label="Replace gambar">
                   <input
                     type="file"

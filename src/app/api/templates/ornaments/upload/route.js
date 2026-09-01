@@ -2,15 +2,86 @@ import { NextResponse } from "next/server";
 import { requireAdminApiSession } from "../../../../../lib/auth";
 import { createServiceSupabaseClient } from "../../../../../lib/supabase/server";
 import { validateImageUpload } from "../../../../../lib/uploadValidation";
+import { ornamentSlots } from "../../../../../templates/ornamentModel";
+import {
+  hasServiceEnv,
+  readOrnamentManifest,
+  writeOrnamentManifest,
+  updateOrnamentManifest,
+} from "../../../../../lib/ai/manifest";
+
+// Vocabulary metadata ornamen yang dimengerti AI template generator.
+// Nilai ini otoritas: AI catalog (src/lib/ai/catalog.js) membaca dari sini.
+export const ornamentThemeOptions = [
+  "jawa",
+  "wayang",
+  "bali",
+  "sunda",
+  "islami",
+  "floral",
+  "tropical",
+  "modern",
+  "minimal",
+  "klasik",
+  "royal",
+  "watercolor",
+  "rustic",
+  "elegant",
+  "nature",
+];
+
+export const ornamentVisualPropOptions = [
+  "gelap",
+  "terang",
+  "tebal",
+  "halus",
+  "tradisional",
+  "modern",
+  "mewah",
+  "sederhana",
+];
+
+export const ornamentVisualPropLabels = {
+  gelap: "Gelap (cocok di background terang)",
+  terang: "Terang (cocok di background gelap)",
+  tebal: "Tebal / pekat",
+  halus: "Halus / tipis",
+  tradisional: "Tradisional / adat",
+  modern: "Modern / geometris",
+  mewah: "Mewah / gold-royal",
+  sederhana: "Sederhana / minimal",
+};
+
+export function normalizeOrnamentMetadata(metadata = {}) {
+  const rawSlots = metadata.suggestedSlots || metadata.suggested_slots || [];
+  const suggestedSlots = Array.isArray(rawSlots)
+    ? rawSlots
+        .map((slot) => String(slot).trim())
+        .filter((slot) => ornamentSlots.includes(slot))
+    : [];
+
+  const rawThemes = metadata.theme || metadata.themes || [];
+  const theme = Array.isArray(rawThemes)
+    ? rawThemes
+        .map((item) => String(item).trim().toLowerCase())
+        .filter((item) => ornamentThemeOptions.includes(item))
+    : [];
+
+  const rawVisual = metadata.visualProps || metadata.visual_props || [];
+  const visualProps = Array.isArray(rawVisual)
+    ? rawVisual
+        .map((item) => String(item).trim().toLowerCase())
+        .filter((item) => ornamentVisualPropOptions.includes(item))
+    : [];
+
+  return {
+    theme,
+    suggestedSlots,
+    visualProps,
+  };
+}
 
 const BUCKET_NAME = "template-assets";
-const ORNAMENT_MANIFEST_PATH = "_ornament_manifest.json";
-
-function hasServiceEnv() {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY,
-  );
-}
 
 function sanitizeFilename(filename = "ornament") {
   return filename
@@ -20,44 +91,6 @@ function sanitizeFilename(filename = "ornament") {
     .slice(0, 80);
 }
 
-async function readOrnamentManifest(supabase) {
-  const { data, error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .download(ORNAMENT_MANIFEST_PATH);
-
-  if (error || !data) {
-    return {};
-  }
-
-  try {
-    return JSON.parse(await data.text());
-  } catch {
-    return {};
-  }
-}
-
-async function writeOrnamentManifest(supabase, manifest) {
-  const body = JSON.stringify(manifest, null, 2);
-  const { error } = await supabase.storage
-    .from(BUCKET_NAME)
-    .upload(ORNAMENT_MANIFEST_PATH, body, {
-      contentType: "application/json",
-      upsert: true,
-    });
-
-  return error;
-}
-
-async function updateOrnamentManifest(supabase, storagePath, data) {
-  const manifest = await readOrnamentManifest(supabase);
-  manifest[storagePath] = {
-    ...(manifest[storagePath] || {}),
-    ...data,
-    updatedAt: new Date().toISOString(),
-  };
-  return writeOrnamentManifest(supabase, manifest);
-}
-
 export async function POST(request) {
   const formData = await request.formData();
   const templateId = formData.get("templateId");
@@ -65,7 +98,25 @@ export async function POST(request) {
   const ornamentId = formData.get("ornamentId") || "ornament";
   const displayName = formData.get("name") || ornamentId;
   const tags = formData.get("tags") || "";
+  const themeRaw = formData.get("theme") || "";
+  const suggestedSlotsRaw = formData.get("suggestedSlots") || "";
+  const visualPropsRaw = formData.get("visualProps") || "";
   const file = formData.get("file");
+
+  const aiMetadata = normalizeOrnamentMetadata({
+    theme: themeRaw
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    suggestedSlots: suggestedSlotsRaw
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    visualProps: visualPropsRaw
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+  });
 
   if (!templateId || typeof templateId !== "string") {
     return NextResponse.json({ error: "templateId is required" }, { status: 400 });
@@ -89,6 +140,9 @@ export async function POST(request) {
         ornamentId,
         name: displayName,
         tags,
+        theme: aiMetadata.theme,
+        suggestedSlots: aiMetadata.suggestedSlots,
+        visualProps: aiMetadata.visualProps,
         url: "/assets/blue-watercolor-frame.svg",
       },
     });
@@ -113,6 +167,9 @@ export async function POST(request) {
         displayName: String(displayName).slice(0, 120),
         category: String(section).slice(0, 40),
         tags: String(tags).slice(0, 240),
+        theme: aiMetadata.theme.join(","),
+        suggestedSlots: aiMetadata.suggestedSlots.join(","),
+        visualProps: aiMetadata.visualProps.join(","),
       },
       upsert: false,
     });
@@ -129,6 +186,9 @@ export async function POST(request) {
     name: String(displayName).slice(0, 120),
     section: String(section).slice(0, 40),
     tags: String(tags).slice(0, 240),
+    theme: aiMetadata.theme,
+    suggestedSlots: aiMetadata.suggestedSlots,
+    visualProps: aiMetadata.visualProps,
   });
 
   if (manifestError) {
@@ -143,6 +203,9 @@ export async function POST(request) {
       ornamentId,
       name: displayName,
       tags,
+      theme: aiMetadata.theme,
+      suggestedSlots: aiMetadata.suggestedSlots,
+      visualProps: aiMetadata.visualProps,
       url: publicUrlData.publicUrl,
       storagePath,
     },
@@ -228,6 +291,21 @@ export async function GET(request) {
       const nameWithoutExtension = item.name.replace(/\.[^.]+$/, "");
       const section = nameWithoutExtension.split("-")[0] || "general";
       const manifestItem = manifest[storagePath] || {};
+      const aiMetadata = normalizeOrnamentMetadata({
+        theme: manifestItem.theme || item.metadata?.theme || "",
+        suggestedSlots:
+          manifestItem.suggestedSlots ||
+          manifestItem.suggested_slots ||
+          item.metadata?.suggestedSlots ||
+          item.metadata?.suggested_slots ||
+          "",
+        visualProps:
+          manifestItem.visualProps ||
+          manifestItem.visual_props ||
+          item.metadata?.visualProps ||
+          item.metadata?.visual_props ||
+          "",
+      });
 
       return {
         id: storagePath,
@@ -239,6 +317,9 @@ export async function GET(request) {
         fileSize: item.metadata?.size || null,
         mimeType: item.metadata?.mimetype || item.metadata?.contentType || null,
         tags: manifestItem.tags || item.metadata?.tags || "",
+        theme: aiMetadata.theme,
+        suggestedSlots: aiMetadata.suggestedSlots,
+        visualProps: aiMetadata.visualProps,
         createdAt: item.created_at || item.updated_at || null,
         source: "supabase",
       };
@@ -304,6 +385,9 @@ export async function PATCH(request) {
       name: formData.get("name"),
       category: formData.get("category"),
       tags: formData.get("tags"),
+      theme: formData.get("theme"),
+      suggestedSlots: formData.get("suggestedSlots"),
+      visualProps: formData.get("visualProps"),
       mimeType: formData.get("mimeType"),
     };
     const file = formData.get("file");
@@ -319,6 +403,20 @@ export async function PATCH(request) {
   const displayName = String(payload.name || "").trim();
   const category = String(payload.category || "custom").trim();
   const tags = String(payload.tags || "").trim();
+  const aiMetadata = normalizeOrnamentMetadata({
+    theme: String(payload.theme || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    suggestedSlots: String(payload.suggestedSlots || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+    visualProps: String(payload.visualProps || "")
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean),
+  });
 
   if (!displayName) {
     return NextResponse.json({ error: "name is required" }, { status: 400 });
@@ -376,6 +474,9 @@ export async function PATCH(request) {
         displayName: displayName.slice(0, 120),
         category: category.slice(0, 40),
         tags: tags.slice(0, 240),
+        theme: aiMetadata.theme.join(","),
+        suggestedSlots: aiMetadata.suggestedSlots.join(","),
+        visualProps: aiMetadata.visualProps.join(","),
       },
     });
 
@@ -387,6 +488,9 @@ export async function PATCH(request) {
     name: displayName.slice(0, 120),
     section: category.slice(0, 40),
     tags: tags.slice(0, 240),
+    theme: aiMetadata.theme,
+    suggestedSlots: aiMetadata.suggestedSlots,
+    visualProps: aiMetadata.visualProps,
   });
 
   if (manifestError) {
@@ -400,6 +504,9 @@ export async function PATCH(request) {
       name: displayName,
       section: category,
       tags,
+      theme: aiMetadata.theme,
+      suggestedSlots: aiMetadata.suggestedSlots,
+      visualProps: aiMetadata.visualProps,
       replaced: Boolean(replacementFile),
       fileSize: fileData.size || null,
       mimeType: fileData.type || payload.mimeType || null,

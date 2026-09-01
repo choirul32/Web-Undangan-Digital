@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { normalizeDesignConfig } from "../../../templates/designConfigs";
 
 // ============================================================
@@ -141,12 +141,20 @@ export function applyPatchOpeningSequenceAsset(config, fields) {
 
 // ---- Hook ----
 
+const HISTORY_LIMIT = 50;
+
 export default function useDesignConfig({
   activeDesignSection = "home",
   selectedOrnamentIndex = 0,
   setManagerMessage = () => {},
 } = {}) {
   const [designConfigText, setDesignConfigText] = useState("");
+
+  // Riwayat undo/redo. Setiap writeDesignConfig yang bukan redo/undo
+  // akan mendorong state lama ke undoStack dan membersihkan redoStack.
+  const [undoStack, setUndoStack] = useState([]);
+  const [redoStack, setRedoStack] = useState([]);
+  const historyRef = useRef({ undo: [], redo: [] });
 
   const parsedDesignConfig = useMemo(() => {
     try {
@@ -156,9 +164,53 @@ export default function useDesignConfig({
     }
   }, [designConfigText]);
 
-  const writeDesignConfig = (nextConfig) => {
-    setDesignConfigText(JSON.stringify(nextConfig, null, 2));
+  const writeDesignConfig = (nextConfig, options = {}) => {
+    const { record = true } = options;
+    const nextText = JSON.stringify(nextConfig, null, 2);
+
+    if (record && designConfigText) {
+      const nextUndo = [...historyRef.current.undo, designConfigText].slice(-HISTORY_LIMIT);
+      historyRef.current.undo = nextUndo;
+      historyRef.current.redo = [];
+      setUndoStack(nextUndo);
+      setRedoStack([]);
+    }
+
+    setDesignConfigText(nextText);
     setManagerMessage("");
+  };
+
+  const undo = () => {
+    const prev = historyRef.current.undo[historyRef.current.undo.length - 1];
+    if (prev === undefined) {
+      return;
+    }
+    historyRef.current.redo = [...historyRef.current.redo, designConfigText].slice(-HISTORY_LIMIT);
+    historyRef.current.undo = historyRef.current.undo.slice(0, -1);
+    setRedoStack(historyRef.current.redo);
+    setUndoStack(historyRef.current.undo);
+    setDesignConfigText(prev);
+    setManagerMessage("");
+  };
+
+  const redo = () => {
+    const next = historyRef.current.redo[historyRef.current.redo.length - 1];
+    if (next === undefined) {
+      return;
+    }
+    historyRef.current.undo = [...historyRef.current.undo, designConfigText].slice(-HISTORY_LIMIT);
+    historyRef.current.redo = historyRef.current.redo.slice(0, -1);
+    setUndoStack(historyRef.current.undo);
+    setRedoStack(historyRef.current.redo);
+    setDesignConfigText(next);
+    setManagerMessage("");
+  };
+
+  const resetHistory = () => {
+    historyRef.current.undo = [];
+    historyRef.current.redo = [];
+    setUndoStack([]);
+    setRedoStack([]);
   };
 
   const guard = (fn) => {
@@ -229,5 +281,10 @@ export default function useDesignConfig({
     toggleGlobalOrnamentExclusion,
     patchOpeningSequenceAsset,
     writeDesignConfigPreset,
+    undo,
+    redo,
+    resetHistory,
+    canUndo: undoStack.length > 0,
+    canRedo: redoStack.length > 0,
   };
 }

@@ -67,12 +67,13 @@ function Panel({ eyebrow, title, description, children }) {
   );
 }
 
-function MiniInput({ label, type = "text", step, value, onChange }) {
+function MiniInput({ label, type = "text", step, placeholder, value, onChange }) {
   return (
     <Field label={label}>
       <TextInput
         type={type}
         step={step}
+        placeholder={placeholder}
         value={value ?? ""}
         onChange={(event) => onChange(event.target.value)}
       />
@@ -350,6 +351,61 @@ export default function OpeningStep({
                 </div>
               </div>
             </details>
+
+            <Panel
+              eyebrow="Ukuran & Posisi"
+              title="Personalisasi layar pembuka"
+              description="Atur ukuran font, lebar foto, dan posisi konten. Kosongkan ukuran untuk memakai default."
+            >
+              <MiniInput
+                label="Ukuran Nama (px)"
+                type="number"
+                placeholder="22 (default mobile)"
+                value={openingRevealWidgetConfig.titleFontSize ?? ""}
+                onChange={(value) => updateOpeningRevealWidget("titleFontSize", value)}
+              />
+              <MiniInput
+                label="Ukuran Nama Tamu (px)"
+                type="number"
+                placeholder="13 (default mobile)"
+                value={openingRevealWidgetConfig.guestFontSize ?? ""}
+                onChange={(value) => updateOpeningRevealWidget("guestFontSize", value)}
+              />
+              <MiniInput
+                label="Ukuran Tombol (px)"
+                type="number"
+                placeholder="14 (default mobile)"
+                value={openingRevealWidgetConfig.buttonFontSize ?? ""}
+                onChange={(value) => updateOpeningRevealWidget("buttonFontSize", value)}
+              />
+              <MiniInput
+                label="Lebar Foto Tengah (px)"
+                type="number"
+                placeholder="144 (default mobile)"
+                value={openingRevealWidgetConfig.photoWidth ?? ""}
+                onChange={(value) => updateOpeningRevealWidget("photoWidth", value)}
+              />
+              <Field label="Posisi Konten">
+                <SelectInput
+                  value={openingRevealWidgetConfig.contentPosition || "center"}
+                  onChange={(event) =>
+                    updateOpeningRevealWidget("contentPosition", event.target.value)
+                  }
+                >
+                  <option value="center">Tengah</option>
+                  <option value="top">Atas</option>
+                  <option value="bottom">Bawah</option>
+                  <option value="split">Nama Atas, Tamu Bawah</option>
+                </SelectInput>
+              </Field>
+              <MiniInput
+                label="Geser Konten (px, minus = naik)"
+                type="number"
+                step="4"
+                value={openingRevealWidgetConfig.contentOffsetY ?? 0}
+                onChange={(value) => updateOpeningRevealWidget("contentOffsetY", Number(value))}
+              />
+            </Panel>
           </div>
 
           <div className="rounded-[14px] border border-[var(--dash-border)] bg-white p-3 lg:sticky lg:top-4">

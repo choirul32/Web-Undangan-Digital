@@ -96,7 +96,7 @@ function CountdownCalendarCard({ event }) {
 
 export function EventSection({ designConfig, events, eventConfig }) {
   return (
-    <SectionFrame section="acara" designConfig={designConfig} baseClassName="bg-[var(--color-bg)]">
+    <SectionFrame section="acara" designConfig={designConfig}>
       <div className="relative z-10 mx-auto max-w-6xl">
         <SectionTitle eyebrow="Acara" title="Detail hari bahagia" />
         <EventWidget events={events} config={eventConfig} classes={eventClasses(eventConfig.variant)} />
@@ -110,7 +110,7 @@ export function CountdownSection({ designConfig, events, countdownConfig }) {
   const activeCountdownClasses = countdownClasses(countdownConfig.variant);
   const targetEvent = getCountdownTargetEvent(events, countdownConfig);
   return (
-    <SectionFrame section="countdown" designConfig={designConfig} baseClassName="bg-[var(--color-surface)]">
+    <SectionFrame section="countdown" designConfig={designConfig}>
       <div className="relative z-10 mx-auto max-w-3xl text-center">
         <SectionTitle eyebrow="Hitung Mundur" title="Menuju hari bahagia" />
         <CountdownCalendarCard event={targetEvent} />
@@ -131,7 +131,7 @@ export function CountdownSection({ designConfig, events, countdownConfig }) {
 
 export function StorySection({ designConfig, story, storyConfig }) {
   return (
-    <SectionFrame section="story" designConfig={designConfig} baseClassName="bg-[var(--color-section-soft)]">
+    <SectionFrame section="story" designConfig={designConfig}>
       <div className="relative z-10 mx-auto max-w-6xl">
         <SectionTitle eyebrow="Love Story" title="Cerita kami" />
         <StoryWidget stories={story} config={storyConfig} classes={storyClasses(storyConfig.variant)} />
@@ -142,7 +142,7 @@ export function StorySection({ designConfig, story, storyConfig }) {
 
 export function GallerySection({ designConfig, invitation, galleryConfig }) {
   return (
-    <SectionFrame section="gallery" designConfig={designConfig} baseClassName="bg-[var(--color-bg)]">
+    <SectionFrame section="gallery" designConfig={designConfig}>
       <div className="relative z-10 mx-auto max-w-6xl">
         <SectionTitle eyebrow="Gallery" title="Momen bahagia" />
         <GalleryWidget images={invitation.gallery || []} coverImage={invitation.coverImage} config={galleryConfig} classes={galleryClasses(galleryConfig.variant)} />
@@ -155,7 +155,7 @@ export function RsvpSection({ designConfig, invitation, personalizedGuestName, g
   if (!invitation.features?.rsvp) return null;
 
   return (
-    <SectionFrame section="rsvp" designConfig={designConfig} baseClassName="bg-[var(--color-section-soft)]">
+    <SectionFrame section="rsvp" designConfig={designConfig}>
       <div className="relative z-10 mx-auto max-w-4xl text-center">
         <p className="text-sm font-black uppercase tracking-[0.18em] text-[var(--color-accent)]">
           Kehadiran & Doa

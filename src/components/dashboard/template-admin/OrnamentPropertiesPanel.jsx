@@ -4,6 +4,37 @@ import {
   getParallaxSpeed,
   ornamentLayerPresets,
 } from "../../../templates/ornamentModel";
+import VisualChoiceControl from "./VisualChoiceControl";
+
+// Thumbnail ornamen aktif dengan deteksi error — admin langsung tahu kalau
+// asset ornamen rusak/kosong (No Image).
+function OrnamentAssetThumb({ src }) {
+  const [hasError, setHasError] = useState(false);
+  const isEmpty = !src;
+
+  if (isEmpty || hasError) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-1 rounded-md border border-dashed border-red-300 bg-red-50">
+        <svg viewBox="0 0 20 20" className="h-5 w-5 text-red-400" fill="none" stroke="currentColor" strokeWidth="1.8">
+          <rect x="3.5" y="3.5" width="13" height="13" rx="2" />
+          <path d="m6 13 3-3 2 2 3-3 2 2" />
+        </svg>
+        <span className="text-[9px] font-black uppercase tracking-wide text-red-500">
+          No Image
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt=""
+      className="h-full w-full rounded-md object-cover"
+      onError={() => setHasError(true)}
+    />
+  );
+}
 
 function MiniInput({ label, value, onChange, type = "text", step }) {
   return (
@@ -65,39 +96,105 @@ export default function OrnamentPropertiesPanel({
         <p className="text-xs font-black text-[var(--color-text)]">Properti Ornamen</p>
       </div>
 
-      <div className="grid gap-2 md:grid-cols-[1fr_112px]">
+      <div className="grid gap-2">
         <label className="block">
-          <span className="text-[11px] font-bold text-[var(--color-text)]/70">ID Ornamen</span>
-          <input
-            value={selectedOrnament.id || ""}
-            onChange={(e) => updateOrnament("id", e.target.value)}
-            className="mt-1 h-8 w-full rounded-md border border-[var(--color-accent-pale)] bg-white px-2.5 text-xs font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
-          />
-        </label>
-        <div>
-          <span className="text-[11px] font-bold text-[var(--color-text)]/70">Slot Posisi</span>
-          <div className="mt-1 grid grid-cols-3 gap-1 rounded-md border border-[var(--color-accent-pale)] p-1">
-            {["top-left", "center-top", "top-right", "side-left", "center", "side-right", "bottom-left", "center-bottom", "bottom-right"].map((slot) => (
-              <button
-                key={slot}
-                type="button"
-                onClick={() => updateOrnament("slot", slot)}
-                className={`h-5 rounded text-[9px] font-bold ${
-                  selectedOrnament.slot === slot
-                    ? "bg-[var(--color-accent)] text-white"
-                    : "bg-[var(--color-bg)] text-[var(--color-text)]/70"
-                }`}
-              >
-                {slot === "center"
-                  ? "C"
-                  : slot
-                      .split("-")
-                      .map((p) => p[0]?.toUpperCase())
-                      .join("")}
-              </button>
-            ))}
+          <span className="text-[11px] font-bold text-[var(--color-text)]/70">Posisi Ornamen</span>
+          <span className="mt-1 block text-[10px] font-medium leading-4 text-[var(--color-text)]/60">
+            Geser ornamen langsung di canvas pratinjau, atau pilih posisi di bawah.
+          </span>
+          <div className="mt-1.5">
+            <VisualChoiceControl
+              value={selectedOrnament.slot || "top-left"}
+              options={[
+                {
+                  value: "top-left",
+                  label: "Kiri atas",
+                  preview: (
+                    <span className="flex h-full w-full items-start justify-start p-1.5">
+                      <span className="h-3 w-3 rounded-sm bg-[var(--dash-ink)]" />
+                    </span>
+                  ),
+                },
+                {
+                  value: "center-top",
+                  label: "Tengah atas",
+                  preview: (
+                    <span className="flex h-full w-full items-start justify-center p-1.5">
+                      <span className="h-3 w-3 rounded-sm bg-[var(--dash-ink)]" />
+                    </span>
+                  ),
+                },
+                {
+                  value: "top-right",
+                  label: "Kanan atas",
+                  preview: (
+                    <span className="flex h-full w-full items-start justify-end p-1.5">
+                      <span className="h-3 w-3 rounded-sm bg-[var(--dash-ink)]" />
+                    </span>
+                  ),
+                },
+                {
+                  value: "side-left",
+                  label: "Kiri tengah",
+                  preview: (
+                    <span className="flex h-full w-full items-center justify-start p-1.5">
+                      <span className="h-3 w-3 rounded-sm bg-[var(--dash-ink)]" />
+                    </span>
+                  ),
+                },
+                {
+                  value: "center",
+                  label: "Tengah",
+                  preview: (
+                    <span className="flex h-full w-full items-center justify-center p-1.5">
+                      <span className="h-3 w-3 rounded-sm bg-[var(--dash-ink)]" />
+                    </span>
+                  ),
+                },
+                {
+                  value: "side-right",
+                  label: "Kanan tengah",
+                  preview: (
+                    <span className="flex h-full w-full items-center justify-end p-1.5">
+                      <span className="h-3 w-3 rounded-sm bg-[var(--dash-ink)]" />
+                    </span>
+                  ),
+                },
+                {
+                  value: "bottom-left",
+                  label: "Kiri bawah",
+                  preview: (
+                    <span className="flex h-full w-full items-end justify-start p-1.5">
+                      <span className="h-3 w-3 rounded-sm bg-[var(--dash-ink)]" />
+                    </span>
+                  ),
+                },
+                {
+                  value: "center-bottom",
+                  label: "Tengah bawah",
+                  preview: (
+                    <span className="flex h-full w-full items-end justify-center p-1.5">
+                      <span className="h-3 w-3 rounded-sm bg-[var(--dash-ink)]" />
+                    </span>
+                  ),
+                },
+                {
+                  value: "bottom-right",
+                  label: "Kanan bawah",
+                  preview: (
+                    <span className="flex h-full w-full items-end justify-end p-1.5">
+                      <span className="h-3 w-3 rounded-sm bg-[var(--dash-ink)]" />
+                    </span>
+                  ),
+                },
+              ]}
+              onChange={(slot) => updateOrnament("slot", slot)}
+              columns={3}
+              size="sm"
+              ariaLabel="Posisi ornamen"
+            />
           </div>
-        </div>
+        </label>
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-2">
@@ -132,6 +229,9 @@ export default function OrnamentPropertiesPanel({
           onChange={(v) => updateOrnament("rotate", v)}
         />
       </div>
+      <p className="mt-1 text-[10px] font-medium text-[var(--color-text)]/60">
+        Tips: geser ornamen langsung di canvas pratinjau untuk mengubah posisi X/Y.
+      </p>
 
       <div className="mt-3 rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)]/55 p-2.5">
         <div className="flex items-start justify-between gap-3">
@@ -330,18 +430,23 @@ export default function OrnamentPropertiesPanel({
       <div className="mt-3 border-t border-[var(--color-accent-pale)] pt-3">
         <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[var(--color-text)]">Aset Ornamen</p>
         <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-          <label className="flex min-h-[76px] cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-2 py-2 text-center">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) => updateSelectedOrnamentFile(event.target.files?.[0])}
-              className="hidden"
-            />
-            <span className="text-[11px] font-bold text-[var(--color-text)]">Drag & drop file di sini</span>
-            <span className="mt-1 text-[10px] font-medium text-[var(--color-text)]/65">
-              atau klik untuk upload PNG, WEBP, SVG
-            </span>
-          </label>
+          <div className="grid grid-cols-[76px_minmax(0,1fr)] gap-2">
+            <div className="h-[76px] w-[76px] overflow-hidden rounded-md border border-[var(--color-accent-pale)] bg-white">
+              <OrnamentAssetThumb src={selectedOrnament.src} />
+            </div>
+            <label className="flex min-h-[76px] cursor-pointer flex-col items-center justify-center rounded-md border border-dashed border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-2 py-2 text-center">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(event) => updateSelectedOrnamentFile(event.target.files?.[0])}
+                className="hidden"
+              />
+              <span className="text-[11px] font-bold text-[var(--color-text)]">Drag & drop file di sini</span>
+              <span className="mt-1 text-[10px] font-medium text-[var(--color-text)]/65">
+                atau klik untuk upload PNG, WEBP, SVG
+              </span>
+            </label>
+          </div>
           <button
             type="button"
             onClick={() => setShowAllAssets((current) => !current)}
@@ -380,6 +485,23 @@ export default function OrnamentPropertiesPanel({
             ))}
           </div>
         ) : null}
+      </div>
+
+      <div className="mt-3 border-t border-[var(--color-accent-pale)] pt-3">
+        <label className="block">
+          <span className="text-[11px] font-bold text-[var(--color-text)]/70">
+            Nama internal (opsional)
+          </span>
+          <span className="mt-0.5 block text-[10px] font-medium leading-4 text-[var(--color-text)]/60">
+            Dipakai untuk identifikasi di layer panel. Tidak tampil di undangan.
+          </span>
+          <input
+            value={selectedOrnament.id || ""}
+            onChange={(e) => updateOrnament("id", e.target.value)}
+            placeholder="cth: corner-floral-kiri"
+            className="mt-1.5 h-8 w-full rounded-md border border-[var(--color-accent-pale)] bg-white px-2.5 text-xs font-semibold text-[var(--color-text)] outline-none focus:border-[var(--color-accent)]"
+          />
+        </label>
       </div>
     </div>
   );

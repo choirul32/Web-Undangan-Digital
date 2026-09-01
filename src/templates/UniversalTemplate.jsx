@@ -11,12 +11,16 @@ import {
   getOpeningSequenceConfig,
 } from "./designConfigs";
 import MusicPlayer, { getMusicWidgetConfig } from "./components/MusicPlayer";
+import LoadingScreen from "./components/LoadingScreen";
+import FloatingActions from "./components/FloatingActions";
+import GlobalBackground from "./components/GlobalBackground";
 import { getCountdownWidgetConfig } from "./components/CountdownTimer";
 import { getEventWidgetConfig } from "./components/EventWidget";
 import { getGalleryWidgetConfig } from "./components/GalleryWidget";
 import { getStoryWidgetConfig } from "./components/StoryWidget";
 import { cssVars, normalizeEventExamples } from "./utils/templateStyling";
 import usePreviewSectionFilter from "./hooks/usePreviewSectionFilter";
+import useSectionBackgroundParallax from "./hooks/useSectionBackgroundParallax";
 import OpeningRevealOverlay from "./sections/OpeningRevealOverlay";
 import HomeSection from "./sections/HomeSection";
 import { CoupleSection, GiftSection, WishesSection } from "./sections/BaseSections";
@@ -37,6 +41,13 @@ export default function UniversalTemplate({
   const musicFadeRef = useRef(null);
   const [isNarrowViewport, setIsNarrowViewport] = useState(false);
   const [isRevealOpen, setIsRevealOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(
+    () =>
+      !framedPreview &&
+      typeof window !== "undefined" &&
+      // Loading tampil di mode publik & preview editor (bukan framed mini-preview)
+      !previewSectionOnly,
+  );
 
   const invitation = { ...emptyInvitation, ...data };
   const couple = invitation.couple || emptyInvitation.couple;
@@ -92,6 +103,9 @@ export default function UniversalTemplate({
 
     return () => media.removeEventListener("change", updateViewportState);
   }, []);
+
+  // Background parallax per-section (poin 4)
+  useSectionBackgroundParallax();
 
   const startMusic = async ({ fadeIn = true, attempt = 0 } = {}) => {
     const audio = musicRef.current;
@@ -171,8 +185,25 @@ export default function UniversalTemplate({
 
   return (
     <main className={`relative min-h-screen bg-[var(--color-bg)] text-[var(--color-primary)] ${framedPreview ? "framed-preview-mobile" : ""}`} style={cssVars(globalStyleConfig)}>
+      {/* Background global menempel (parallax) — section di atasnya bisa transparan */}
+      <GlobalBackground
+        backgroundImage={globalStyleConfig.backgroundImage}
+        parallax={globalStyleConfig.backgroundParallax}
+        overlay={globalStyleConfig.backgroundOverlay}
+      />
+
       <AnimatePresence>
-        {!isRevealOpen ? (
+        {isLoading ? (
+          <LoadingScreen
+            coverImage={coverPhoto}
+            onDone={() => setIsLoading(false)}
+            minDuration={previewMode ? 600 : 1400}
+          />
+        ) : null}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {!isRevealOpen && !isLoading ? (
           <OpeningRevealOverlay
             config={openingOverlayConfig}
             coverConfig={coverConfig}
@@ -228,6 +259,10 @@ export default function UniversalTemplate({
           config={musicConfig}
           autoPlayOnInteraction={!openingOverlayConfig.enabled || isRevealOpen}
         />
+      ) : null}
+
+      {!previewSectionOnly ? (
+        <FloatingActions isRevealOpen={isRevealOpen || !openingOverlayConfig.enabled} />
       ) : null}
     </main>
   );

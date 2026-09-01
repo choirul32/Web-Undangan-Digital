@@ -179,6 +179,14 @@ export const defaultCoverSectionConfig = {
   openingAnimation: "fade-up",
   guestBlockStyle: "card",
   dateVariant: "separator-dot",
+  // Personalisasi ukuran & posisi (px / offset). Nilai null/kosong = pakai default render.
+  nameFontSize: "", // px — ukuran nama pasangan
+  dateFontSize: "", // px — ukuran tanggal
+  quoteFontSize: "", // px — ukuran kutipan
+  contentPosition: "center", // center | top | bottom
+  contentOffsetY: 0, // px — geser konten naik (-) / turun (+)
+  photoWidth: "", // px — lebar foto cover
+  photoOffsetY: 0, // px — geser foto naik (-) / turun (+)
 };
 
 export const defaultOpeningRevealConfig = {
@@ -192,6 +200,13 @@ export const defaultOpeningRevealConfig = {
   animation: "fade",
   sequencePreset: "auto",
   autoPlayMusic: true,
+  // Personalisasi ukuran & posisi layar pembuka
+  titleFontSize: "", // px — ukuran nama pasangan
+  guestFontSize: "", // px — ukuran nama tamu
+  buttonFontSize: "", // px — ukuran teks tombol
+  contentPosition: "center", // center | top | bottom
+  contentOffsetY: 0, // px — geser konten naik (-) / turun (+)
+  photoWidth: "", // px — lebar foto tengah
 };
 
 export const defaultOpeningSequenceConfig = {
@@ -226,6 +241,8 @@ export const defaultCoupleSectionConfig = {
 export const defaultSectionStyleConfig = {
   backgroundColor: "",
   backgroundImage: "",
+  backgroundParallax: "none", // none | slow | medium | fast
+  backgroundOverlay: 0, // 0-90 (kegelapan overlay biar teks terbaca)
   textColor: "",
   accentColor: "",
   fontPreset: "default",

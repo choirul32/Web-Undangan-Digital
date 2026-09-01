@@ -27,7 +27,7 @@ export default function StepNavigator({
             variant="secondary"
             size="sm"
           >
-            Back
+            Kembali
           </DashboardButton>
           <DashboardButton
             type="button"
@@ -35,7 +35,7 @@ export default function StepNavigator({
             disabled={!nextStepId}
             size="sm"
           >
-            Next
+            Lanjut
           </DashboardButton>
         </div>
       </div>
@@ -45,7 +45,8 @@ export default function StepNavigator({
           style={{ width: `${(currentStepNumber / totalEditorSteps) * 100}%` }}
         />
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
+      {/* Step chips: scroll horizontal di mobile biar tidak menumpuk jadi banyak baris */}
+      <div className="scrollbar-hide -mx-1 mt-3 flex gap-2 overflow-x-auto px-1 pb-1">
         {editorSteps.map((step) => (
           <DashboardButton
             key={step.id}
@@ -53,6 +54,7 @@ export default function StepNavigator({
             onClick={() => onSelectStep(step.id)}
             variant={editorStep === step.id ? "primary" : "secondary"}
             size="sm"
+            className="shrink-0"
           >
             {step.label}
           </DashboardButton>

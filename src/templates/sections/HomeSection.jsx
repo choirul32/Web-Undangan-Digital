@@ -3,27 +3,28 @@ import OrnamentLayer from "../components/OrnamentLayer";
 import { coverMotion } from "../utils/templateStyling";
 import { getSectionOrnaments } from "../designConfigs";
 
-export function CoverDateDisplay({ date, variant = "separator-dot", compact = false }) {
+export function CoverDateDisplay({ date, variant = "separator-dot", compact = false, fontSize = "" }) {
   const d = new Date(date);
   const day = d.getDate();
   const weekday = d.toLocaleDateString("id-ID", { weekday: "long" });
   const monthLong = d.toLocaleDateString("id-ID", { month: "long" });
   const monthShort = d.toLocaleDateString("id-ID", { month: "short" });
   const year = d.getFullYear();
+  const fontSizeStyle = fontSize ? { fontSize: `${fontSize}px` } : null;
   const baseTextClass = `font-black text-[var(--color-primary)] ${
     compact ? "text-[12px]" : "text-lg"
   }`;
   const smallTextClass = compact ? "text-[9px]" : "text-xs";
 
   if (variant === "plain") {
-    return <p className={`${baseTextClass} mt-3 tracking-[0.08em]`}>{day} {monthLong} {year}</p>;
+    return <p className={`${baseTextClass} mt-3 tracking-[0.08em]`} style={fontSizeStyle}>{day} {monthLong} {year}</p>;
   }
 
   if (variant === "separator-line") {
     return (
       <div className="mt-3 flex items-center justify-center gap-3">
         <span className="h-px w-8 bg-[var(--color-accent)]" />
-        <p className={`${baseTextClass} tracking-[0.08em]`}>{day} {monthLong} {year}</p>
+        <p className={`${baseTextClass} tracking-[0.08em]`} style={fontSizeStyle}>{day} {monthLong} {year}</p>
         <span className="h-px w-8 bg-[var(--color-accent)]" />
       </div>
     );
@@ -32,9 +33,9 @@ export function CoverDateDisplay({ date, variant = "separator-dot", compact = fa
   if (variant === "stacked") {
     return (
       <div className="mt-3 text-center">
-        <p className={`font-black leading-none text-[var(--color-primary)] ${compact ? "text-3xl" : "text-5xl"}`}>{day}</p>
-        <p className={`${smallTextClass} mt-1 font-black uppercase tracking-[0.22em] text-[var(--color-accent)]`}>{monthLong}</p>
-        <p className={`${smallTextClass} mt-0.5 font-bold tracking-[0.12em] text-[var(--color-text)]`}>{year}</p>
+        <p className={`font-black leading-none text-[var(--color-primary)] ${compact ? "text-3xl" : "text-5xl"}`} style={fontSizeStyle}>{day}</p>
+        <p className={`${smallTextClass} mt-1 font-black uppercase tracking-[0.22em] text-[var(--color-accent)]`} style={fontSizeStyle}>{monthLong}</p>
+        <p className={`${smallTextClass} mt-0.5 font-bold tracking-[0.12em] text-[var(--color-text)]`} style={fontSizeStyle}>{year}</p>
       </div>
     );
   }
@@ -42,7 +43,7 @@ export function CoverDateDisplay({ date, variant = "separator-dot", compact = fa
   if (variant === "badge") {
     return (
       <div className="mx-auto mt-3 inline-flex rounded-full border border-[var(--color-accent-pale)] bg-[var(--color-surface)]/88 px-4 py-2 shadow-lg shadow-[var(--color-primary)]/8">
-        <p className={`${smallTextClass} font-black uppercase tracking-[0.14em] text-[var(--color-primary)]`}>
+        <p className={`${smallTextClass} font-black uppercase tracking-[0.14em] text-[var(--color-primary)]`} style={fontSizeStyle}>
           {day} {monthLong} {year}
         </p>
       </div>
@@ -52,9 +53,9 @@ export function CoverDateDisplay({ date, variant = "separator-dot", compact = fa
   if (variant === "columns") {
     return (
       <div className="mx-auto mt-3 grid max-w-[220px] grid-cols-3 divide-x divide-[var(--color-accent-pale)] border-y border-[var(--color-accent-pale)] py-2">
-        <p className={`${smallTextClass} font-black uppercase tracking-[0.16em] text-[var(--color-accent)]`}>{monthShort}</p>
-        <p className={`font-black leading-none text-[var(--color-primary)] ${compact ? "text-xl" : "text-2xl"}`}>{day}</p>
-        <p className={`${smallTextClass} font-black tracking-[0.12em] text-[var(--color-accent)]`}>{year}</p>
+        <p className={`${smallTextClass} font-black uppercase tracking-[0.16em] text-[var(--color-accent)]`} style={fontSizeStyle}>{monthShort}</p>
+        <p className={`font-black leading-none text-[var(--color-primary)] ${compact ? "text-xl" : "text-2xl"}`} style={fontSizeStyle}>{day}</p>
+        <p className={`${smallTextClass} font-black tracking-[0.12em] text-[var(--color-accent)]`} style={fontSizeStyle}>{year}</p>
       </div>
     );
   }
@@ -62,10 +63,10 @@ export function CoverDateDisplay({ date, variant = "separator-dot", compact = fa
   if (variant === "full-day") {
     return (
       <div className="mt-3 text-center">
-        <p className={`${smallTextClass} font-black uppercase tracking-[0.22em] text-[var(--color-accent)]`}>{weekday}</p>
+        <p className={`${smallTextClass} font-black uppercase tracking-[0.22em] text-[var(--color-accent)]`} style={fontSizeStyle}>{weekday}</p>
         <div className="mt-1 flex items-center justify-center gap-3">
           <span className="h-px w-7 bg-[var(--color-accent-pale)]" />
-          <p className={`${baseTextClass} tracking-[0.08em]`}>{day} {monthLong} {year}</p>
+          <p className={`${baseTextClass} tracking-[0.08em]`} style={fontSizeStyle}>{day} {monthLong} {year}</p>
           <span className="h-px w-7 bg-[var(--color-accent-pale)]" />
         </div>
       </div>
@@ -76,15 +77,15 @@ export function CoverDateDisplay({ date, variant = "separator-dot", compact = fa
     return (
       <div className="mx-auto mt-3 grid max-w-[230px] grid-cols-3 divide-x divide-[var(--color-accent-pale)] rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)]/88 py-2 shadow-lg shadow-[var(--color-primary)]/8">
         <div>
-          <p className={`font-black leading-none text-[var(--color-primary)] ${compact ? "text-lg" : "text-2xl"}`}>{day}</p>
+          <p className={`font-black leading-none text-[var(--color-primary)] ${compact ? "text-lg" : "text-2xl"}`} style={fontSizeStyle}>{day}</p>
           <p className={`${smallTextClass} mt-1 font-bold uppercase tracking-[0.14em] text-[var(--color-accent)]`}>Tgl</p>
         </div>
         <div>
-          <p className={`font-black leading-none text-[var(--color-primary)] ${compact ? "text-lg" : "text-2xl"}`}>{monthShort}</p>
+          <p className={`font-black leading-none text-[var(--color-primary)] ${compact ? "text-lg" : "text-2xl"}`} style={fontSizeStyle}>{monthShort}</p>
           <p className={`${smallTextClass} mt-1 font-bold uppercase tracking-[0.14em] text-[var(--color-accent)]`}>Bln</p>
         </div>
         <div>
-          <p className={`font-black leading-none text-[var(--color-primary)] ${compact ? "text-lg" : "text-2xl"}`}>{year}</p>
+          <p className={`font-black leading-none text-[var(--color-primary)] ${compact ? "text-lg" : "text-2xl"}`} style={fontSizeStyle}>{year}</p>
           <p className={`${smallTextClass} mt-1 font-bold uppercase tracking-[0.14em] text-[var(--color-accent)]`}>Thn</p>
         </div>
       </div>
@@ -96,6 +97,7 @@ export function CoverDateDisplay({ date, variant = "separator-dot", compact = fa
       className={`font-black tracking-[0.12em] text-[var(--color-primary)] ${
         compact ? "mt-3 text-[12px]" : "mt-5 text-lg"
       }`}
+      style={fontSizeStyle}
     >
       {day} <span className="text-[var(--color-accent)]">·</span> {monthLong} <span className="text-[var(--color-accent)]">·</span> {year}
     </p>
@@ -114,6 +116,29 @@ export default function HomeSection({
 }) {
   const coverBackgroundColor = coverConfig.backgroundColor || "#fbf7ef";
   const coverBackgroundImage = coverConfig.backgroundMode === "image" ? coverConfig.backgroundImage : "";
+
+  // Personalisasi ukuran & posisi dari designConfig (kosong = default render).
+  const px = (value, fallback) => (value ? { fontSize: `${value}px` } : fallback);
+  const nameStyle = px(coverConfig.nameFontSize, null);
+  const dateStyle = px(coverConfig.dateFontSize, null);
+  const quoteStyle = px(coverConfig.quoteFontSize, null);
+  const photoWidthStyle = coverConfig.photoWidth ? { width: `${coverConfig.photoWidth}px` } : null;
+  const contentPositionClass =
+    coverConfig.contentPosition === "top"
+      ? "items-start pt-10"
+      : coverConfig.contentPosition === "bottom"
+        ? "items-end pb-10"
+        : coverConfig.contentPosition === "split"
+          ? "justify-between"
+          : "items-center";
+  const contentOffsetStyle =
+    coverConfig.contentOffsetY || coverConfig.photoOffsetY
+      ? { transform: `translateY(${Number(coverConfig.contentOffsetY || 0)}px)` }
+      : null;
+  const photoOffsetStyle = coverConfig.photoOffsetY
+    ? { transform: `translateY(${Number(coverConfig.photoOffsetY)}px)` }
+    : null;
+
   const photoStyle = coverConfig.photoStyle || "arch";
   const photoShapeClass =
     photoStyle === "circle"
@@ -140,9 +165,11 @@ export default function HomeSection({
     <section
       id="section-home"
       data-preview-section="home"
-      className={`relative isolate flex items-center justify-center overflow-hidden px-6 text-center ${
+      className={`relative isolate flex overflow-hidden px-6 text-center ${
+        coverConfig.contentPosition === "split" ? "flex-col" : ""
+      } ${
         isCompactHomePreview ? "min-h-[100svh] py-4 px-3" : "min-h-screen py-20"
-      }`}
+      } ${contentPositionClass}`}
       style={{ backgroundColor: coverBackgroundColor }}
     >
       {coverBackgroundImage ? <img src={coverBackgroundImage} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" /> : null}
@@ -155,7 +182,12 @@ export default function HomeSection({
           coverConfig.layout === "split"
             ? "lg:grid lg:grid-cols-[0.9fr_1.1fr] lg:items-center lg:gap-12 lg:text-left"
             : ""
+        } ${
+          coverConfig.contentPosition === "split"
+            ? "flex w-full flex-1 flex-col justify-between"
+            : ""
         } ${isCompactHomePreview ? "max-w-[220px] scale-[0.74] origin-center sm:max-w-[260px] sm:scale-[0.84]" : ""}`}
+        style={contentOffsetStyle}
       >
         {coverConfig.photoEnabled ? (
           <img
@@ -168,6 +200,7 @@ export default function HomeSection({
                 ? compactPhotoSizeClass
                 : fullPhotoSizeClass
             }`}
+            style={{ ...photoWidthStyle, ...photoOffsetStyle }}
           />
         ) : null}
         <div>
@@ -181,7 +214,7 @@ export default function HomeSection({
             className={`mt-2 font-serif font-black leading-[0.94] text-[var(--color-heading)] ${
               isCompactHomePreview ? "text-[22px] sm:text-[26px]" : "text-4xl sm:text-7xl"
             }`}
-            style={{ fontFamily: "var(--font-heading)" }}
+            style={{ fontFamily: "var(--font-heading)", ...nameStyle }}
           >
             {couple.groomNickname} & {couple.brideNickname}
           </h1>
@@ -199,6 +232,7 @@ export default function HomeSection({
                   date={events[0].date}
                   variant={coverConfig.dateVariant || "separator-dot"}
                   compact={isCompactHomePreview}
+                  fontSize={coverConfig.dateFontSize}
                 />
               </div>
             </div>
@@ -210,6 +244,7 @@ export default function HomeSection({
                   ? "mt-3 text-[11px] leading-4"
                   : "mt-6 text-sm leading-6 sm:mt-7 sm:text-lg sm:leading-8"
               }`}
+              style={quoteStyle}
             >
               &ldquo;{couple.quote}&rdquo;
             </p>
@@ -219,7 +254,11 @@ export default function HomeSection({
               className={
                 isCompactHomePreview
                   ? "mt-3 rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)]/88 px-3 py-2 shadow-lg shadow-[var(--color-primary)]/8 backdrop-blur"
-                  : "mt-6 mx-auto w-full max-w-[18rem] rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)]/88 px-4 py-3 shadow-lg shadow-[var(--color-primary)]/8 backdrop-blur sm:mt-8 sm:max-w-sm sm:px-7 sm:py-5 sm:shadow-xl sm:shadow-[var(--color-primary)]/10"
+                  : `rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-surface)]/88 px-4 py-3 shadow-lg shadow-[var(--color-primary)]/8 backdrop-blur sm:px-7 sm:py-5 sm:shadow-xl sm:shadow-[var(--color-primary)]/10 ${
+                      coverConfig.contentPosition === "split"
+                        ? "mx-auto mt-auto w-full max-w-[18rem] sm:max-w-sm"
+                        : "mx-auto mt-6 w-full max-w-[18rem] sm:mt-8 sm:max-w-sm"
+                    }`
               }
             >
               <p

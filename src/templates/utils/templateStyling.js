@@ -30,6 +30,9 @@ export const FONT_FAMILIES = {
   josefin: "'Josefin Sans', sans-serif",
   lora: "'Lora', serif",
   "alex-brush": "'Alex Brush', cursive",
+  "bodoni-moda": "'Bodoni Moda', serif",
+  montserrat: "'Montserrat', sans-serif",
+  niconne: "'Niconne', cursive",
   inter: "'Inter', sans-serif",
   poppins: "'Poppins', sans-serif",
   nunito: "'Nunito', sans-serif",
@@ -58,7 +61,17 @@ export function contentScaleValue(contentSize) {
 export function cssVars(styleConfig = {}) {
   const headingFamily = FONT_FAMILIES[styleConfig.headingFont] || undefined;
   const bodyFamily = FONT_FAMILIES[styleConfig.bodyFont] || undefined;
-  const cardRadius = styleConfig.cardStyle === "sharp" ? "0px" : styleConfig.cardStyle === "pill" ? "24px" : "8px";
+  // cardRadius: prioritas nilai custom (angka/string), fallback ke cardStyle legacy
+  const cardRadius =
+    styleConfig.cardRadius !== undefined && styleConfig.cardRadius !== ""
+      ? typeof styleConfig.cardRadius === "number"
+        ? `${styleConfig.cardRadius}px`
+        : String(styleConfig.cardRadius)
+      : styleConfig.cardStyle === "sharp"
+        ? "0px"
+        : styleConfig.cardStyle === "pill"
+          ? "999px"
+          : "8px";
   const primaryColor = styleConfig.primaryColor || styleConfig.textColor || undefined;
   const textColor = styleConfig.textColor || styleConfig.primaryColor || undefined;
   const contentScale = contentScaleValue(styleConfig.contentSize);
@@ -73,6 +86,10 @@ export function cssVars(styleConfig = {}) {
     "--color-accent": styleConfig.accentColor || undefined,
     "--font-heading": headingFamily || "inherit",
     "--card-radius": cardRadius,
+    "--card-border-width": styleConfig.cardBorderWidth || "1px",
+    "--card-border-color": styleConfig.cardBorderColor || "var(--color-accent-pale)",
+    "--card-shadow": styleConfig.cardShadow || "0 10px 30px rgba(0,0,0,0.08)",
+    "--card-padding": styleConfig.cardPadding || "1.75rem",
     // Only emit when explicitly set so per-section frames don't reset the
     // global value inherited from the template root.
     "--content-scale": contentScale ? String(contentScale) : undefined,
@@ -137,11 +154,65 @@ export function SectionFrame({ section, designConfig, baseClassName = "", applyS
   const pulseSync = musicWidgetConfig.pulseSync || false;
   const pulseIntensity = musicWidgetConfig.pulseIntensity || "subtle";
 
+  // Transparansi section: kalau ADA background global, section jadi transparan
+  // KECUALI: home, section yang set backgroundImage sendiri, atau section yang
+  // eksplisit set useGlobalBackground=false (pilih "pakai background sendiri").
+  const globalBg = designConfig?.sections?.global?.backgroundImage;
+  const sectionOwn = designConfig?.sections?.[section] || {};
+  const hasOwnImage = Boolean(sectionOwn.backgroundImage);
+  const useGlobalBackground = sectionOwn.useGlobalBackground !== false;
+  const isTransparentSection =
+    Boolean(globalBg) &&
+    section !== "home" &&
+    useGlobalBackground &&
+    !hasOwnImage;
+
+  const parallaxSpeed = {
+    none: 0,
+    slow: 12,
+    medium: 24,
+    fast: 40,
+  }[styleConfig.backgroundParallax || "none"] || 0;
+
+  // Hanya render background IMAGE lokal kalau section punya gambar SENDIRI
+  // (sectionOwn.backgroundImage), bukan warisan global — global sudah dirender
+  // sekali di GlobalBackground (root).
+  const hasOwnBackgroundImage = Boolean(sectionOwn.backgroundImage) && !isTransparentSection;
+  const overlayOpacity = Math.min(90, Math.max(0, Number(styleConfig.backgroundOverlay) || 0)) / 100;
+
+  // Background section: kalau transparan → transparent.
+  // Kalau tidak transparan → warna section SENDIRI (sectionOwn.backgroundColor),
+  // bukan styleConfig.backgroundColor yang bisa berasal dari global (useGlobal=true
+  // membuat getSectionStyleConfig mengembalikan warna global, menutupi bg image global).
+  const effectiveBackground = isTransparentSection
+    ? "transparent"
+    : sectionOwn.backgroundColor || styleConfig.backgroundColor;
+
   return (
-    <motion.section {...sectionMotion(styleConfig.entranceAnimation)} viewport={{ once: true, amount: 0.18 }} transition={{ duration: 0.6, ease: "easeOut" }} id={`section-${section}`} data-preview-section={section} className={`relative overflow-hidden ${spacingClass(styleConfig.spacingPreset)} ${fontClass(styleConfig.fontPreset)} ${baseClassName}`} style={applySectionStyle ? cssVars(styleConfig) : undefined}>
-      {styleConfig.backgroundImage ? <img src={styleConfig.backgroundImage} alt="" className="absolute inset-0 z-0 h-full w-full object-cover opacity-[0.42]" /> : null}
+    <motion.section {...sectionMotion(styleConfig.entranceAnimation)} viewport={{ once: true, amount: 0.18 }} transition={{ duration: 0.6, ease: "easeOut" }} id={`section-${section}`} data-preview-section={section} data-background-parallax={parallaxSpeed ? String(parallaxSpeed) : undefined} className={`relative z-10 overflow-hidden ${spacingClass(styleConfig.spacingPreset)} ${fontClass(styleConfig.fontPreset)} ${isTransparentSection ? "!bg-transparent" : ""} ${baseClassName}`} style={applySectionStyle ? { ...cssVars(styleConfig), backgroundColor: effectiveBackground || undefined } : undefined}>
+      {hasOwnBackgroundImage ? (
+        <>
+          <div
+            className={`absolute inset-0 z-0 overflow-hidden ${parallaxSpeed ? "section-bg-parallax" : ""}`}
+            style={parallaxSpeed ? { "--parallax-speed": `${parallaxSpeed}px` } : undefined}
+          >
+            <img
+              src={styleConfig.backgroundImage}
+              alt=""
+              className="section-bg-image h-full w-full object-cover"
+              style={parallaxSpeed ? { height: "130%", maxWidth: "none" } : undefined}
+            />
+          </div>
+          {overlayOpacity > 0 ? (
+            <div
+              className="absolute inset-0 z-[1]"
+              style={{ backgroundColor: `rgba(0,0,0,${overlayOpacity})` }}
+            />
+          ) : null}
+        </>
+      ) : null}
       <OrnamentLayer ornaments={getSectionOrnaments(designConfig, section)} pulseSync={pulseSync} pulseIntensity={pulseIntensity} />
-      {children}
+      <div className="relative z-[2]">{children}</div>
     </motion.section>
   );
 }

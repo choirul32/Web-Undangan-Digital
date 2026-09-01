@@ -1,10 +1,36 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   DashboardButton,
   Field,
   SelectInput,
   TextInput,
 } from "../FormControls";
+
+// Thumbnail ornamen dengan deteksi error: kalau gambar gagal dimuat atau
+// src kosong, tampilkan badge "No Image" supaya admin tahu asset bermasalah.
+function OrnamentThumb({ src }) {
+  const [hasError, setHasError] = useState(false);
+  const isEmpty = !src;
+
+  if (isEmpty || hasError) {
+    return (
+      <span className="flex h-full w-full items-center justify-center rounded border border-dashed border-red-300 bg-red-50">
+        <span className="px-0.5 text-[7px] font-black uppercase leading-tight text-red-500">
+          No Image
+        </span>
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={src}
+      alt=""
+      className="h-full w-full object-cover"
+      onError={() => setHasError(true)}
+    />
+  );
+}
 
 export default function OrnamentLayerPanel({
   activeDesignSection,
@@ -34,7 +60,7 @@ export default function OrnamentLayerPanel({
             <rect x="4" y="8.5" width="12" height="3" rx="1" />
             <rect x="4" y="13" width="12" height="3" rx="1" />
           </svg>
-          <p className="text-xs font-extrabold text-[var(--dash-ink)]">Layer / Ornamen</p>
+          <p className="text-xs font-extrabold text-[var(--dash-ink)]">Lapisan / Ornamen</p>
         </div>
         <svg viewBox="0 0 20 20" className="h-4 w-4 text-[var(--color-text)]/60" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="m6 8 4 4 4-4" />
@@ -141,7 +167,7 @@ export default function OrnamentLayerPanel({
                   >
                     <span className="inline-flex h-8 w-8 items-center justify-center overflow-hidden rounded border border-[var(--color-accent-pale)] bg-white">
                       {hasImage ? (
-                        <img src={ornament.src} alt="" className="h-full w-full object-cover" />
+                        <OrnamentThumb src={ornament.src} />
                       ) : (
                         <svg viewBox="0 0 20 20" className="h-4 w-4 text-[var(--color-text)]/40" fill="none" stroke="currentColor" strokeWidth="1.8">
                           <rect x="3.5" y="3.5" width="13" height="13" rx="2" />

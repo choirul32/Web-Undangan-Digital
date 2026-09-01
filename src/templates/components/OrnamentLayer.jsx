@@ -45,6 +45,19 @@ function OrnamentImage({ ornament, animation, animationDelay, loopMode = "infini
   }, [ornament.src]);
 
   if (hasError || !ornament.src) {
+    // Indikator "No Image" HANYA di canvas editor embedded (iframe dashboard),
+    // supaya admin tahu asset rusak. Preview penuh (/preview?editorPreview=1)
+    // dan halaman public/tamu menyembunyikan ornamen yang gagal dimuat agar
+    // tampilan tidak dirusak kotak error.
+    const isEmbeddedEditor =
+      typeof window !== "undefined" &&
+      (window.location.search.includes("embeddedEditorPreview") ||
+        window.location.search.includes("previewSectionOnly"));
+
+    if (!isEmbeddedEditor) {
+      return null;
+    }
+
     return (
       <div
         className="flex h-full w-full items-center justify-center rounded-[8px] border border-dashed border-[var(--color-accent)]/35 bg-[var(--color-muted)]/18"
@@ -61,7 +74,7 @@ function OrnamentImage({ ornament, animation, animationDelay, loopMode = "infini
   return (
     <>
       {isLoading && (
-        <div className="absolute inset-0 animate-pulse rounded-[8px] bg-[var(--color-muted)]/16" />
+        <div className="absolute inset-0 animate-pulse rounded-[8px] bg-[var(--color-muted)]/16 motion-reduce:animate-none" />
       )}
       <img
         src={ornament.src}

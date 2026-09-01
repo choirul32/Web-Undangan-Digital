@@ -11,8 +11,8 @@ import {
 } from "../../data/templateAdminDefaults";
 import {
   InvitationErrorState,
-  InvitationLoadingState,
 } from "../../components/InvitationLoadingState";
+import LoadingScreen from "../../templates/components/LoadingScreen";
 import {
   buildReadyMessage,
   PREVIEW_MESSAGE,
@@ -105,6 +105,13 @@ function readEditorPreviewSnapshot(templateId) {
 
 function applyEditorPreviewSnapshot(invitation, snapshot, templateId) {
   if (!snapshot) {
+    return invitation;
+  }
+
+  // Snapshot dianggap valid kalau membawa designConfig (bukan objek kosong).
+  // Kalau kosong, biarkan fallback lain (override lokal / metadata) yang isi.
+  const hasConfig = snapshot.designConfig && Object.keys(snapshot.designConfig).length > 0;
+  if (!hasConfig) {
     return invitation;
   }
 
@@ -267,14 +274,27 @@ export default function PreviewPageClient() {
             templateId,
           }
         : draft;
-      let nextData = applyStoredTemplateOverrideToInvitation(previewData);
+
+      // 1) Snapshot editor (sessionStorage) — paling fresh kalau ada.
+      let nextData = editorPreview
+        ? applyEditorPreviewSnapshot(
+            previewData,
+            readEditorPreviewSnapshot(templateId),
+            templateId,
+          )
+        : previewData;
+
+      // 2) Override template tersimpan lokal (fallback saat Supabase nonaktif).
+      nextData = applyStoredTemplateOverrideToInvitation(nextData);
+
       let templateMetadata = mergeTemplateOverrides(defaultTemplateMetadata).find(
         (template) => template.id === templateId,
       );
 
       if (templateId) {
         try {
-          const response = await fetch("/api/templates?scope=admin");
+          // scope=public agar preview bisa baca template tanpa login admin.
+          const response = await fetch("/api/templates?scope=public");
           const result = await response.json();
           if (Array.isArray(result.data)) {
             templateMetadata =
@@ -287,21 +307,15 @@ export default function PreviewPageClient() {
         }
       }
 
-      if (templateMetadata) {
+      // 3) Metadata API/default hanya dipakai kalau belum ada snapshot
+      //    editor maupun override lokal yang menyediakan designConfig.
+      if (templateMetadata && !nextData.designConfig) {
         nextData = {
           ...nextData,
           templateId,
           coverImage: templateMetadata.image || nextData.coverImage,
           designConfig: templateMetadata.designConfig || nextData.designConfig,
         };
-      }
-
-      if (editorPreview && templateId) {
-        nextData = applyEditorPreviewSnapshot(
-          nextData,
-          readEditorPreviewSnapshot(templateId),
-          templateId,
-        );
       }
 
       if (templateId && previewDataMode !== "empty") {
@@ -334,11 +348,16 @@ export default function PreviewPageClient() {
       }
 
       if (isMounted && (slug || templateId)) {
-        await preloadInvitationImages(nextData);
+        // Editor preview butuh responsif — lewati preload gambar & minimal
+        // loading supaya hasil edit langsung nampil. Halaman publik tetap
+        // pakai preload + minimal loading biar tidak kedip konten kosong.
+        if (!editorPreview) {
+          await preloadInvitationImages(nextData);
+        }
       }
 
       if (isMounted) {
-        const minimumLoadingMs = embeddedEditorPreview ? 0 : PUBLIC_PREVIEW_MIN_LOADING_MS;
+        const minimumLoadingMs = embeddedEditorPreview || editorPreview ? 0 : PUBLIC_PREVIEW_MIN_LOADING_MS;
         const remainingLoadingMs = minimumLoadingMs - (Date.now() - loadStartedAt);
         if (remainingLoadingMs > 0) {
           await new Promise((resolve) => {
@@ -412,7 +431,7 @@ export default function PreviewPageClient() {
 
   if (isLoading) {
     return (
-      <InvitationLoadingState description="Memuat data, desain, dan gambar undangan." />
+      <LoadingScreen coverImage="" onDone={() => {}} minDuration={400} />
     );
   }
 

@@ -42,7 +42,7 @@ const features = [
   { icon: "gallery", title: "Gallery", desc: "Tampilkan foto dan video prewedding terbaik kalian." },
   { icon: "quote", title: "Doa & Quotes", desc: "Tambahkan kutipan atau doa yang sesuai dengan konsep acara." },
   { icon: "story", title: "Love Story", desc: "Ceritakan perjalanan cinta dari awal sampai hari bahagia." },
-  { icon: "qr", title: "QR Check In", desc: "Cocok untuk penerimaan tamu yang lebih rapi." },
+  { icon: "photobox", title: "Photobox Online", desc: "Tamu foto langsung di web, hasilnya tampil di galeri undangan." },
 ];
 
 const trustItems = ["Gratis konsultasi", "Revisi dibantu", "Selesai 1 hari"];
@@ -58,7 +58,15 @@ const defaultPlans = [
     priceKey: "basic",
     defaultPrice: "Rp 45.000",
     desc: "Untuk undangan simpel yang tetap rapi dan siap dibagikan.",
-    features: ["Detail acara", "Profil mempelai", "Google Maps", "Gallery foto", "Masa aktif 3 bulan"],
+    features: [
+      "Nama tamu personal",
+      "RSVP kehadiran",
+      "Detail acara",
+      "Profil mempelai",
+      "Google Maps",
+      "Gallery foto",
+      "Masa aktif 3 bulan",
+    ],
   },
   {
     name: "Premium",
@@ -68,11 +76,11 @@ const defaultPlans = [
     featured: true,
     features: [
       "Semua fitur Basic",
-      "Custom nama tamu",
-      "RSVP kehadiran",
       "Amplop digital",
       "Love story",
       "Backsound music",
+      "Revisi lebih banyak",
+      "Masa aktif lebih lama",
     ],
   },
   {
@@ -82,8 +90,9 @@ const defaultPlans = [
     desc: "Untuk tampilan lebih personal dengan layanan prioritas.",
     features: [
       "Semua fitur Premium",
-      "QR check in",
-      "Video gallery",
+      "Photobox online untuk tamu",
+      "Video cover cinematic",
+      "Template exclusive",
       "Unlimited revisi",
       "Masa aktif 1 tahun",
     ],
@@ -137,8 +146,8 @@ function LineIcon({ name, className = "h-6 w-6" }) {
   if (name === "story") {
     return <svg {...props}><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" /><path d="M9 7h7" /><path d="M9 11h5" /></svg>;
   }
-  if (name === "qr") {
-    return <svg {...props}><path d="M4 4h6v6H4z" /><path d="M14 4h6v6h-6z" /><path d="M4 14h6v6H4z" /><path d="M14 14h2v2h-2z" /><path d="M18 14h2v6h-4v-2" /><path d="M14 18h2v2h-2z" /></svg>;
+  if (name === "photobox") {
+    return <svg {...props}><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3Z" /><circle cx="12" cy="13" r="3.5" /></svg>;
   }
   if (name === "check") {
     return <svg {...props}><path d="m5 12 4 4L19 6" /></svg>;
@@ -564,6 +573,8 @@ function CatalogCard({ item }) {
           <img
             src={item.image}
             alt={`Preview template undangan ${item.title}`}
+            loading="lazy"
+            decoding="async"
             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
         </div>

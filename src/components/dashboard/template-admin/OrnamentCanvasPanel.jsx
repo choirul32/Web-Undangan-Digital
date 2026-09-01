@@ -4,6 +4,7 @@ import {
   buildSnapshotMessage,
   PREVIEW_MESSAGE,
 } from "../../../templates/previewProtocol";
+import OrnamentDragOverlay from "./ornamentDragOverlay";
 
 const previewViewport = {
   width: 412,
@@ -19,9 +20,39 @@ export default function OrnamentCanvasPanel({
   validationWarnings,
   templatePreviewSrc,
   previewSnapshot,
+  selectedOrnamentIndex = -1,
+  setSelectedOrnamentIndex,
+  updateOrnamentAtIndex,
+  setManagerMessage,
 }) {
   const iframeRef = useRef(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(true);
+  const [isDragging, setIsDragging] = useState(false);
+
+  // Iframe hanya perlu di-remount saat template/section berubah, bukan saat
+  // config diedit — update konten cukup lewat postMessage snapshot.
+  // NOTE: deklarasi di sini (sebelum useEffect yang memakainya) supaya tidak
+  // kena Temporal Dead Zone — dipakai sebagai dependency array useEffect.
+  const templateIdFromSrc =
+    typeof templatePreviewSrc === "string"
+      ? new URLSearchParams(templatePreviewSrc.split("?")[1] || "").get("templateId") || "unknown"
+      : "unknown";
+
+  // Buang previewTick dari URL: previewTick berisi hash designConfig yang
+  // berubah tiap edit → kalau dipakai sebagai src, iframe reload terus.
+  // Konten di-update via postMessage snapshot, jadi src harus stabil.
+  const stablePreviewSrc =
+    typeof templatePreviewSrc === "string"
+      ? templatePreviewSrc
+          .split("?")[0] +
+        "?" +
+        new URLSearchParams(
+          Array.from(new URLSearchParams(templatePreviewSrc.split("?")[1] || "").entries()).filter(
+            ([key]) => key !== "previewTick",
+          ),
+        ).toString()
+      : templatePreviewSrc;
+
   const postPreviewSnapshot = () => {
     if (!previewSnapshot || !iframeRef.current?.contentWindow) {
       return;
@@ -39,7 +70,7 @@ export default function OrnamentCanvasPanel({
 
   useEffect(() => {
     setIsPreviewLoading(true);
-  }, [templatePreviewSrc]);
+  }, [activeDesignSection, templateIdFromSrc]);
 
   useEffect(() => {
     const handlePreviewReady = (event) => {
@@ -88,6 +119,31 @@ export default function OrnamentCanvasPanel({
     keepPageScroll(() => setPreviewEntranceKey((k) => k + 1));
   };
 
+  const handleOrnamentSelect = (index) => {
+    setSelectedOrnamentIndex?.(index);
+  };
+
+  const handleOrnamentMove = (index, x, y) => {
+    if (!updateOrnamentAtIndex) {
+      return;
+    }
+    setIsDragging(true);
+    updateOrnamentAtIndex(index, { x, y });
+  };
+
+  const handleOrnamentSnap = (index, slot, x, y) => {
+    setIsDragging(false);
+    if (!updateOrnamentAtIndex) {
+      return;
+    }
+    updateOrnamentAtIndex(index, { slot, x, y });
+    setManagerMessage?.(`Ornamen disnapkan ke posisi ${slot}.`);
+  };
+
+  const handleOrnamentDragEnd = () => {
+    setIsDragging(false);
+  };
+
   return (
     <div className="space-y-3 xl:sticky xl:top-4 xl:z-10 xl:max-h-[calc(100vh-6.5rem)] xl:overflow-y-auto xl:pb-3">
       <div className="rounded-[8px] border border-[var(--color-accent-pale)] bg-white p-3 shadow-[0_10px_30px_rgba(15,23,42,0.08)]">
@@ -129,9 +185,9 @@ export default function OrnamentCanvasPanel({
                 }}
               >
                 <iframe
-                  key={templatePreviewSrc}
+                  key={`${activeDesignSection}-${templateIdFromSrc}`}
                   ref={iframeRef}
-                  src={templatePreviewSrc}
+                  src={stablePreviewSrc}
                   title={`Ornament ${activeDesignSection} preview`}
                   tabIndex={-1}
                   className="absolute left-0 top-0 border-0"
@@ -151,6 +207,32 @@ export default function OrnamentCanvasPanel({
                         Memuat preview
                       </span>
                     </div>
+                  </div>
+                ) : null}
+                {/* Overlay drag ornamen — geometri sama dengan renderer.
+                    Iframe di-scale (transformOrigin top-left), jadi overlay
+                    juga di-scale dengan nilai yang sama supaya posisi nyambung. */}
+                {!isPreviewLoading ? (
+                  <div
+                    className="absolute left-0 top-0"
+                    style={{
+                      width: `${previewViewport.width}px`,
+                      height: `${previewViewport.height}px`,
+                      transform: `scale(${previewViewport.scale})`,
+                      transformOrigin: "top left",
+                    }}
+                  >
+                    <OrnamentDragOverlay
+                      ornaments={activeOrnaments}
+                      selectedIndex={selectedOrnamentIndex}
+                      onSelect={handleOrnamentSelect}
+                      onMove={handleOrnamentMove}
+                      onSnap={handleOrnamentSnap}
+                      onDragEnd={handleOrnamentDragEnd}
+                      containerWidth={previewViewport.width}
+                      containerHeight={previewViewport.height}
+                      disabled={isDragging}
+                    />
                   </div>
                 ) : null}
                 <div className="pointer-events-none absolute inset-0 border border-dashed border-[var(--color-accent)]/45" />

@@ -22,6 +22,57 @@ function TemplateStatusPill({ status }) {
   );
 }
 
+// Thumbnail dengan placeholder: gambar dimuat asinkron (lazy) dan
+// tampil dengan fade-in setelah selesai. Selama belum ada, tampil
+// placeholder abu-abu berdenyut — jadi card tidak "bolong".
+function ThumbWithPlaceholder({ src, alt }) {
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    setLoaded(false);
+  }, [src]);
+
+  return (
+    <div className="relative h-full w-full">
+      {!loaded ? (
+        <div className="absolute inset-0 animate-pulse bg-[var(--dash-fog)]" aria-hidden="true" />
+      ) : null}
+      <img
+        src={src}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        fetchPriority="low"
+        onLoad={() => setLoaded(true)}
+        className={`relative h-full w-full object-contain transition-opacity duration-300 ${
+          loaded ? "opacity-100" : "opacity-0"
+        }`}
+      />
+    </div>
+  );
+}
+
+function SkeletonCard() {
+  return (
+    <DashboardCard className="overflow-hidden bg-[var(--dash-canvas)] p-3 shadow-[var(--dash-shadow)]">
+      <div className="flex gap-3">
+        <div className="aspect-[9/13] w-24 shrink-0 animate-pulse rounded-[8px] bg-[var(--dash-fog)]" />
+        <div className="min-w-0 flex-1 space-y-2.5">
+          <div className="h-4 w-3/4 animate-pulse rounded bg-[var(--dash-fog)]" />
+          <div className="h-3 w-1/2 animate-pulse rounded bg-[var(--dash-fog)]" />
+          <div className="h-3 w-full animate-pulse rounded bg-[var(--dash-fog)]" />
+          <div className="h-3 w-5/6 animate-pulse rounded bg-[var(--dash-fog)]" />
+        </div>
+      </div>
+      <div className="mt-3 flex justify-end gap-1.5 border-t border-[var(--dash-border)] pt-2.5">
+        <div className="h-8 w-8 animate-pulse rounded-full bg-[var(--dash-fog)]" />
+        <div className="h-8 w-8 animate-pulse rounded-full bg-[var(--dash-fog)]" />
+        <div className="h-8 w-8 animate-pulse rounded-full bg-[var(--dash-fog)]" />
+      </div>
+    </DashboardCard>
+  );
+}
+
 export default function TemplateCatalogGrid({
   visible,
   filteredTemplates,
@@ -53,10 +104,9 @@ export default function TemplateCatalogGrid({
                 className="relative block aspect-[9/13] w-24 shrink-0 overflow-hidden rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] shadow-inner"
                 title="Buka preview"
               >
-                <img
+                <ThumbWithPlaceholder
                   src={template.image || defaultThumbnail}
                   alt={`Preview ${template.name}`}
-                  className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-[1.03]"
                 />
                 <div className="pointer-events-none absolute inset-0 ring-1 ring-inset ring-white/60" />
               </a>
@@ -167,12 +217,14 @@ export default function TemplateCatalogGrid({
           </DashboardCard>
         ))}
 
-        {isLoadingTemplates ? (
-          <div className="px-5 py-12 text-center">
-            <p className="text-xl font-black text-[var(--color-primary)]">Memuat template...</p>
-          </div>
+        {isLoadingTemplates && filteredTemplates.length === 0 ? (
+          <>
+            {Array.from({ length: 6 }).map((_, index) => (
+              <SkeletonCard key={`skeleton-${index}`} />
+            ))}
+          </>
         ) : filteredTemplates.length === 0 ? (
-          <div className="px-5 py-12 text-center">
+          <div className="px-5 py-12 text-center md:col-span-2 xl:col-span-3 2xl:col-span-4">
             <p className="text-xl font-black text-[var(--color-primary)]">Template tidak ditemukan</p>
             <p className="mt-2 text-base font-semibold text-[var(--color-text)]">
               Coba ubah keyword, kategori, atau status filter.

@@ -96,6 +96,7 @@ export const headingFontOptions = [
   { id: "great-vibes", label: "Great Vibes", family: "'Great Vibes', cursive", vibe: "Script mewah" },
   { id: "dancing", label: "Dancing Script", family: "'Dancing Script', cursive", vibe: "Script casual" },
   { id: "cinzel", label: "Cinzel", family: "'Cinzel', serif", vibe: "Royal formal" },
+  { id: "bodoni-moda", label: "Bodoni Moda", family: "'Bodoni Moda', serif", vibe: "High-contrast elegan" },
   { id: "josefin", label: "Josefin Sans", family: "'Josefin Sans', sans-serif", vibe: "Modern clean" },
   { id: "lora", label: "Lora", family: "'Lora', serif", vibe: "Warm serif" },
   { id: "alex-brush", label: "Alex Brush", family: "'Alex Brush', cursive", vibe: "Calligraphy" },
@@ -107,11 +108,17 @@ export const bodyFontOptions = [
   { id: "nunito", label: "Nunito", family: "'Nunito', sans-serif", vibe: "Soft rounded" },
   { id: "source-serif", label: "Source Serif 4", family: "'Source Serif 4', serif", vibe: "Readable serif" },
   { id: "dm-sans", label: "DM Sans", family: "'DM Sans', sans-serif", vibe: "Clean geometric" },
+  { id: "montserrat", label: "Montserrat", family: "'Montserrat', sans-serif", vibe: "Modern sans" },
   { id: "lora", label: "Lora", family: "'Lora', serif", vibe: "Warm serif" },
 ];
 
 // ===== COLOR PALETTE PRESETS =====
 export const colorPalettePresets = [
+  {
+    id: "blue-java",
+    label: "Blue Java",
+    colors: { primary: "#ddbe82", accent: "#ddbe82", text: "#ffffff", bg: "#091932", surface: "#0f2442" },
+  },
   {
     id: "royal-navy-gold",
     label: "Royal Navy Gold",
@@ -732,9 +739,54 @@ export const templateStylePresets = [
       guestBlockStyle: "hidden",
     },
   },
+  {
+    id: "blue-java",
+    label: "Blue Java",
+    description: "Adat Jawa elegan biru tua + emas, serif tinggi, spacing lega, dan motif songket.",
+    sectionStyle: {
+      fontPreset: "serif",
+      spacingPreset: "roomy",
+      entranceAnimation: "fade-up",
+      backgroundColor: "#091932",
+      backgroundImage: "",
+      backgroundOverlay: 38,
+      textColor: "#ffffff",
+      accentColor: "#ddbe82",
+      headingFont: "bodoni-moda",
+      bodyFont: "montserrat",
+    },
+    animation: {
+      enabled: true,
+      preset: "fade-sequence",
+      entrancePreset: "fade-in",
+      loopPreset: "none",
+      staggerStep: 0.16,
+    },
+    widgets: {
+      openingReveal: { enabled: true, animation: "curtain", backgroundMode: "color", backgroundColor: "#091932" },
+      openingSequence: { preset: "cinematic-soft" },
+      countdown: { variant: "minimal" },
+      events: { variant: "cards", showIcon: true, showMaps: true },
+      story: { variant: "timeline", animation: "fade-up" },
+      gallery: { variant: "grid", includeCover: true },
+    },
+    cover: {
+      openingAnimation: "fade-up",
+      dateVariant: "separator-dot",
+    },
+    ornaments: {
+      home: [],
+    },
+  },
 ];
 
 export const smartThemeConcepts = [
+  {
+    id: "jawa-biru",
+    label: "Jawa Biru Elegan",
+    description: "Biru tua + emas, serif tinggi, opening lembut, dan nuansa adat Jawa.",
+    presetId: "blue-java",
+  },
   {
     id: "adat-jawa",
     label: "Adat Jawa",

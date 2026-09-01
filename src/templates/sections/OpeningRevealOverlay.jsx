@@ -40,10 +40,16 @@ export default function OpeningRevealOverlay({
     ? config.coverImage
     : coverImage || config.coverImage || coverConfig.coverImage || defaultOpeningCoverImage;
   const visualBackgroundMode = config.backgroundMode || "color";
+  // Kalau foto cover tengah dimatikan, background mode "cover" tidak relevan
+  // lagi — jatuhkan ke warna supaya foto cover tidak muncul sama sekali.
+  const effectiveBackgroundMode =
+    config.coverImageEnabled === false && visualBackgroundMode === "cover"
+      ? "color"
+      : visualBackgroundMode;
   const backgroundImage =
-    visualBackgroundMode === "cover"
+    effectiveBackgroundMode === "cover"
       ? revealCoverImage
-      : visualBackgroundMode === "image"
+      : effectiveBackgroundMode === "image"
         ? config.backgroundImage || coverConfig.backgroundImage
         : "";
   const backgroundColor = config.backgroundColor || coverConfig.backgroundColor || "#fbf7ef";
@@ -70,7 +76,30 @@ export default function OpeningRevealOverlay({
     ? "absolute inset-0 h-full min-h-screen"
     : "fixed inset-0 h-[100dvh] min-h-[100svh]";
   const contentWidthClass = compactMode ? "max-w-[350px]" : "max-w-3xl";
-  const contentLayoutClass = compactMode ? "flex min-h-[calc(100svh-3.5rem)] flex-col items-center justify-center" : "";
+  const contentLayoutClass = compactMode
+    ? "flex min-h-[calc(100svh-3.5rem)] flex-col items-center justify-center"
+    : config.contentPosition === "split"
+      ? "flex min-h-[calc(100svh-3.5rem)] flex-col items-center"
+      : "";
+
+  // Personalisasi ukuran & posisi dari designConfig (kosong = default render).
+  const px = (value) => (value ? { fontSize: `${value}px` } : null);
+  const titleFontSizeStyle = px(config.titleFontSize);
+  const guestFontSizeStyle = px(config.guestFontSize);
+  const buttonFontSizeStyle = px(config.buttonFontSize);
+  const photoWidthStyle = config.photoWidth ? { width: `${config.photoWidth}px` } : null;
+  const openingContentPositionClass =
+    config.contentPosition === "top"
+      ? "items-start pt-10"
+      : config.contentPosition === "bottom"
+        ? "items-end pb-10"
+        : config.contentPosition === "split"
+          ? "flex-col justify-between"
+          : "items-center";
+  const contentOffsetStyle = config.contentOffsetY
+    ? { transform: `translateY(${Number(config.contentOffsetY)}px)` }
+    : null;
+
   const coverImageClass = `${compactMode
     ? "mx-auto mb-5 aspect-[3/4] w-36 rounded-t-full rounded-b-[14px]"
     : "mx-auto mb-7 aspect-[3/4] w-44 rounded-t-full rounded-b-[16px]"
@@ -88,7 +117,7 @@ export default function OpeningRevealOverlay({
     usePhotoBackdrop
       ? "border-white/70 bg-black/42 shadow-black/20"
       : "border-[var(--color-accent-pale)] bg-[var(--color-surface)]/88 shadow-[var(--color-primary)]/10"
-  }`;
+  } ${config.contentPosition === "split" ? "mt-auto" : ""}`;
   const guestEyebrowClass = compactMode
     ? `text-[10px] font-black uppercase tracking-[0.14em] ${usePhotoBackdrop ? "text-white/85" : "text-[var(--color-accent)]"}`
     : `text-sm font-black uppercase tracking-[0.16em] ${usePhotoBackdrop ? "text-white/85" : "text-[var(--color-accent)]"}`;
@@ -112,7 +141,7 @@ export default function OpeningRevealOverlay({
   };
 
   return (
-    <motion.div exit={revealExitMotion(animation)} transition={{ duration: 0.72, ease: "easeInOut" }} className={`${overlayFrameClass} z-[120] flex items-center justify-center overflow-hidden ${overlaySpacingClass} text-center ${frameClass}`} style={{ backgroundColor }}>
+    <motion.div exit={revealExitMotion(animation)} transition={{ duration: 0.72, ease: "easeInOut" }} className={`${overlayFrameClass} z-[120] flex items-center justify-center overflow-hidden ${overlaySpacingClass} text-center ${frameClass} ${openingContentPositionClass}`} style={{ backgroundColor }}>
       {isSplitAnimation ? (
         <>
           <motion.div initial={false} animate={isOpening ? { x: "-102%" } : { x: 0 }} transition={{ duration: 0.85, ease: [0.76, 0, 0.24, 1] }} className={`${splitPanelClass} left-0`} style={splitPanelStyle("left")} />
@@ -133,15 +162,15 @@ export default function OpeningRevealOverlay({
       <OrnamentLayer ornaments={getSectionOrnaments(designConfig, "opening")} />
       <OpeningSequenceAsset asset={config.asset} isOpening={isOpening} onSkip={handleOpen} />
       <OpeningSequenceAtmosphere config={config} isOpening={isOpening} />
-      <OpeningSequence config={config} isOpening={isOpening} className={`relative z-10 mx-auto w-full ${contentWidthClass} ${contentLayoutClass} ${contentClass}`}>
-        {config.coverImageEnabled ? <img src={revealCoverImage} alt={`${couple.groomNickname} dan ${couple.brideNickname}`} className={coverImageClass} /> : null}
+      <OpeningSequence config={config} isOpening={isOpening} className={`relative z-10 mx-auto w-full ${contentWidthClass} ${contentLayoutClass} ${contentClass}`} style={contentOffsetStyle}>
+        {config.coverImageEnabled ? <img src={revealCoverImage} alt={`${couple.groomNickname} dan ${couple.brideNickname}`} className={coverImageClass} style={photoWidthStyle} /> : null}
         <p className={`${eyebrowClass} ${eyebrowColorClass}`}>The Wedding Of</p>
-        <h1 className={`${titleClass} ${headingColorClass}`} style={{ fontFamily: "var(--font-heading)" }}>{couple.groomNickname} & {couple.brideNickname}</h1>
+        <h1 className={`${titleClass} ${headingColorClass}`} style={{ fontFamily: "var(--font-heading)", ...titleFontSizeStyle }}>{couple.groomNickname} & {couple.brideNickname}</h1>
         <div className={guestBoxClass}>
           <p className={guestEyebrowClass}>Kepada Yth.</p>
-          <p className={guestNameClass}>{guestName || "Tamu Undangan"}</p>
+          <p className={guestNameClass} style={guestFontSizeStyle}>{guestName || "Tamu Undangan"}</p>
         </div>
-        <button type="button" onClick={handleOpen} disabled={isOpening} className={buttonClass}>
+        <button type="button" onClick={handleOpen} disabled={isOpening} className={buttonClass} style={buttonFontSizeStyle}>
           {config.buttonText || "Buka Undangan"}
         </button>
       </OpeningSequence>

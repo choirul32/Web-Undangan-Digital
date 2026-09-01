@@ -107,6 +107,7 @@ import WidgetsStep from "./template-admin/WidgetsStep";
 import TemplateCatalogGrid from "./template-admin/TemplateCatalogGrid";
 import OpeningStep from "./template-admin/OpeningStep";
 import GlobalStyleStep from "./template-admin/GlobalStyleStep";
+import AiTemplateGenerator from "./template-admin/AiTemplateGenerator";
 import useOrnamentTimelineInteractions from "../../hooks/dashboard/useOrnamentTimelineInteractions";
 import { prepareImageForUpload } from "../../lib/imageUpload";
 
@@ -171,6 +172,7 @@ export default
 function TemplateAdminPage() {
   const editorSteps = [
     { id: 1, label: "Metadata" },
+    { id: 2, label: "AI Generator" },
     { id: 3, label: "Gaya Global" },
     { id: 4, label: "Cover" },
     { id: 5, label: "Pembuka" },
@@ -361,6 +363,7 @@ function TemplateAdminPage() {
   const designSectionNames = useMemo(() => {
     const names = Array.from(
       new Set([
+        ...standardTemplateSections,
         "opening",
         "global",
         ...Object.keys(parsedDesignConfig?.ornaments || {}),
@@ -975,6 +978,25 @@ function TemplateAdminPage() {
     setManagerMessage(`Palette "${palette.label}" diterapkan.`);
   };
 
+  const handleAiGenerated = ({ designConfig, description }) => {
+    if (!designConfig) {
+      return;
+    }
+
+    writeDesignConfig(designConfig);
+    setManagerMessage(
+      "Template hasil AI dimuat ke editor. Cek pratinjau, lalu simpan.",
+    );
+
+    // Isi deskripsi otomatis jika belum ada.
+    if (description && !templateDraft?.description) {
+      updateTemplateDraft("description", description);
+    }
+
+    // Arahkan ke step Pratinjau supaya admin langsung melihat hasil.
+    setEditorStep(8);
+  };
+
   const toggleSectionOverride = (section, enabled) => {
     updateTemplateSectionConfig(section, "useGlobal", !enabled);
   };
@@ -1436,18 +1458,28 @@ function TemplateAdminPage() {
   };
 
   const persistTemplate = async (template) => {
-    const response = await fetch("/api/templates", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(template),
-    });
-    const result = await response.json();
+    try {
+      const response = await fetch("/api/templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(template),
+      });
+      const result = await response.json();
 
-    if (!response.ok) {
-      throw new Error(result.error || "Gagal menyimpan template");
+      if (!response.ok) {
+        // Supabase butuh login admin — jangan gagalkan save; simpan ke
+        // override lokal sebagai fallback biar preview tetap pakai hasil
+        // personalisasi.
+        upsertStoredTemplateOverride(template);
+        return { source: "local", data: template };
+      }
+
+      return result;
+    } catch (error) {
+      // Network/parse error — fallback ke override lokal juga.
+      upsertStoredTemplateOverride(template);
+      return { source: "local", data: template };
     }
-
-    return result;
   };
 
   const deleteTemplate = (template) => {
@@ -1822,7 +1854,7 @@ function TemplateAdminPage() {
       setManagerMessage(
         result.source === "supabase"
           ? "Template berhasil disimpan."
-          : "Template tersimpan ke katalog lokal. Supabase belum dikonfigurasi.",
+          : "Template tersimpan ke katalog lokal. Login admin / konfigurasi Supabase untuk sinkronisasi penuh.",
       );
     } catch (error) {
       setManagerMessage(error.message);
@@ -1839,7 +1871,7 @@ function TemplateAdminPage() {
   return (
       <motion.section
         variants={fadeUp}
-        className="template-admin-editor rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-6 shadow-[var(--dash-shadow)]"
+        className="template-admin-editor mx-auto max-w-[1100px] rounded-[14px] border border-[var(--dash-border)] bg-[var(--dash-canvas)] p-6 shadow-[var(--dash-shadow)]"
       >
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -1929,31 +1961,34 @@ function TemplateAdminPage() {
               onSelectStep={setEditorStep}
             />
 
+            <div className="mt-4 grid gap-5">
+              <div className="min-w-0">
             <MetadataStep
               visible={editorStep === 1}
               templateDraft={templateDraft}
               editingTemplateId={editingTemplateId}
-                updateTemplateDraft={updateTemplateDraft}
+              updateTemplateDraft={updateTemplateDraft}
               templateCategoryOptions={templateCategoryOptions}
               templateBadgeOptions={templateBadgeOptions}
               selectedBadgeOption={selectedBadgeOption}
               designConfig={parsedDesignConfig}
-                isUploadingThumbnail={isUploadingThumbnail}
-                updateTemplateThumbnail={updateTemplateThumbnail}
-              />
-              <CoverStep
+              isUploadingThumbnail={isUploadingThumbnail}
+              updateTemplateThumbnail={updateTemplateThumbnail}
+            />
+            <div className={editorStep === 2 ? "" : "hidden"}>
+              <AiTemplateGenerator onGenerated={handleAiGenerated} />
+            </div>
+            <CoverStep
                 visible={editorStep === 4}
                 coverSectionConfig={coverSectionConfig}
                 updateTemplateSectionConfig={updateTemplateSectionConfig}
-                coverLayoutOptions={coverLayoutOptions}
-                coverDateVariantOptions={coverDateVariantOptions}
-                coverOpeningAnimationOptions={coverOpeningAnimationOptions}
                 coverBackgroundModeOptions={coverBackgroundModeOptions}
                 updateCoverBackgroundImage={updateCoverBackgroundImage}
                 coverPreviewSrc={coverSectionPreviewSrc}
               />
               <GlobalStyleStep
                 visible={editorStep === 3}
+                templateId={templateDraft?.id}
                 colorPalettePresets={colorPalettePresets}
                 parsedDesignConfig={parsedDesignConfig}
                 applyColorPalette={applyColorPalette}
@@ -1962,8 +1997,6 @@ function TemplateAdminPage() {
                 updateTemplateSectionConfig={updateTemplateSectionConfig}
                 headingFontOptions={headingFontOptions}
                 bodyFontOptions={bodyFontOptions}
-                sectionSpacingPresetOptions={sectionSpacingPresetOptions}
-                sectionEntranceOptions={sectionEntranceOptions}
                 coupleSectionConfig={coupleSectionConfig}
                 couplePhotoStyleOptions={couplePhotoStyleOptions}
                 coupleFontPresetOptions={coupleFontPresetOptions}
@@ -2008,7 +2041,7 @@ function TemplateAdminPage() {
                 updateGiftWidget={updateGiftWidget}
                 updateRsvpWidget={updateRsvpWidget}
               />
-              <div id="template-ornaments" className={`scroll-mt-24 md:col-span-2 ${editorStep === 7 ? "" : "hidden"}`}>
+              <div id="template-ornaments" className={`scroll-mt-24 ${editorStep === 7 ? "" : "hidden"}`}>
                 <div className="overflow-anchor-none rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] p-3 pb-24">
                   <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                     <div>
@@ -2022,8 +2055,8 @@ function TemplateAdminPage() {
                   </div>
 
                   {parsedDesignConfig ? (
-                    <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
-                      <div className="min-w-0 space-y-4">
+                    <>
+                      <div className="mt-4">
                         <OrnamentTimelinePanel
                           activeOrnaments={activeOrnaments}
                           previewEntranceKey={previewEntranceKey}
@@ -2039,6 +2072,9 @@ function TemplateAdminPage() {
                           setTimelineInteraction={setTimelineInteraction}
                           selectedOrnamentIndex={selectedOrnamentIndex}
                         />
+                      </div>
+                      <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+                        <div className="min-w-0 space-y-4">
                         <div className="grid gap-4 lg:grid-cols-[280px_minmax(300px,1fr)] lg:items-start">
                           <OrnamentLayerPanel
                             activeDesignSection={activeDesignSection}
@@ -2087,8 +2123,13 @@ function TemplateAdminPage() {
                         validationWarnings={validationWarnings}
                         templatePreviewSrc={ornamentCanvasPreviewSrc}
                         previewSnapshot={editorPreviewSnapshot}
+                        selectedOrnamentIndex={selectedOrnamentIndex}
+                        setSelectedOrnamentIndex={setSelectedOrnamentIndex}
+                        updateOrnamentAtIndex={patchOrnamentAtIndex}
+                        setManagerMessage={setManagerMessage}
                       />
                     </div>
+                    </>
                   ) : (
                     <p className="mt-5 rounded-[8px] bg-white px-4 py-3 text-sm font-black text-[var(--color-primary)]">
                       Design config JSON belum valid, editor visual dinonaktifkan sementara.
@@ -2230,6 +2271,8 @@ function TemplateAdminPage() {
                 onDesignConfigChange={setDesignConfigText}
                 onResetMessage={() => setManagerMessage("")}
               />
+              </div>
+            </div>
             </div>
 
             <div className={`mt-5 rounded-[8px] border border-[var(--color-accent-pale)] bg-[var(--color-bg)] px-4 py-3 text-sm font-black text-[var(--color-primary)] ${editorStep === 9 ? "" : "hidden"}`}>

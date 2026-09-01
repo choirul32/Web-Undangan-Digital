@@ -1,5 +1,7 @@
 "use client";
 
+import "leaflet/dist/leaflet.css";
+
 import React, { useEffect, useState } from "react";
 import {
   CircleMarker,

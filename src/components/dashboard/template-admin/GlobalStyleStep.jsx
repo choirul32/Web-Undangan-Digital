@@ -3,12 +3,31 @@ import ColorPalettePicker from "./ColorPalettePicker";
 import FontPicker from "./FontPicker";
 import { CoupleSectionPreview } from "../WidgetPreviews";
 import {
+  DashboardButton,
   DashboardCard,
   Field,
   SelectInput,
+  TextInput,
   ToggleField,
 } from "../FormControls";
 import { prepareImageForUpload } from "../../../lib/imageUpload";
+import VisualChoiceControl from "./VisualChoiceControl";
+import SectionSettingsPanel from "./SectionSettingsPanel";
+import {
+  previewSpacingCompact,
+  previewSpacingNormal,
+  previewSpacingRoomy,
+  previewCornerRounded,
+  previewCornerSharp,
+  previewCornerPill,
+  previewAnimNone,
+  previewAnimFadeUp,
+  previewAnimZoomIn,
+  previewAnimPop,
+  previewAnimSlideLeft,
+  previewAnimSlideRight,
+  previewAnimFade,
+} from "./choicePreviews";
 
 const spacingLabels = {
   compact: "Rapat",
@@ -156,6 +175,7 @@ function StylePreviewCard({
 
 export default function GlobalStyleStep({
   visible,
+  templateId,
   colorPalettePresets,
   parsedDesignConfig,
   applyColorPalette,
@@ -164,8 +184,6 @@ export default function GlobalStyleStep({
   updateTemplateSectionConfig,
   headingFontOptions,
   bodyFontOptions,
-  sectionSpacingPresetOptions,
-  sectionEntranceOptions,
   coupleSectionConfig,
   couplePhotoStyleOptions,
   coupleFontPresetOptions,
@@ -174,6 +192,48 @@ export default function GlobalStyleStep({
     return null;
   }
 
+  const uploadGlobalBackground = async (file) => {
+    if (!file) return;
+    const prepared = await prepareImageForUpload(file, "cover");
+
+    // Upload ke Supabase Storage → dapat URL kecil (bukan data URL raksasa)
+    const formData = new FormData();
+    formData.append("templateId", templateId || "template-draft");
+    formData.append("file", prepared.file);
+
+    const response = await fetch("/api/templates/background", {
+      method: "POST",
+      body: formData,
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(result.error || "Gagal upload background.");
+    }
+
+    updateGlobalSectionStyle("backgroundImage", result.data.url);
+  };
+
+  const uploadSectionBackground = async (section, file) => {
+    if (!file) return;
+    const prepared = await prepareImageForUpload(file, "cover");
+
+    const formData = new FormData();
+    formData.append("templateId", templateId || "template-draft");
+    formData.append("file", prepared.file);
+
+    const response = await fetch("/api/templates/background", {
+      method: "POST",
+      body: formData,
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(result.error || "Gagal upload background.");
+    }
+
+    updateTemplateSectionConfig(section, "backgroundImage", result.data.url);
+    updateTemplateSectionConfig(section, "backgroundMode", "image");
+  };
+
   const updateCoupleCardImage = async (file) => {
     if (!file) return;
     const prepared = await prepareImageForUpload(file, "default");
@@ -181,8 +241,89 @@ export default function GlobalStyleStep({
     updateTemplateSectionConfig("couple", "cardBackgroundImage", previewUrl);
   };
 
+  const spacingOptions = [
+    {
+      value: "compact",
+      label: spacingLabels.compact,
+      description: spacingDescriptions.compact,
+      preview: previewSpacingCompact(),
+    },
+    {
+      value: "normal",
+      label: spacingLabels.normal,
+      description: spacingDescriptions.normal,
+      preview: previewSpacingNormal(),
+    },
+    {
+      value: "roomy",
+      label: spacingLabels.roomy,
+      description: spacingDescriptions.roomy,
+      preview: previewSpacingRoomy(),
+    },
+  ];
+
+  const cardStyleOptions = [
+    {
+      value: "rounded",
+      label: cardStyleLabels.rounded,
+      description: cardStyleDescriptions.rounded,
+      preview: previewCornerRounded(),
+    },
+    {
+      value: "sharp",
+      label: cardStyleLabels.sharp,
+      description: cardStyleDescriptions.sharp,
+      preview: previewCornerSharp(),
+    },
+    {
+      value: "pill",
+      label: cardStyleLabels.pill,
+      description: cardStyleDescriptions.pill,
+      preview: previewCornerPill(),
+    },
+  ];
+
+  const entranceOptions = [
+    {
+      value: "fade-up",
+      label: animationLabels["fade-up"],
+      preview: previewAnimFadeUp(),
+    },
+    {
+      value: "zoom-in",
+      label: animationLabels["zoom-in"],
+      preview: previewAnimZoomIn(),
+    },
+    {
+      value: "pop-up",
+      label: animationLabels["pop-up"],
+      preview: previewAnimPop(),
+    },
+    {
+      value: "slide-left",
+      label: animationLabels["slide-left"],
+      preview: previewAnimSlideLeft(),
+    },
+    {
+      value: "slide-right",
+      label: animationLabels["slide-right"],
+      preview: previewAnimSlideRight(),
+    },
+    {
+      value: "fade",
+      label: animationLabels.fade,
+      preview: previewAnimFade(),
+    },
+    {
+      value: "none",
+      label: animationLabels.none,
+      preview: previewAnimNone(),
+    },
+  ];
+
   return (
-    <>
+    <div className="scroll-mt-24 md:col-span-2">
+      <div className="space-y-5">
       <div className="scroll-mt-24 md:col-span-2">
         <DashboardCard>
           <ColorPalettePicker
@@ -242,49 +383,31 @@ export default function GlobalStyleStep({
           <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_320px]">
             <div className="grid gap-4 md:grid-cols-3">
               <Field label="Jarak Section">
-                <SelectInput
+                <VisualChoiceControl
                   value={globalSectionStyleConfig.spacingPreset || "normal"}
-                  onChange={(event) => updateGlobalSectionStyle("spacingPreset", event.target.value)}
-                >
-                  {sectionSpacingPresetOptions.map((preset) => (
-                    <option key={preset} value={preset}>
-                      {spacingLabels[preset] || preset}
-                    </option>
-                  ))}
-                </SelectInput>
-                <p className="mt-1.5 text-[10px] font-semibold text-[var(--color-text)]/60">
-                  {spacingDescriptions[globalSectionStyleConfig.spacingPreset] ||
-                    spacingDescriptions.normal}
-                </p>
+                  options={spacingOptions}
+                  onChange={(value) => updateGlobalSectionStyle("spacingPreset", value)}
+                  columns={3}
+                  ariaLabel="Jarak antar section"
+                />
               </Field>
               <Field label="Gaya Card">
-                <SelectInput
+                <VisualChoiceControl
                   value={globalSectionStyleConfig.cardStyle || "rounded"}
-                  onChange={(event) => updateGlobalSectionStyle("cardStyle", event.target.value)}
-                >
-                  <option value="rounded">{cardStyleLabels.rounded}</option>
-                  <option value="sharp">{cardStyleLabels.sharp}</option>
-                  <option value="pill">{cardStyleLabels.pill}</option>
-                </SelectInput>
-                <p className="mt-1.5 text-[10px] font-semibold text-[var(--color-text)]/60">
-                  {cardStyleDescriptions[globalSectionStyleConfig.cardStyle] ||
-                    cardStyleDescriptions.rounded}
-                </p>
+                  options={cardStyleOptions}
+                  onChange={(value) => updateGlobalSectionStyle("cardStyle", value)}
+                  columns={3}
+                  ariaLabel="Gaya sudut card"
+                />
               </Field>
               <Field label="Animasi Masuk">
-                <SelectInput
+                <VisualChoiceControl
                   value={globalSectionStyleConfig.entranceAnimation || "fade-up"}
-                  onChange={(event) => updateGlobalSectionStyle("entranceAnimation", event.target.value)}
-                >
-                  {sectionEntranceOptions.map((anim) => (
-                    <option key={anim} value={anim}>
-                      {animationLabels[anim] || anim}
-                    </option>
-                  ))}
-                </SelectInput>
-                <p className="mt-1.5 text-[10px] font-semibold text-[var(--color-text)]/60">
-                  Cara section muncul saat tamu scroll undangan.
-                </p>
+                  options={entranceOptions}
+                  onChange={(value) => updateGlobalSectionStyle("entranceAnimation", value)}
+                  columns={3}
+                  ariaLabel="Animasi munculnya section"
+                />
               </Field>
               <Field label="Ukuran Konten">
                 <SelectInput
@@ -302,11 +425,203 @@ export default function GlobalStyleStep({
                     contentSizeDescriptions.normal}
                 </p>
               </Field>
+              <Field label="Parallax Background">
+                <SelectInput
+                  value={globalSectionStyleConfig.backgroundParallax || "none"}
+                  onChange={(event) =>
+                    updateGlobalSectionStyle("backgroundParallax", event.target.value)
+                  }
+                >
+                  <option value="none">Tanpa parallax</option>
+                  <option value="slow">Parallax pelan</option>
+                  <option value="medium">Parallax sedang</option>
+                  <option value="fast">Parallax cepat</option>
+                </SelectInput>
+                <p className="mt-1.5 text-[10px] font-semibold text-[var(--color-text)]/60">
+                  Efek foto background bergerak pelan saat scroll.
+                </p>
+              </Field>
+              <Field label="Gelap Overlay Background">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="0"
+                    max="80"
+                    step="5"
+                    value={Number(globalSectionStyleConfig.backgroundOverlay) || 0}
+                    onChange={(event) =>
+                      updateGlobalSectionStyle("backgroundOverlay", Number(event.target.value))
+                    }
+                    className="w-full"
+                  />
+                  <span className="w-10 shrink-0 text-right text-sm font-black text-[var(--dash-ink)]">
+                    {Number(globalSectionStyleConfig.backgroundOverlay) || 0}%
+                  </span>
+                </div>
+                <p className="mt-1.5 text-[10px] font-semibold text-[var(--color-text)]/60">
+                  Gelapkan foto background biar teks lebih terbaca.
+                </p>
+              </Field>
+              <Field label="Radius Card (custom)">
+                <TextInput
+                  type="number"
+                  min="0"
+                  max="48"
+                  value={globalSectionStyleConfig.cardRadius ?? ""}
+                  onChange={(event) =>
+                    updateGlobalSectionStyle(
+                      "cardRadius",
+                      event.target.value === "" ? "" : Number(event.target.value),
+                    )
+                  }
+                  placeholder="Kosongkan → pakai Gaya Card"
+                />
+                <p className="mt-1.5 text-[10px] font-semibold text-[var(--color-text)]/60">
+                  Radius sudut card dalam px. Isi untuk override "Gaya Card".
+                </p>
+              </Field>
             </div>
             <StylePreviewCard
               config={globalSectionStyleConfig}
               headingFontOptions={headingFontOptions}
               bodyFontOptions={bodyFontOptions}
+            />
+          </div>
+        </DashboardCard>
+      </div>
+      <div id="template-global-background" className="scroll-mt-24 md:col-span-2">
+        <DashboardCard>
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[var(--dash-muted)]">
+            Background Global
+          </p>
+          <p className="mt-1 text-base font-semibold text-[var(--dash-ink)]">
+            Satu gambar background menempel di seluruh halaman (parallax saat scroll). Section yang memakai gaya global dan tidak punya background sendiri akan transparan di atasnya.
+          </p>
+          <div className="mt-4 grid gap-5 lg:grid-cols-[1fr_280px] lg:items-start">
+            <div className="space-y-4">
+              <Field label="Gambar Background Global">
+                {globalSectionStyleConfig.backgroundImage ? (
+                  <div className="flex items-center gap-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={globalSectionStyleConfig.backgroundImage}
+                      alt="Pratinjau background global"
+                      className="aspect-[4/5] w-24 rounded-lg border border-[var(--dash-border)] object-cover"
+                    />
+                    <div className="space-y-2">
+                      <DashboardButton
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          const input = document.createElement("input");
+                          input.type = "file";
+                          input.accept = "image/*";
+                          input.onchange = async (event) => {
+                            const file = event.target.files?.[0];
+                            if (!file) return;
+                            try {
+                              await uploadGlobalBackground(file);
+                            } catch (err) {
+                              window.alert(err.message || "Gagal upload background.");
+                            }
+                          };
+                          input.click();
+                        }}
+                      >
+                        Ganti Gambar
+                      </DashboardButton>
+                      <DashboardButton
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => updateGlobalSectionStyle("backgroundImage", "")}
+                      >
+                        Hapus
+                      </DashboardButton>
+                    </div>
+                  </div>
+                ) : (
+                  <label className="block cursor-pointer rounded-xl border-2 border-dashed border-[var(--dash-border)] bg-[var(--dash-fog)] p-5 text-center transition-colors hover:border-[var(--dash-ink)]">
+                    <span className="text-sm font-bold text-[var(--dash-ink)]">
+                      Klik untuk upload gambar background
+                    </span>
+                    <span className="mt-1 block text-xs font-semibold text-[var(--dash-muted)]">
+                      PNG/JPG/WebP. Rasio potret 4:5 atau lebih tinggi agar parallax tidak bolong.
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      className="hidden"
+                      onChange={async (event) => {
+                        const file = event.target.files?.[0];
+                        if (!file) return;
+                        try {
+                          await uploadGlobalBackground(file);
+                        } catch (err) {
+                          window.alert(err.message || "Gagal upload background.");
+                        }
+                      }}
+                    />
+                  </label>
+                )}
+              </Field>
+              <div className="grid gap-4 md:grid-cols-2">
+                <Field label="Parallax Background">
+                  <SelectInput
+                    value={globalSectionStyleConfig.backgroundParallax || "none"}
+                    onChange={(event) =>
+                      updateGlobalSectionStyle("backgroundParallax", event.target.value)
+                    }
+                  >
+                    <option value="none">Tanpa parallax</option>
+                    <option value="slow">Parallax pelan</option>
+                    <option value="medium">Parallax sedang</option>
+                    <option value="fast">Parallax cepat</option>
+                  </SelectInput>
+                  <p className="mt-1.5 text-[10px] font-semibold text-[var(--color-text)]/60">
+                    Background bergerak pelan saat scroll.
+                  </p>
+                </Field>
+                <Field label="Gelap Overlay Background">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min="0"
+                      max="80"
+                      step="5"
+                      value={Number(globalSectionStyleConfig.backgroundOverlay) || 0}
+                      onChange={(event) =>
+                        updateGlobalSectionStyle("backgroundOverlay", Number(event.target.value))
+                      }
+                      className="w-full"
+                    />
+                    <span className="w-10 shrink-0 text-right text-sm font-black text-[var(--dash-ink)]">
+                      {Number(globalSectionStyleConfig.backgroundOverlay) || 0}%
+                    </span>
+                  </div>
+                  <p className="mt-1.5 text-[10px] font-semibold text-[var(--color-text)]/60">
+                    Gelapkan biar teks section terbaca.
+                  </p>
+                </Field>
+              </div>
+            </div>
+            <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-fog)]/50 p-4 text-xs font-semibold leading-5 text-[var(--dash-muted)]">
+              <p className="font-black text-[var(--dash-ink)]">Cara kerja:</p>
+              <ul className="mt-2 list-inside list-disc space-y-1">
+                <li>Background ini menempel & parallax saat scroll.</li>
+                <li>Section tanpa background sendiri jadi transparan — background terlihat menyambung.</li>
+                <li>Section yang set warna/foto sendiri tetap tampil normal di atasnya.</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Pengaturan per section: latar, warna teks, jarak, card, animasi */}
+          <div className="mt-5 border-t border-[var(--dash-border)] pt-4">
+            <SectionSettingsPanel
+              parsedDesignConfig={parsedDesignConfig}
+              updateTemplateSectionConfig={updateTemplateSectionConfig}
+              uploadSectionBackground={uploadSectionBackground}
             />
           </div>
         </DashboardCard>
@@ -428,6 +743,7 @@ export default function GlobalStyleStep({
           </div>
         </DashboardCard>
       </div>
-    </>
+      </div>
+    </div>
   );
 }

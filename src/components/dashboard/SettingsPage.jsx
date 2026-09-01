@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { fadeUp } from "./config";
 import BankCatalogManager from "./BankCatalogManager";
+import AiProvidersPanel from "./AiProvidersPanel";
 import {
   DashboardButton,
   Field,
@@ -68,6 +69,7 @@ const settingsTabs = [
   { id: "messages", label: "Pesan" },
   { id: "assets", label: "Asset Default" },
   { id: "banks", label: "Katalog Bank" },
+  { id: "ai", label: "AI" },
   { id: "system", label: "Sistem" },
   { id: "pricing", label: "Harga" },
 ];
@@ -621,6 +623,17 @@ export default function SettingsPage() {
         desc="Daftar nama dan logo bank yang dapat dipilih saat mengisi Amplop Digital."
       >
         <BankCatalogManager />
+      </SectionCard>
+        </>
+      ) : null}
+
+      {activeSettingsTab === "ai" ? (
+        <>
+      <SectionCard
+        title="AI Template Generator"
+        desc="Konfigurasi provider LLM untuk generate template dari prompt. API key tersimpan di database (hanya admin yang bisa melihat)."
+      >
+        <AiProvidersPanel />
       </SectionCard>
         </>
       ) : null}
