@@ -48,8 +48,21 @@ export default function OrnamentLayerPanel({
   reorderSelectedOrnament,
   globalExcludedSections = [],
   toggleGlobalOrnamentExclusion,
+  allOrnamentsBySection = {},
+  removeOrnamentFromSection,
 }) {
-  const countdownExcluded = globalExcludedSections.includes("countdown");
+  // Kumpulkan ornamen bermasalah (src kosong) dari SEMUA section, supaya
+  // admin bisa lihat & hapus walau tidak sedang di section itu.
+  const brokenOrnaments = Object.entries(allOrnamentsBySection).flatMap(([section, ornaments]) =>
+    (Array.isArray(ornaments) ? ornaments : [])
+      .map((ornament, index) => ({ ornament, index, section }))
+      .filter(({ ornament }) => !ornament.src),
+  );
+
+  // Section yang bisa dikecualikan dari ornamen global (semua kecuali global).
+  const excludableSections = designSectionNames.filter(
+    (sectionName) => sectionName !== "global",
+  );
 
   return (
     <div className="overflow-hidden rounded-[14px] border border-[var(--dash-border)] bg-white shadow-[var(--dash-shadow)] xl:sticky xl:top-4 xl:flex xl:max-h-[calc(100vh-6.5rem)] xl:flex-col">
@@ -82,37 +95,29 @@ export default function OrnamentLayerPanel({
         </Field>
 
         {activeDesignSection === "global" ? (
-          <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-fog)] p-3">
-            <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--dash-muted)]">
-              Pengecualian Global
+          <div className="rounded-xl border border-[var(--dash-border)] bg-[var(--dash-fog)] p-2.5">
+            <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[var(--dash-muted)]">
+              Sembunyikan di section
             </p>
-            <button
-              type="button"
-              onClick={() => toggleGlobalOrnamentExclusion?.("countdown")}
-              className={`mt-2 flex w-full items-center justify-between gap-3 rounded-lg border px-3 py-2 text-left text-xs font-bold transition-colors ${
-                countdownExcluded
-                  ? "border-[var(--color-accent)] bg-white text-[var(--color-primary)]"
-                  : "border-[var(--dash-border)] bg-white/70 text-[var(--dash-muted)] hover:bg-white hover:text-[var(--dash-ink)]"
-              }`}
-            >
-              <span>
-                Sembunyikan di section hitung mundur
-                <span className="mt-0.5 block text-[10px] font-semibold opacity-70">
-                  Cocok untuk section kecil agar tidak terlalu penuh.
-                </span>
-              </span>
-              <span
-                className={`relative h-5 w-9 shrink-0 rounded-full transition-colors ${
-                  countdownExcluded ? "bg-[var(--color-accent)]" : "bg-slate-300"
-                }`}
-              >
-                <span
-                  className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition-transform ${
-                    countdownExcluded ? "translate-x-4" : "translate-x-0.5"
-                  }`}
-                />
-              </span>
-            </button>
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {excludableSections.map((sectionName) => {
+                const isExcluded = globalExcludedSections.includes(sectionName);
+                return (
+                  <button
+                    key={sectionName}
+                    type="button"
+                    onClick={() => toggleGlobalOrnamentExclusion?.(sectionName)}
+                    className={`rounded-full border px-2 py-0.5 text-[10px] font-bold transition-colors ${
+                      isExcluded
+                        ? "border-[var(--color-accent)] bg-white text-[var(--color-primary)]"
+                        : "border-[var(--dash-border)] bg-white/60 text-[var(--dash-muted)] hover:bg-white hover:text-[var(--dash-ink)]"
+                    }`}
+                  >
+                    {isExcluded ? "✓ " : ""}{sectionName}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         ) : null}
 
@@ -232,6 +237,44 @@ export default function OrnamentLayerPanel({
             </p>
           ) : null}
         </div>
+
+        {brokenOrnaments.length > 0 ? (
+          <div className="rounded-xl border border-red-200 bg-red-50/60 p-2.5">
+            <p className="text-[10px] font-black uppercase tracking-[0.1em] text-red-600">
+              Ornamen Bermasalah ({brokenOrnaments.length})
+            </p>
+            <div className="mt-1.5 max-h-36 space-y-1 overflow-auto pr-1">
+              {brokenOrnaments.map(({ ornament, index, section }) => (
+                <div
+                  key={`${section}-${ornament.id || index}`}
+                  className="flex items-center gap-1.5 rounded-md border border-red-200 bg-white px-1.5 py-1"
+                >
+                  <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded border border-dashed border-red-300 bg-red-50">
+                    <span className="px-0.5 text-[7px] font-black uppercase leading-tight text-red-500">
+                      No Image
+                    </span>
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[11px] font-bold text-[var(--color-text)]">
+                      {ornament.id || `Ornamen ${index + 1}`}
+                    </span>
+                    <span className="block truncate text-[10px] font-medium text-[var(--color-text)]/60">
+                      Section: {section}
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    title="Hapus ornamen"
+                    onClick={() => removeOrnamentFromSection?.(section, index)}
+                    className="flex h-6 w-6 shrink-0 items-center justify-center rounded text-red-500 hover:bg-red-100"
+                  >
+                    <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M3 5h14" /><path d="M7 5V3h6v2" /><path d="M6 5l1 11h6l1-11" /><path d="M9 8v6" /><path d="M11 8v6" /></svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <div className="flex items-center justify-between border-t border-[var(--dash-border)] pt-2">
           <span className="text-xs font-medium text-[var(--color-text)]/60">{activeOrnaments.length} item</span>

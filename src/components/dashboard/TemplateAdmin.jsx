@@ -1320,6 +1320,26 @@ function TemplateAdminPage() {
     });
   };
 
+  // Hapus ornamen dari section mana pun (dipakai panel "Ornamen Bermasalah"
+  // untuk membersihkan ornamen yang src-nya rusak/kosong).
+  const removeOrnamentFromSection = (section, targetIndex) => {
+    if (!parsedDesignConfig) return;
+    const sectionOrnaments = parsedDesignConfig.ornaments?.[section] || [];
+    if (!sectionOrnaments[targetIndex]) return;
+    const nextOrnaments = sectionOrnaments.filter((_, index) => index !== targetIndex);
+    writeDesignConfig({
+      ...parsedDesignConfig,
+      ornaments: {
+        ...(parsedDesignConfig.ornaments || {}),
+        [section]: nextOrnaments,
+      },
+    });
+    if (section === activeDesignSection) {
+      setSelectedOrnamentIndex(0);
+    }
+    setManagerMessage(`Ornamen bermasalah dihapus dari section ${section}.`);
+  };
+
   const duplicateOrnamentAtIndex = (targetIndex) => {
     if (!parsedDesignConfig || !activeOrnaments[targetIndex]) return;
     const section = activeDesignSection || "home";
@@ -2092,6 +2112,8 @@ function TemplateAdminPage() {
                             reorderSelectedOrnament={reorderSelectedOrnament}
                             globalExcludedSections={parsedDesignConfig.ornamentExclusions?.global || []}
                             toggleGlobalOrnamentExclusion={toggleGlobalOrnamentExclusion}
+                            allOrnamentsBySection={parsedDesignConfig?.ornaments || {}}
+                            removeOrnamentFromSection={removeOrnamentFromSection}
                           />
                           {selectedOrnament ? (
                             <OrnamentPropertiesPanel
