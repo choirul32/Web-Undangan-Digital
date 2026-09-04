@@ -111,11 +111,24 @@ export default function HomeSection({
   events,
   personalizedGuestName,
   profileImages,
+  invitationCoverImage = null,
   isCompactHomePreview,
   showGuestGreeting = true,
 }) {
   const coverBackgroundColor = coverConfig.backgroundColor || "#fbf7ef";
-  const coverBackgroundImage = coverConfig.backgroundMode === "image" ? coverConfig.backgroundImage : "";
+
+  // Saat template mematikan foto utama (photoEnabled: false) tapi invitation
+  // punya cover image sendiri, cover dipakai sebagai hero background menggantikan
+  // background template. Ini memastikan cover invitation selalu tampil di halaman
+  // depan apa pun template-nya.
+  const useInvitationCoverAsBackground =
+    coverConfig.photoEnabled === false && Boolean(invitationCoverImage);
+
+  const coverBackgroundImage = useInvitationCoverAsBackground
+    ? invitationCoverImage
+    : coverConfig.backgroundMode === "image"
+      ? coverConfig.backgroundImage
+      : "";
 
   // Personalisasi ukuran & posisi dari designConfig (kosong = default render).
   const px = (value, fallback) => (value ? { fontSize: `${value}px` } : fallback);
@@ -140,6 +153,18 @@ export default function HomeSection({
     : null;
 
   const photoStyle = coverConfig.photoStyle || "arch";
+  // Saat cover invitation dipakai sebagai hero background, timpa variabel warna
+  // lokal jadi terang supaya teks (termasuk CoverDateDisplay) tetap terbaca.
+  const heroTextVariables = useInvitationCoverAsBackground
+    ? {
+        "--color-heading": "#ffffff",
+        "--color-primary": "#ffffff",
+        "--color-accent": "#ffe9c7",
+        "--color-text": "#ffffff",
+        "--color-surface": "rgba(0,0,0,0.35)",
+        "--color-accent-pale": "rgba(255,255,255,0.35)",
+      }
+    : undefined;
   const photoShapeClass =
     photoStyle === "circle"
       ? "aspect-square rounded-full"
@@ -170,10 +195,16 @@ export default function HomeSection({
       } ${
         isCompactHomePreview ? "min-h-[100svh] py-4 px-3" : "min-h-screen py-20"
       } ${contentPositionClass}`}
-      style={{ backgroundColor: coverBackgroundColor }}
+      style={{ backgroundColor: coverBackgroundColor, ...heroTextVariables }}
     >
       {coverBackgroundImage ? <img src={coverBackgroundImage} alt="" className="absolute inset-0 -z-20 h-full w-full object-cover" /> : null}
-      <div className="absolute inset-0 -z-10 bg-[var(--color-bg)]/78" />
+      <div
+        className={`absolute inset-0 -z-10 ${
+          useInvitationCoverAsBackground
+            ? "bg-gradient-to-b from-black/55 via-black/35 to-black/60"
+            : "bg-[var(--color-bg)]/78"
+        }`}
+      />
       <OrnamentLayer ornaments={getSectionOrnaments(designConfig, "home")} />
       <motion.div
         {...coverMotion(coverConfig.openingAnimation)}

@@ -176,7 +176,11 @@ function StylePreviewCard({
 export default function GlobalStyleStep({
   visible,
   templateId,
-  colorPalettePresets,
+  palettes = [],
+  onAiGeneratePalette,
+  onDeletePalette,
+  isAiGeneratingPalette = false,
+  paletteGenerateError = "",
   parsedDesignConfig,
   applyColorPalette,
   globalSectionStyleConfig,
@@ -327,9 +331,13 @@ export default function GlobalStyleStep({
       <div className="scroll-mt-24 md:col-span-2">
         <DashboardCard>
           <ColorPalettePicker
-            palettes={colorPalettePresets}
+            palettes={palettes}
             activePaletteId={parsedDesignConfig?.palette || ""}
             onApplyPalette={applyColorPalette}
+            onGeneratePalette={onAiGeneratePalette}
+            onDeletePalette={onDeletePalette}
+            isGenerating={isAiGeneratingPalette}
+            generateError={paletteGenerateError}
           />
         </DashboardCard>
       </div>

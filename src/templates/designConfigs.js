@@ -211,6 +211,20 @@ export const defaultOpeningRevealConfig = {
   contentPosition: "center", // center | top | bottom | split
   contentOffsetY: 0, // px — geser konten naik (-) / turun (+)
   photoWidth: "", // px — lebar foto tengah
+  // Posisi per elemen: "" = otomatis (ikuti contentPosition), lalu top | center | bottom
+  photoPosition: "", // posisi vertikal foto tengah
+  titlePosition: "", // posisi vertikal blok nama mempelai
+  guestPosition: "", // posisi vertikal card tamu
+  buttonPosition: "", // posisi vertikal tombol
+  // Offset halus per elemen (px, minus = naik) — dipakai untuk geser presisi
+  photoOffsetY: 0, // px — geser foto naik (-) / turun (+)
+  titleOffsetY: 0, // px — geser nama naik (-) / turun (+)
+  buttonOffsetY: 0, // px — geser tombol naik (-) / turun (+)
+  // Ruang & batas konten
+  contentPaddingTop: "", // px — jarak konten dari atas layar (kosong = auto)
+  contentPaddingBottom: "", // px — jarak konten dari bawah layar (kosong = auto)
+  contentMaxWidth: "", // px — lebar maks blok konten (kosong = auto)
+  elementGap: "", // px — jarak antar elemen (foto, nama, tamu, tombol; kosong = auto)
   // Warna card nama tamu (kosong = pakai style bawaan)
   guestCardBgColor: "", // hex — background card "Kepada Yth / Tamu Undangan"
   guestCardTextColor: "", // hex — warna teks nama tamu
@@ -256,6 +270,7 @@ export const defaultSectionStyleConfig = {
   backgroundOverlay: 0, // 0-90 (kegelapan overlay biar teks terbaca)
   textColor: "",
   accentColor: "",
+  surfaceColor: "", // warna permukaan card (--color-surface)
   fontPreset: "default",
   spacingPreset: "normal",
   entranceAnimation: "fade-up",
@@ -346,21 +361,53 @@ export function getCoupleSectionConfig(designConfig = {}) {
   };
 }
 
+// Properti style non-latar yang boleh di-override per-section MESKIPUN section
+// masih "ikut global" (useGlobal=true). Latar (warna/gambar) tetap sepenuhnya
+// dikontrol global kecuali useGlobalBackground=false. Ini menyelaraskan panel
+// "Pengaturan per Section" dengan renderer: warna teks, jarak, font, gaya card,
+// ukuran konten, dan animasi masuk yang diatur per-section harus benar-benar
+// dipakai.
+const LOCAL_SECTION_STYLE_KEYS = [
+  "textColor",
+  "accentColor",
+  "surfaceColor",
+  "fontPreset",
+  "spacingPreset",
+  "entranceAnimation",
+  "cardStyle",
+  "cardRadius",
+  "cardBorderWidth",
+  "cardBorderColor",
+  "cardShadow",
+  "cardPadding",
+  "contentSize",
+  "headingFont",
+  "bodyFont",
+  "primaryColor",
+];
+
 export function getSectionStyleConfig(designConfig = {}, sectionName = "") {
   const normalizedConfig = normalizeDesignConfig(designConfig);
   const globalStyle = normalizedConfig.sections?.global || {};
   const sectionStyle = normalizedConfig.sections?.[sectionName] || {};
   const useGlobal = sectionStyle.useGlobal !== false;
 
-  const localStyle = sectionName === "global"
-    ? sectionStyle
-    : useGlobal
-    ? { useGlobal: true }
+  // Kalau section "ikut global", basisnya global, lalu merge override
+  // non-latar yang eksplisit diatur per-section (lihat LOCAL_SECTION_STYLE_KEYS).
+  // Latar TIDAK ikut di-merge — mengikuti global kecuali useGlobalBackground=false
+  // (ditangani SectionFrame).
+  const localOverride = useGlobal
+    ? LOCAL_SECTION_STYLE_KEYS.reduce((acc, key) => {
+        if (sectionStyle[key] !== undefined && sectionStyle[key] !== "") {
+          acc[key] = sectionStyle[key];
+        }
+        return acc;
+      }, {})
     : sectionStyle;
 
   return {
     ...defaultSectionStyleConfig,
     ...(useGlobal ? globalStyle : {}),
-    ...localStyle,
+    ...localOverride,
   };
 }

@@ -84,6 +84,7 @@ export function cssVars(styleConfig = {}) {
     "--color-heading": primaryColor,
     "--color-text": textColor,
     "--color-accent": styleConfig.accentColor || undefined,
+    "--color-surface": styleConfig.surfaceColor || undefined,
     "--font-heading": headingFamily || "inherit",
     "--card-radius": cardRadius,
     "--card-border-width": styleConfig.cardBorderWidth || "1px",

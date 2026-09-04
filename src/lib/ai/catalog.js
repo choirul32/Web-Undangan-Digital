@@ -169,11 +169,22 @@ export function buildOrnamentCatalog(manifestOrnaments = []) {
 }
 
 // ---- Semua nilai valid untuk prompt AI ----
-export function buildAiCatalog({ ornaments = [], backgrounds = staticBackgroundCatalog } = {}) {
+export function buildAiCatalog({ ornaments = [], backgrounds = staticBackgroundCatalog, colorPalettes = [] } = {}) {
   const ornamentCatalog = buildOrnamentCatalog(ornaments);
   const backgroundCatalog = (backgrounds || []).length
     ? backgrounds
     : staticBackgroundCatalog;
+
+  // Palet yang boleh dipakai AI = preset statis + palet custom (dari DB).
+  // Dipakai buildSystemPrompt agar AI template generator bisa memilih palet
+  // yang dibuat admin via "Buat palet dengan AI".
+  const paletteCatalog = colorPalettes.length
+    ? colorPalettes
+    : colorPalettePresets.map((palette) => ({
+        id: palette.id,
+        label: palette.label,
+        colors: palette.colors,
+      }));
 
   return {
     ornamentSlots,
@@ -203,8 +214,9 @@ export function buildAiCatalog({ ornaments = [], backgrounds = staticBackgroundC
     sectionFontPresetOptions,
     sectionSpacingPresetOptions,
     sectionEntranceOptions,
-    colorPalettePresets: colorPalettePresets.map((palette) => ({
+    colorPalettePresets: paletteCatalog.map((palette) => ({
       id: palette.id,
+      label: palette.label || "",
       colors: palette.colors,
     })),
     headingFontOptions,

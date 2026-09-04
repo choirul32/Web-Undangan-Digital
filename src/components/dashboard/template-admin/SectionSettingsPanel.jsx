@@ -340,6 +340,19 @@ function SectionAccordion({
                 </span>
               </div>
             </Field>
+            <Field label="Warna Card">
+              <div className="flex items-center gap-3">
+                <input
+                  type="color"
+                  value={sectionConfig.surfaceColor || "#ffffff"}
+                  onChange={(event) => updateSection(section, "surfaceColor", event.target.value)}
+                  className="h-11 w-16 shrink-0 cursor-pointer rounded-lg border border-[var(--dash-border)] bg-white p-1"
+                />
+                <span className="min-w-0 flex-1 truncate text-xs font-semibold text-[var(--dash-muted)]">
+                  {sectionConfig.surfaceColor || "Pilih warna card"}
+                </span>
+              </div>
+            </Field>
             <Field label="Jarak Section">
               <VisualChoiceControl
                 value={sectionConfig.spacingPreset || "normal"}

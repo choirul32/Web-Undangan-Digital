@@ -1,21 +1,15 @@
 ﻿"use client";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import {
-  addStoredDeletedTemplateId,
-  getStoredDeletedTemplateIds,
-  getStoredTemplateOverrides,
-  mergeTemplateOverrides,
-  upsertStoredTemplateOverride,
-} from "../../data/templateAdminDefaults";
 import InvitationRenderer from "../../templates/InvitationRenderer";
 import {
   buildPreviewSnapshot,
   buildPreviewUrl,
   buildSnapshotMessage,
+  clearPreviewSnapshot,
+  persistPreviewSnapshot,
   PREVIEW_MESSAGE,
-  SNAPSHOT_STORAGE_KEY,
 } from "../../templates/previewProtocol";
 import {
   defaultGiftWidgetConfig,
@@ -84,6 +78,7 @@ import {
   DashboardButton,
   Field,
   SelectInput,
+  StatusToast,
   TextInput,
   ToggleField,
 } from "./FormControls";
@@ -196,6 +191,148 @@ function TemplateAdminPage() {
   const [deleteTemplateTarget, setDeleteTemplateTarget] = useState(null);
   const [isDeletingTemplate, setIsDeletingTemplate] = useState(false);
   const [isUploadingThumbnail, setIsUploadingThumbnail] = useState(false);
+  // Palet custom dari Supabase (hasil "Buat palet dengan AI" / simpan manual).
+  const [customPalettes, setCustomPalettes] = useState([]);
+  const [isAiGeneratingPalette, setIsAiGeneratingPalette] = useState(false);
+  const [paletteGenerateError, setPaletteGenerateError] = useState("");
+
+  // Muat palet custom dari Supabase sekali saat halaman editor dibuka.
+  useEffect(() => {
+    let isMounted = true;
+    fetch("/api/palettes")
+      .then((response) => response.json())
+      .then((result) => {
+        if (isMounted && Array.isArray(result.data)) {
+          setCustomPalettes(result.data);
+        }
+      })
+      .catch(() => {
+        // ignore — daftar palet custom kosong, preset statis tetap tampil.
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Daftar palet yang ditampilkan = preset statis + custom dari DB.
+  const allPalettes = useMemo(
+    () => [
+      ...colorPalettePresets.map((palette) => ({
+        ...palette,
+        source: "preset",
+      })),
+      ...customPalettes,
+    ],
+    [customPalettes],
+  );
+
+  const handleAiGeneratedPalette = async (prompt) => {
+    setIsAiGeneratingPalette(true);
+    setPaletteGenerateError("");
+    try {
+      const response = await fetch("/api/palettes/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Gagal membuat palet.");
+      }
+      const palette = result.data;
+      setCustomPalettes((current) => [palette, ...current]);
+      applyColorPalette(palette);
+      setManagerMessage(`Palet "${palette.label}" dibuat AI & diterapkan.`);
+      notifySave(`Palet "${palette.label}" dibuat AI & diterapkan.`, "success");
+    } catch (error) {
+      setPaletteGenerateError(error.message || "Gagal membuat palet.");
+      setManagerMessage(error.message || "Gagal membuat palet.");
+      notifySave(error.message || "Gagal membuat palet.", "error");
+    } finally {
+      setIsAiGeneratingPalette(false);
+    }
+  };
+
+  const handleDeletePalette = async (palette) => {
+    if (!palette?.id) return;
+    try {
+      const response = await fetch("/api/palettes", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ paletteId: palette.id }),
+      });
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.error || "Gagal menghapus palet.");
+      }
+      setCustomPalettes((current) =>
+        current.filter((item) => item.id !== palette.id),
+      );
+      setManagerMessage(`Palet "${palette.label}" dihapus.`);
+    } catch (error) {
+      setManagerMessage(error.message || "Gagal menghapus palet.");
+    }
+  };
+
+  // Beri tahu fetch mount (yang bisa lambat) bahwa daftar template sudah
+  // berubah lewat aksi user — supaya hasilnya tidak menimpa save/delete.
+  const markItemsChanged = () => {
+    window.dispatchEvent(new window.Event("template-admin-items-changed"));
+    try {
+      window.sessionStorage.removeItem("nusa-invite:admin-template-cache");
+    } catch {
+      // ignore storage failures
+    }
+  };
+
+  // Notifikasi simpan yang selalu terlihat (toast pojok kanan bawah).
+  const [saveFeedback, setSaveFeedback] = useState(null);
+  const saveFeedbackTimerRef = useRef(null);
+  const notifySave = (text, tone = "info") => {
+    if (saveFeedbackTimerRef.current) {
+      window.clearTimeout(saveFeedbackTimerRef.current);
+    }
+    setSaveFeedback({ text, tone });
+    saveFeedbackTimerRef.current = window.setTimeout(() => {
+      setSaveFeedback(null);
+      saveFeedbackTimerRef.current = null;
+    }, 4500);
+  };
+  const dismissSaveFeedback = () => {
+    if (saveFeedbackTimerRef.current) {
+      window.clearTimeout(saveFeedbackTimerRef.current);
+      saveFeedbackTimerRef.current = null;
+    }
+    setSaveFeedback(null);
+  };
+
+  // Cek apakah id template sudah dipakai template lain di daftar lokal.
+  // Dipakai untuk memastikan id template baru selalu unik meski fetch katalog
+  // belum selesai (daftar dari Supabase satu-satunya sumber kebenaran).
+  const isTemplateIdTaken = useCallback(
+    (candidateId, excludeId = null) => {
+      if (!candidateId) return true;
+      return items.some((item) => item.id === candidateId && item.id !== excludeId);
+    },
+    [items],
+  );
+
+  const buildUniqueTemplateId = useCallback(
+    (baseId, excludeId = null) => {
+      const slugged = slugifyTemplateId(baseId) || "template-baru";
+      if (!isTemplateIdTaken(slugged, excludeId)) {
+        return slugged;
+      }
+      let counter = 2;
+      let nextId = `${slugged}-${counter}`;
+      while (isTemplateIdTaken(nextId, excludeId)) {
+        counter += 1;
+        nextId = `${slugged}-${counter}`;
+      }
+      return nextId;
+    },
+    [isTemplateIdTaken],
+  );
   const [isUploadingOrnament, setIsUploadingOrnament] = useState(false);
   const [dynamicOrnamentAssets, setDynamicOrnamentAssets] = useState([]);
   const [isLoadingOrnamentAssets, setIsLoadingOrnamentAssets] = useState(false);
@@ -216,6 +353,7 @@ function TemplateAdminPage() {
   const [ornamentSearchQuery, setOrnamentSearchQuery] = useState("");
   const timelineContainerRef = useRef(null);
   const fullPreviewIframeRef = useRef(null);
+  const savingRef = useRef(false);
   const editorStepIds = editorSteps.map((step) => step.id);
   const currentStepIndex = Math.max(0, editorStepIds.indexOf(editorStep));
   const totalEditorSteps = editorSteps.length;
@@ -247,18 +385,84 @@ function TemplateAdminPage() {
 
   useEffect(() => {
     let isMounted = true;
+    let isStale = false;
+    // Kalau user sudah save/ubah daftar sebelum fetch mount selesai, jangan
+    // timpa — fetch yang lambat bisa membawa data lama (tanpa template yang
+    // baru disimpan) dan membuat hasil save "hilang" dari katalog.
+    const markDirty = () => {
+      isStale = true;
+    };
+    window.addEventListener("template-admin-items-changed", markDirty);
     setIsLoadingTemplates(true);
+
+    // Bersihkan sisa override template lama dari localStorage (mekanisme sudah
+    // dihapus — data template hanya dari Supabase). Ini mencegah "template
+    // hantu" dari versi sebelumnya tetap muncul.
+    try {
+      window.localStorage.removeItem("nusa-invite:template-overrides");
+      window.localStorage.removeItem("nusa-invite:deleted-template-ids");
+    } catch {
+      // ignore storage access issues
+    }
+
+    // Cache katalog di sessionStorage (TTL pendek) supaya halaman dashboard
+    // langsung punya daftar template — penting agar "Tambah Template" tidak
+    // memakai id yang sudah ada di Supabase saat fetch masih berjalan lambat.
+    const ADMIN_TEMPLATES_CACHE_KEY = "nusa-invite:admin-template-cache";
+    const loadFromCache = () => {
+      try {
+        const raw = window.sessionStorage.getItem(ADMIN_TEMPLATES_CACHE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed?.expiresAt || Date.now() > parsed.expiresAt) return null;
+        return Array.isArray(parsed.data) ? parsed.data : null;
+      } catch {
+        return null;
+      }
+    };
+    const writeCache = (data) => {
+      try {
+        window.sessionStorage.setItem(
+          ADMIN_TEMPLATES_CACHE_KEY,
+          JSON.stringify({ data, expiresAt: Date.now() + 30000 }),
+        );
+      } catch {
+        // ignore storage failures
+      }
+    };
+
+    const cachedData = loadFromCache();
+    if (Array.isArray(cachedData) && cachedData.length > 0 && !isStale) {
+      setItems((currentItems) =>
+        cachedData.map((template) => {
+          const registryTemplate =
+            currentItems.find((item) => item.id === template.id) ||
+            templates.find((item) => item.id === template.id) ||
+            {};
+          return {
+            ...registryTemplate,
+            ...template,
+            image: template.image || registryTemplate.image,
+            previewUrl: template.previewUrl || registryTemplate.previewUrl || "/preview",
+            supportedFeatures:
+              template.supportedFeatures || registryTemplate.supportedFeatures || [],
+          };
+        }),
+      );
+      setIsLoadingTemplates(false);
+    }
 
     fetch("/api/templates?scope=admin")
       .then((response) => response.json())
       .then((result) => {
-        if (!isMounted) {
+        if (!isMounted || isStale) {
           return;
         }
 
         if (Array.isArray(result.data)) {
+          writeCache(result.data);
           setItems((currentItems) =>
-            mergeTemplateOverrides(result.data.map((template) => {
+            result.data.map((template) => {
               const registryTemplate =
                 currentItems.find((item) => item.id === template.id) ||
                 templates.find((item) => item.id === template.id) ||
@@ -272,7 +476,7 @@ function TemplateAdminPage() {
                 supportedFeatures:
                   template.supportedFeatures || registryTemplate.supportedFeatures || [],
               };
-            })),
+            }),
           );
           setTemplateSource(result.source || "api");
           return;
@@ -281,7 +485,7 @@ function TemplateAdminPage() {
         setItems([]);
       })
       .catch(() => {
-        if (isMounted) {
+        if (isMounted && !isStale) {
           setItems([]);
           setTemplateSource("api_error");
         }
@@ -294,6 +498,7 @@ function TemplateAdminPage() {
 
     return () => {
       isMounted = false;
+      window.removeEventListener("template-admin-items-changed", markDirty);
     };
   }, []);
 
@@ -772,16 +977,13 @@ function TemplateAdminPage() {
       return;
     }
 
-    try {
-      const previewSnapshot = buildPreviewSnapshot({
+    persistPreviewSnapshot(
+      buildPreviewSnapshot({
         id: templateDraft.id,
         image: templateDraft.image,
         designConfig: parsedDesignConfig || {},
-      });
-      window.sessionStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(previewSnapshot));
-    } catch {
-      return;
-    }
+      }),
+    );
 
     return undefined;
   }, [parsedDesignConfig, templateDraft]);
@@ -801,17 +1003,13 @@ function TemplateAdminPage() {
       return;
     }
 
-    try {
-      const previewSnapshot = buildPreviewSnapshot({
+    persistPreviewSnapshot(
+      buildPreviewSnapshot({
         id: templateDraft.id,
         image: templateDraft.image,
         designConfig: nextConfig,
-      });
-      window.sessionStorage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(previewSnapshot));
-    } catch {
-      setManagerMessage("Gagal menyiapkan editor preview.");
-      return;
-    }
+      }),
+    );
 
     const previewUrl = `/preview?templateId=${encodeURIComponent(templateDraft.id)}&editorPreview=1`;
     window.open(previewUrl, "_blank", "noopener,noreferrer");
@@ -969,6 +1167,7 @@ function TemplateAdminPage() {
       primaryColor: palette.colors.primary,
       textColor: palette.colors.text,
       accentColor: palette.colors.accent,
+      surfaceColor: palette.colors.surface,
     };
 
     Object.keys(nextSections)
@@ -981,6 +1180,7 @@ function TemplateAdminPage() {
           backgroundColor: palette.colors.bg,
           textColor: palette.colors.text,
           accentColor: palette.colors.accent,
+          surfaceColor: palette.colors.surface,
         };
       });
 
@@ -1009,6 +1209,61 @@ function TemplateAdminPage() {
 
     // Arahkan ke step Pratinjau supaya admin langsung melihat hasil.
     setEditorStep(8);
+  };
+
+  // Generate AI → langsung simpan sebagai template BARU (status hidden) di
+  // katalog lalu buka di editor. Template sumber/template aktif tidak berubah.
+  const handleAiGeneratedAsNewTemplate = async ({ designConfig, description, name }) => {
+    if (!designConfig) {
+      return;
+    }
+
+    const baseName = String(name || description || "Template AI").trim();
+    const baseId = slugifyTemplateId(baseName) || "template-ai";
+    const nextId = buildUniqueTemplateId(baseId);
+
+    const newTemplate = {
+      id: nextId,
+      name: baseName,
+      category: "Standard",
+      price: "Rp 99.000",
+      badge: "New",
+      status: "hidden",
+      description: description || "Template dibuat AI.",
+      image: "/assets/backgrounds/soft-watercolor-cream.jpg",
+      previewUrl: `/preview?templateId=${encodeURIComponent(nextId)}`,
+      supportedFeatures: ["rsvp", "gift", "music", "guestName", "gallery", "story"],
+      designConfig: ensurePresetSections(nextId, designConfig),
+      sortOrder: items.length + 1,
+    };
+
+    setItems((currentItems) => [
+      newTemplate,
+      ...currentItems.filter((item) => item.id !== newTemplate.id),
+    ]);
+    markItemsChanged();
+    setManagerMessage("Menyimpan template hasil AI...");
+
+    try {
+      const result = await persistTemplate(newTemplate);
+      const savedTemplate = { ...newTemplate, ...result.data };
+      setItems((currentItems) => [
+        savedTemplate,
+        ...currentItems.filter((item) => item.id !== savedTemplate.id),
+      ]);
+      setTemplateSource(result.source || templateSource);
+      startEditTemplate(savedTemplate);
+      setManagerMessage("Template hasil AI disimpan sebagai template baru.");
+      notifySave("Template hasil AI disimpan sebagai template baru.", "success");
+      setEditorStep(8);
+    } catch (error) {
+      setItems((currentItems) =>
+        currentItems.filter((item) => item.id !== newTemplate.id),
+      );
+      markItemsChanged();
+      setManagerMessage(error.message || "Gagal menyimpan template hasil AI.");
+      notifySave(error.message || "Gagal menyimpan template hasil AI.", "error");
+    }
   };
 
   const toggleSectionOverride = (section, enabled) => {
@@ -1492,28 +1747,27 @@ function TemplateAdminPage() {
   };
 
   const persistTemplate = async (template) => {
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 8000);
+    let response;
     try {
-      const response = await fetch("/api/templates", {
+      response = await fetch("/api/templates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(template),
+        signal: controller.signal,
       });
-      const result = await response.json();
-
-      if (!response.ok) {
-        // Supabase butuh login admin — jangan gagalkan save; simpan ke
-        // override lokal sebagai fallback biar preview tetap pakai hasil
-        // personalisasi.
-        upsertStoredTemplateOverride(template);
-        return { source: "local", data: template };
-      }
-
-      return result;
-    } catch (error) {
-      // Network/parse error — fallback ke override lokal juga.
-      upsertStoredTemplateOverride(template);
-      return { source: "local", data: template };
+    } finally {
+      window.clearTimeout(timeoutId);
     }
+
+    const result = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      throw new Error(result.error || `Gagal menyimpan template (${response.status}).`);
+    }
+
+    return result;
   };
 
   const deleteTemplate = (template) => {
@@ -1534,6 +1788,8 @@ function TemplateAdminPage() {
 
     setIsDeletingTemplate(true);
     setItems((currentItems) => currentItems.filter((item) => item.id !== template.id));
+    markItemsChanged();
+    clearPreviewSnapshot(template.id);
     if (editingTemplateId === template.id) {
       cancelEditTemplate();
     }
@@ -1545,21 +1801,17 @@ function TemplateAdminPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: template.id }),
       });
-      const result = await response.json();
+      const result = await response.json().catch(() => ({}));
 
       if (!response.ok) {
         throw new Error(result.error || "Gagal menghapus template");
-      }
-
-      if (result.source !== "supabase") {
-        addStoredDeletedTemplateId(template.id);
       }
 
       setTemplateSource(result.source || templateSource);
       setManagerMessage(
         result.source === "supabase"
           ? "Template berhasil dihapus dari Supabase."
-          : "Template dihapus dari katalog lokal.",
+          : "Template berhasil dihapus.",
       );
     } catch (error) {
       setItems(previousItems);
@@ -1586,17 +1838,21 @@ function TemplateAdminPage() {
         template.id === templateId ? nextTemplate : template,
       ),
     );
+    markItemsChanged();
 
     try {
       const result = await persistTemplate(nextTemplate);
       setTemplateSource(result.source || templateSource);
-      setManagerMessage(
-        result.source === "supabase"
-          ? "Status template tersimpan ke Supabase."
-          : "Status template tersimpan sementara. Supabase belum dikonfigurasi.",
-      );
+      setManagerMessage("Status template tersimpan.");
     } catch (error) {
-      setManagerMessage(error.message);
+      // Rollback status kalau gagal disimpan ke Supabase.
+      setItems((currentItems) =>
+        currentItems.map((template) =>
+          template.id === templateId ? targetTemplate : template,
+        ),
+      );
+      markItemsChanged();
+      setManagerMessage(error.message || "Gagal menyimpan status template.");
     }
   };
 
@@ -1605,18 +1861,7 @@ function TemplateAdminPage() {
       return;
     }
 
-    const reservedIds = new Set([
-      ...items.map((item) => item.id),
-      ...getStoredTemplateOverrides().map((item) => item.id),
-      ...getStoredDeletedTemplateIds(),
-    ]);
-    const baseId = `${template.id}-copy`;
-    let nextId = baseId;
-    let counter = 2;
-    while (reservedIds.has(nextId)) {
-      nextId = `${baseId}-${counter}`;
-      counter += 1;
-    }
+    const nextId = buildUniqueTemplateId(`${template.id}-copy`);
 
     let clonedConfig = {};
     try {
@@ -1640,13 +1885,11 @@ function TemplateAdminPage() {
       duplicated,
       ...currentItems.filter((item) => item.id !== duplicated.id),
     ]);
+    markItemsChanged();
     setManagerMessage("Menyalin template...");
 
     try {
       const result = await persistTemplate(duplicated);
-      if (result.source !== "supabase") {
-        upsertStoredTemplateOverride(duplicated);
-      }
       const nextTemplate = { ...duplicated, ...result.data };
       setItems((currentItems) => [
         nextTemplate,
@@ -1654,11 +1897,7 @@ function TemplateAdminPage() {
       ]);
       setTemplateSource(result.source || templateSource);
       startEditTemplate(nextTemplate);
-      setManagerMessage(
-        result.source === "supabase"
-          ? "Template berhasil diduplikat. Salinan dibuka untuk diedit."
-          : "Template diduplikat ke katalog lokal. Supabase belum dikonfigurasi.",
-      );
+      setManagerMessage("Template berhasil diduplikat. Salinan dibuka untuk diedit.");
     } catch (error) {
       setItems((currentItems) => currentItems.filter((item) => item.id !== duplicated.id));
       setManagerMessage(error.message || "Gagal menduplikat template.");
@@ -1680,19 +1919,11 @@ function TemplateAdminPage() {
   };
 
   const startCreateTemplate = () => {
-    const baseId = "template-baru";
-    const reservedIds = new Set([
-      ...items.map((template) => template.id),
-      ...getStoredTemplateOverrides().map((template) => template.id),
-      ...getStoredDeletedTemplateIds(),
-    ]);
-    let nextId = baseId;
-    let counter = 2;
-
-    while (reservedIds.has(nextId)) {
-      nextId = `${baseId}-${counter}`;
-      counter += 1;
-    }
+    // Id unik dari items + override lokal + id yang pernah dihapus. Kalau
+    // fetch katalog masih berjalan (items belum memuat template dari DB),
+    // "template-baru" yang sudah ada di Supabase tetap terdeteksi lewat
+    // suffix counter — jadi tidak bentrok dan tidak menimpa.
+    const nextId = buildUniqueTemplateId("template-baru");
 
     const designConfig = ensurePresetSections(nextId, {});
     const nextTemplate = {
@@ -1731,7 +1962,10 @@ function TemplateAdminPage() {
         !editingTemplateId &&
         (!current.id || current.id.startsWith("template-baru"))
       ) {
-        const nextId = slugifyTemplateId(value);
+        // Nama → ID otomatis, tapi jangan sampai bentrok dengan template lain
+        // (termasuk "template-baru" yang sudah ada di katalog/DB). Kalau slug
+        // nama sudah dipakai, beri suffix angka.
+        const nextId = buildUniqueTemplateId(value);
         return {
           ...current,
           name: value,
@@ -1816,19 +2050,35 @@ function TemplateAdminPage() {
       return;
     }
 
-    const normalizedId = slugifyTemplateId(templateDraft.id);
-
-    if (!normalizedId || !templateDraft.name || !templateDraft.category) {
-      setManagerMessage("Template ID, nama, dan kategori wajib diisi.");
+    // Guard anti double-save: state isSavingTemplate baru berlaku setelah
+    // re-render, jadi ref ini menahan klik ganda dalam batch yang sama.
+    if (savingRef.current) {
       return;
     }
 
-    const duplicateTemplate = items.find(
-      (template) => template.id === normalizedId && template.id !== editingTemplateId,
-    );
-    if (duplicateTemplate) {
-      setManagerMessage(`Template ID "${normalizedId}" sudah dipakai.`);
+    const normalizedId = slugifyTemplateId(templateDraft.id);
+
+    if (!normalizedId || !templateDraft.name || !templateDraft.category) {
+      const message = "Template ID, nama, dan kategori wajib diisi.";
+      setManagerMessage(message);
+      notifySave(message, "error");
       return;
+    }
+
+    // Kalau user mengedit template yang SUDAH ADA (editingTemplateId), id tidak
+    // bisa diubah (field disabled) — pakai id asli. Kalau template baru, pastikan
+    // id-nya tidak dipakai template lain; kalau bentrok (misal karena fetch
+    // katalog belum selesai saat "Tambah Template"), generate id unik otomatis
+    // supaya save tidak gagal/menimpa template lain.
+    let finalId = normalizedId;
+    if (!editingTemplateId && isTemplateIdTaken(normalizedId)) {
+      const currentDefaultId = buildUniqueTemplateId(
+        normalizedId.startsWith("template-baru") ? "template-baru" : normalizedId,
+      );
+      finalId = currentDefaultId;
+      const message = `Template ID "${normalizedId}" sudah dipakai — disimpan sebagai "${finalId}".`;
+      setManagerMessage(message);
+      notifySave(message, "info");
     }
 
     let parsedDesignConfig = {};
@@ -1837,18 +2087,21 @@ function TemplateAdminPage() {
         designConfigText.trim() ? JSON.parse(designConfigText) : {},
       );
     } catch {
-      setManagerMessage("Design config JSON belum valid.");
+      const message = "Design config JSON belum valid.";
+      setManagerMessage(message);
+      notifySave(message, "error");
       return;
     }
 
     const draftToSave = {
       ...templateDraft,
-      id: normalizedId,
-      previewUrl: `/preview?templateId=${encodeURIComponent(normalizedId)}`,
+      id: finalId,
+      previewUrl: `/preview?templateId=${encodeURIComponent(finalId)}`,
       designConfig: parsedDesignConfig,
     };
 
     const saveStartedAt = Date.now();
+    savingRef.current = true;
     setIsSavingTemplate(true);
 
     setItems((currentItems) => {
@@ -1862,10 +2115,8 @@ function TemplateAdminPage() {
     });
 
     try {
+      markItemsChanged();
       const result = await persistTemplate(draftToSave);
-      if (result.source !== "supabase") {
-        upsertStoredTemplateOverride(draftToSave);
-      }
       const nextTemplate = { ...draftToSave, ...result.data };
       setItems((currentItems) => {
         if (editingTemplateId) {
@@ -1885,14 +2136,25 @@ function TemplateAdminPage() {
       if (nextTemplate.designConfig) {
         setDesignConfigText(JSON.stringify(nextTemplate.designConfig, null, 2));
       }
-      setManagerMessage(
-        result.source === "supabase"
-          ? "Template berhasil disimpan."
-          : "Template tersimpan ke katalog lokal. Login admin / konfigurasi Supabase untuk sinkronisasi penuh.",
-      );
+      setManagerMessage("Template berhasil disimpan.");
+      notifySave("Template berhasil disimpan.", "success");
     } catch (error) {
-      setManagerMessage(error.message);
+      // Save gagal ke Supabase — kembalikan daftar ke kondisi sebelum simpan
+      // supaya tidak ada template "palsu" yang tampil padahal tidak tersimpan.
+      setItems((currentItems) => {
+        if (editingTemplateId) {
+          return currentItems.map((template) =>
+            template.id === editingTemplateId ? { ...templateDraft, id: editingTemplateId } : template,
+          );
+        }
+        return currentItems.filter((template) => template.id !== draftToSave.id);
+      });
+      markItemsChanged();
+      const message = error.message || "Gagal menyimpan template.";
+      setManagerMessage(message);
+      notifySave(message, "error");
     } finally {
+      savingRef.current = false;
       const elapsed = Date.now() - saveStartedAt;
       const minLoading = 900;
       if (elapsed < minLoading) {
@@ -2010,7 +2272,11 @@ function TemplateAdminPage() {
               updateTemplateThumbnail={updateTemplateThumbnail}
             />
             <div className={editorStep === 2 ? "" : "hidden"}>
-              <AiTemplateGenerator onGenerated={handleAiGenerated} />
+              <AiTemplateGenerator
+                templates={items}
+                onGenerated={handleAiGenerated}
+                onGeneratedAsNewTemplate={handleAiGeneratedAsNewTemplate}
+              />
             </div>
             <CoverStep
                 visible={editorStep === 4}
@@ -2024,7 +2290,11 @@ function TemplateAdminPage() {
               <GlobalStyleStep
                 visible={editorStep === 3}
                 templateId={templateDraft?.id}
-                colorPalettePresets={colorPalettePresets}
+                palettes={allPalettes}
+                onAiGeneratePalette={handleAiGeneratedPalette}
+                onDeletePalette={handleDeletePalette}
+                isAiGeneratingPalette={isAiGeneratingPalette}
+                paletteGenerateError={paletteGenerateError}
                 parsedDesignConfig={parsedDesignConfig}
                 applyColorPalette={applyColorPalette}
                 globalSectionStyleConfig={globalSectionStyleConfig}
@@ -2358,6 +2628,16 @@ function TemplateAdminPage() {
           onClose={() => setDeleteTemplateTarget(null)}
           onConfirm={confirmDeleteTemplate}
         />
+
+        {saveFeedback ? (
+          <div className="fixed bottom-20 right-4 z-[120] w-[calc(100%-2rem)] max-w-sm sm:right-6">
+            <StatusToast
+              tone={saveFeedback.tone}
+              message={saveFeedback.text}
+              onDismiss={dismissSaveFeedback}
+            />
+          </div>
+        ) : null}
       </motion.section>
   );
 }

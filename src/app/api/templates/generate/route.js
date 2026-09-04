@@ -7,6 +7,8 @@ import { sanitizeDesignConfig } from "../../../../lib/ai/validateDesignConfig";
 import { readOrnamentManifest, ORNAMENT_BUCKET } from "../../../../lib/ai/manifest";
 import { normalizeCatalogOrnament } from "../../../../lib/ai/catalog";
 import { createServiceSupabaseClient } from "../../../../lib/supabase/server";
+import { getAllColorPalettes } from "../../../../lib/colorPalettes";
+import { extractJson } from "../../../../lib/ai/extractJson";
 
 // ---- Infer tema dari nama file / tags (untuk ornamen lama tanpa metadata) ----
 const THEME_HINTS = [
@@ -61,44 +63,6 @@ function buildManifestOrnaments(manifest, supabase) {
   });
 }
 
-// ---- Parser JSON toleran ----
-// Model OpenAI-compatible sering membungkus JSON dalam markdown
-// fence (```json ... ```) atau menambahkan teks lain. Kita cari
-// blok JSON pertama yang valid.
-function extractJson(text = "") {
-  const trimmed = String(text).trim();
-
-  // Coba parse langsung dulu
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    // lanjut cari blok
-  }
-
-  // Cari blok ```json ... ```
-  const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenceMatch) {
-    try {
-      return JSON.parse(fenceMatch[1].trim());
-    } catch {
-      // lanjut
-    }
-  }
-
-  // Cari objek JSON pertama: dari { pertama sampai } terakhir
-  const firstBrace = trimmed.indexOf("{");
-  const lastBrace = trimmed.lastIndexOf("}");
-  if (firstBrace !== -1 && lastBrace > firstBrace) {
-    try {
-      return JSON.parse(trimmed.slice(firstBrace, lastBrace + 1));
-    } catch {
-      // gagal
-    }
-  }
-
-  return null;
-}
-
 function parseAiOutput(text = "") {
   const parsed = extractJson(text);
 
@@ -116,6 +80,30 @@ function parseAiOutput(text = "") {
   return { designConfig, description, parseError: "" };
 }
 
+// ---- Ambil design_config template sumber (referensi gaya) ----
+async function getReferenceTemplateConfig(templateId) {
+  if (!templateId) {
+    return null;
+  }
+
+  const supabase = createServiceSupabaseClient();
+  const { data } = await supabase
+    .from("templates")
+    .select("template_id, name, design_config")
+    .eq("template_id", templateId)
+    .maybeSingle();
+
+  if (!data) {
+    return null;
+  }
+
+  return {
+    id: data.template_id,
+    name: data.name,
+    designConfig: data.design_config || {},
+  };
+}
+
 export async function POST(request) {
   let payload;
   try {
@@ -125,6 +113,7 @@ export async function POST(request) {
   }
 
   const prompt = String(payload.prompt || "").trim();
+  const referenceTemplateId = String(payload.referenceTemplateId || "").trim() || null;
   if (!prompt) {
     return NextResponse.json({ error: "Prompt wajib diisi" }, { status: 400 });
   }
@@ -154,12 +143,35 @@ export async function POST(request) {
     const supabase = createServiceSupabaseClient();
     const manifestOrnaments = buildManifestOrnaments(manifest, supabase);
 
-    const systemPrompt = buildSystemPrompt({ ornaments: manifestOrnaments });
+    // Sertakan palet custom admin supaya AI bisa memilihnya juga.
+    const colorPalettes = await getAllColorPalettes();
+
+    const systemPrompt = buildSystemPrompt({
+      ornaments: manifestOrnaments,
+      colorPalettes,
+    });
+
+    // Template acuan gaya (opsional): admin pilih template lain sebagai contoh
+    // struktur section/ornamen/font/layout. AI meniru gayanya, bukan menyalin
+    // mentah — aset tetap harus dari daftar valid.
+    let finalPrompt = prompt;
+    if (referenceTemplateId) {
+      const reference = await getReferenceTemplateConfig(referenceTemplateId);
+      if (reference) {
+        finalPrompt = `${prompt}
+
+## TEMPLATE ACUAN GAYA
+Admin ingin hasil menyerupai template "${reference.name}" (id: ${reference.id}) berikut:
+${JSON.stringify(reference.designConfig).slice(0, 18000)}
+
+Instruksi: tiru GAYA template acuan ini — struktur section, pilihan & penempatan ornamen, font, layout cover, palet warna, dan widget yang dipakai. Lalu ciptakan variasi/desain baru yang sesuai prompt admin di atas. JANGAN menyalin id/src ornamen atau URL di luar daftar ORNAMEN/BACKGROUND TERSEDIA di system prompt — pilih aset yang tersedia dengan gaya serupa. Output tetap design_config JSON dengan struktur yang sama.`;
+      }
+    }
 
     const result = await generateText({
       model,
       system: systemPrompt,
-      prompt,
+      prompt: finalPrompt,
       temperature: 0.7,
     });
 

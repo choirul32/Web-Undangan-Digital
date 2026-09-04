@@ -53,7 +53,6 @@ function buildExampleConfigs(exampleTemplates) {
 
 export function buildSystemPrompt(options = {}) {
   const catalog = buildAiCatalog(options);
-
   return `Kamu adalah desainer undangan digital senior spesialis budaya Indonesia (Jawa, Bali, Sunda, Islami, dll). Tugasmu: mengubah prompt admin menjadi konfigurasi desain undangan (design_config JSON) yang VALID dan langsung bisa dirender.
 
 ## ATURAN WAJIB

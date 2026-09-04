@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { mergeTemplateOverrides } from "../../data/templateAdminDefaults";
 import {
   fadeUp,
   initialInvitationForm,
@@ -274,7 +273,7 @@ export default function InvitationFormPanel({ invitationSlug = "" }) {
           return;
         }
 
-        const loadedTemplates = mergeTemplateOverrides(result.data || [])
+        const loadedTemplates = (result.data || [])
           .map(normalizeTemplateOption)
           .filter((template) => template.id);
         const nextTemplates = loadedTemplates;

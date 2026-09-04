@@ -6,7 +6,10 @@
 // Protocol terdiri dari 3 transport:
 //   1. Query params (URL iframe/preview) — buildPreviewUrl / parsePreviewQuery
 //   2. postMessage — MESSAGE_* + buildSnapshotMessage / buildReadyMessage / buildReplayMessage
-//   3. sessionStorage — SNAPSHOT_STORAGE_KEY (snapshot utk preview window terpisah)
+//   3. Snapshot storage — SNAPSHOT_STORAGE_KEY di sessionStorage + localStorage
+//      (persistPreviewSnapshot / readPreviewSnapshot / clearPreviewSnapshot).
+//      localStorage dipakai supaya tab preview baru (noopener) tetap kebagian
+//      snapshot walau tidak mewarisi sessionStorage dashboard.
 //
 // Semua konsumen WAJIB lewat modul ini, jangan menulis string param
 // atau message name sendiri di komponen.
@@ -38,8 +41,86 @@ export const PREVIEW_MESSAGE = {
   ready: "nusa-invite:editor-preview-ready",
 };
 
-// ---- sessionStorage ----
+// ---- sessionStorage / localStorage ----
 export const SNAPSHOT_STORAGE_KEY = "nusa-invite:editor-preview-template";
+
+// Snapshot ditulis ke sessionStorage (tab editor) DAN localStorage (dibagi
+// antar tab di origin yang sama). Sebab preview editor dibuka lewat
+// window.open(..., "noopener") / target=_blank rel=noreferrer, sehingga tab
+// preview TIDAK mewarisi sessionStorage tab dashboard. Tanpa fallback
+// localStorage, template draft yang belum tersimpan di Supabase tidak akan
+// pernah tampil di tab preview dan jatuh ke template default.
+function writeStorageSnapshot(storage, snapshot) {
+  try {
+    storage.setItem(SNAPSHOT_STORAGE_KEY, JSON.stringify(snapshot));
+  } catch {
+    // ignore storage failures (private mode / quota)
+  }
+}
+
+export function persistPreviewSnapshot(snapshot) {
+  if (typeof window === "undefined" || !snapshot) {
+    return;
+  }
+  writeStorageSnapshot(window.sessionStorage, snapshot);
+  writeStorageSnapshot(window.localStorage, snapshot);
+}
+
+// Snapshot "aktif" = yang id-nya cocok dengan templateId yang diminta.
+// Prioritas sessionStorage (paling fresh dari tab editor), fallback
+// localStorage untuk tab preview yang dibuka tanpa mewarisi sessionStorage.
+export function readPreviewSnapshot(templateId) {
+  if (typeof window === "undefined" || !templateId) {
+    return null;
+  }
+
+  const pick = (snapshot) =>
+    snapshot?.id === templateId && snapshot?.designConfig
+      ? snapshot
+      : null;
+
+  try {
+    const sessionRaw = window.sessionStorage.getItem(SNAPSHOT_STORAGE_KEY);
+    const sessionSnapshot = sessionRaw ? pick(JSON.parse(sessionRaw)) : null;
+    if (sessionSnapshot) {
+      return sessionSnapshot;
+    }
+  } catch {
+    // ignore storage failures
+  }
+
+  try {
+    const localRaw = window.localStorage.getItem(SNAPSHOT_STORAGE_KEY);
+    const localSnapshot = localRaw ? pick(JSON.parse(localRaw)) : null;
+    if (localSnapshot) {
+      return localSnapshot;
+    }
+  } catch {
+    // ignore storage failures
+  }
+
+  return null;
+}
+
+export function clearPreviewSnapshot(templateId) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  const clearMatching = (storage) => {
+    try {
+      const raw = storage.getItem(SNAPSHOT_STORAGE_KEY);
+      if (!raw) return;
+      const snapshot = JSON.parse(raw);
+      if (!templateId || snapshot?.id === templateId) {
+        storage.removeItem(SNAPSHOT_STORAGE_KEY);
+      }
+    } catch {
+      // ignore storage failures
+    }
+  };
+  clearMatching(window.sessionStorage);
+  clearMatching(window.localStorage);
+}
 
 // ---- Snapshot shape: { id, image, designConfig } ----
 export function buildPreviewSnapshot({ id, image, designConfig }) {

@@ -9,6 +9,7 @@ import {
   getCountdownWidgetConfig,
   getEventWidgetConfig,
   getGalleryWidgetConfig,
+  getSectionStyleConfig,
   getStoryWidgetConfig,
   mergeDesignConfigs,
   normalizeDesignConfig,
@@ -58,6 +59,53 @@ describe("designConfig widget defaults", () => {
   it("getter mengabaikan override yang bukan object", () => {
     const config = getCountdownWidgetConfig({ widgets: { countdown: null } });
     expect(config).toEqual(defaultCountdownWidgetConfig);
+  });
+});
+
+describe("getSectionStyleConfig", () => {
+  const config = {
+    sections: {
+      global: {
+        textColor: "#ffffff",
+        backgroundColor: "#101a2f",
+        spacingPreset: "roomy",
+        entranceAnimation: "fade-up",
+      },
+      acara: {
+        useGlobal: true,
+        textColor: "#ff0000",
+        surfaceColor: "#00ffcc",
+        backgroundColor: "#00ff00",
+      },
+      couple: {
+        useGlobal: false,
+        textColor: "#0000ff",
+        backgroundColor: "#ff00ff",
+        spacingPreset: "compact",
+      },
+    },
+  };
+
+  it("section ikut global tetap memakai override non-latar (textColor)", () => {
+    const style = getSectionStyleConfig(config, "acara");
+    expect(style.textColor).toBe("#ff0000");
+    expect(style.surfaceColor).toBe("#00ffcc");
+    // Latar TIDAK diambil dari override saat useGlobal true — tetap global.
+    expect(style.backgroundColor).toBe("#101a2f");
+    expect(style.spacingPreset).toBe("roomy");
+  });
+
+  it("section kustom (useGlobal false) memakai seluruh style sendiri", () => {
+    const style = getSectionStyleConfig(config, "couple");
+    expect(style.textColor).toBe("#0000ff");
+    expect(style.backgroundColor).toBe("#ff00ff");
+    expect(style.spacingPreset).toBe("compact");
+  });
+
+  it("section tanpa override mengikuti global", () => {
+    const style = getSectionStyleConfig(config, "story");
+    expect(style.textColor).toBe("#ffffff");
+    expect(style.backgroundColor).toBe("#101a2f");
   });
 });
 

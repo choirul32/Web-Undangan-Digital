@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { mergeTemplateOverrides } from "../data/templateAdminDefaults";
 import { readDefaultTemplateThumbnail } from "../lib/templateThumbnail";
 
 const whatsappUrl =
@@ -240,7 +239,7 @@ function HeroCarousel() {
         }
 
         const defaultThumbnail = readDefaultTemplateThumbnail();
-        const mappedSlides = mergeTemplateOverrides(result.data)
+        const mappedSlides = (result.data || [])
           .map((template) => ({
             title: template.name,
             desc: template.description || `Template kategori ${template.category || "Custom"}.`,
@@ -638,7 +637,7 @@ function CatalogSection() {
         }
 
         const defaultThumbnail = readDefaultTemplateThumbnail();
-        const mappedItems = mergeTemplateOverrides(result.data)
+        const mappedItems = (result.data || [])
           .map((template) => ({
             title: template.name,
             category: template.category,

@@ -7,6 +7,12 @@ import {
   ToggleField,
 } from "../FormControls";
 import { buildSnapshotMessage } from "../../../templates/previewProtocol";
+import VisualChoiceControl from "./VisualChoiceControl";
+import {
+  previewPositionTop,
+  previewPositionCenter,
+  previewPositionBottom,
+} from "./choicePreviews";
 
 const openingAssetTypeOptions = ["motion", "lottie", "video", "image-sequence"];
 
@@ -71,11 +77,13 @@ function Panel({ eyebrow, title, description, children }) {
 
 function MiniInput({ label, type = "text", step, placeholder, value, onChange }) {
   if (type === "color") {
+    const safeValue =
+      typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value) ? value : "#ffffff";
     return (
       <Field label={label}>
         <input
           type="color"
-          value={value ?? "#ffffff"}
+          value={safeValue}
           onChange={(event) => onChange(event.target.value)}
           className="h-11 w-full rounded-xl border border-[var(--dash-border)] bg-white p-1 outline-none focus:border-[var(--color-accent)]"
         />
@@ -93,6 +101,37 @@ function MiniInput({ label, type = "text", step, placeholder, value, onChange })
         onChange={(event) => onChange(event.target.value)}
       />
     </Field>
+  );
+}
+
+// Posisi vertikal + offset halus untuk satu elemen konten pembuka.
+function PositionField({ label, position, offsetY, onPositionChange, onOffsetChange }) {
+  return (
+    <div className="rounded-xl border border-[var(--dash-border)] bg-white p-3">
+      <p className="mb-2 text-sm font-bold text-[var(--dash-ink)]">{label}</p>
+      <VisualChoiceControl
+        value={position || ""}
+        options={[
+          { value: "", label: "Otomatis", preview: previewPositionCenter() },
+          { value: "top", label: "Atas", preview: previewPositionTop() },
+          { value: "center", label: "Tengah", preview: previewPositionCenter() },
+          { value: "bottom", label: "Bawah", preview: previewPositionBottom() },
+        ]}
+        onChange={onPositionChange}
+        columns={4}
+        size="sm"
+        ariaLabel={`Posisi ${label}`}
+      />
+      <div className="mt-2">
+        <MiniInput
+          label="Geser (px, minus = naik)"
+          type="number"
+          step="4"
+          value={offsetY ?? 0}
+          onChange={onOffsetChange}
+        />
+      </div>
+    </div>
   );
 }
 
@@ -479,6 +518,78 @@ export default function OpeningStep({
                 value={openingRevealWidgetConfig.contentOffsetY ?? 0}
                 onChange={(value) => updateOpeningRevealWidget("contentOffsetY", Number(value))}
               />
+            </Panel>
+
+            <Panel
+              eyebrow="Posisi & Jarak"
+              title="Atur posisi tiap elemen"
+              description="Pilih posisi vertikal untuk foto, nama, card tamu, dan tombol. 'Otomatis' mengikuti Posisi Konten di atas. Geser halus untuk koreksi presisi."
+            >
+              <div className="grid gap-3 md:grid-cols-2">
+                <PositionField
+                  label="Foto Tengah"
+                  position={openingRevealWidgetConfig.photoPosition}
+                  offsetY={openingRevealWidgetConfig.photoOffsetY}
+                  onPositionChange={(value) => updateOpeningRevealWidget("photoPosition", value)}
+                  onOffsetChange={(value) => updateOpeningRevealWidget("photoOffsetY", Number(value))}
+                />
+                <PositionField
+                  label="Nama Mempelai"
+                  position={openingRevealWidgetConfig.titlePosition}
+                  offsetY={openingRevealWidgetConfig.titleOffsetY}
+                  onPositionChange={(value) => updateOpeningRevealWidget("titlePosition", value)}
+                  onOffsetChange={(value) => updateOpeningRevealWidget("titleOffsetY", Number(value))}
+                />
+                <PositionField
+                  label="Card Tamu"
+                  position={openingRevealWidgetConfig.guestPosition}
+                  offsetY={openingRevealWidgetConfig.guestOffsetY}
+                  onPositionChange={(value) => updateOpeningRevealWidget("guestPosition", value)}
+                  onOffsetChange={(value) => updateOpeningRevealWidget("guestOffsetY", Number(value))}
+                />
+                <PositionField
+                  label="Tombol Buka Undangan"
+                  position={openingRevealWidgetConfig.buttonPosition}
+                  offsetY={openingRevealWidgetConfig.buttonOffsetY}
+                  onPositionChange={(value) => updateOpeningRevealWidget("buttonPosition", value)}
+                  onOffsetChange={(value) => updateOpeningRevealWidget("buttonOffsetY", Number(value))}
+                />
+              </div>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <MiniInput
+                  label="Jarak Antar Elemen (px)"
+                  type="number"
+                  step="4"
+                  placeholder="0 (pakai jarak bawaan)"
+                  value={openingRevealWidgetConfig.elementGap ?? ""}
+                  onChange={(value) => updateOpeningRevealWidget("elementGap", value ? Number(value) : "")}
+                />
+                <MiniInput
+                  label="Lebar Maks Konten (px)"
+                  type="number"
+                  step="4"
+                  placeholder="0 (pakai bawaan)"
+                  value={openingRevealWidgetConfig.contentMaxWidth ?? ""}
+                  onChange={(value) => updateOpeningRevealWidget("contentMaxWidth", value ? Number(value) : "")}
+                />
+                <MiniInput
+                  label="Jarak dari Atas Layar (px)"
+                  type="number"
+                  step="4"
+                  placeholder="0 (otomatis)"
+                  value={openingRevealWidgetConfig.contentPaddingTop ?? ""}
+                  onChange={(value) => updateOpeningRevealWidget("contentPaddingTop", value ? Number(value) : "")}
+                />
+                <MiniInput
+                  label="Jarak dari Bawah Layar (px)"
+                  type="number"
+                  step="4"
+                  placeholder="0 (otomatis)"
+                  value={openingRevealWidgetConfig.contentPaddingBottom ?? ""}
+                  onChange={(value) => updateOpeningRevealWidget("contentPaddingBottom", value ? Number(value) : "")}
+                />
+              </div>
             </Panel>
           </div>
 

@@ -218,6 +218,57 @@ export function previewPosition(position = "bottom-right") {
   );
 }
 
+// ---- Posisi vertikal (layout pembuka/cover) ----
+function VerticalPositionFrame({ children }) {
+  return (
+    <span className="flex h-full w-full items-stretch p-1.5">
+      <span className="flex w-full flex-col items-center justify-between py-0.5">
+        <span className="h-1.5 w-8 rounded-sm bg-[var(--dash-muted)]/70" />
+        {children}
+        <span className="h-1.5 w-8 rounded-sm bg-[var(--dash-muted)]/70" />
+      </span>
+    </span>
+  );
+}
+
+export function previewPositionAuto() {
+  return (
+    <VerticalPositionFrame>
+      <span className="flex flex-1 items-center">
+        <span className="mx-auto h-3 w-3 rounded-full bg-[var(--dash-ink)]" />
+      </span>
+    </VerticalPositionFrame>
+  );
+}
+
+export function previewPositionTop() {
+  return (
+    <VerticalPositionFrame>
+      <span className="h-3 w-3 rounded-full bg-[var(--dash-ink)]" />
+      <span className="flex-1" />
+    </VerticalPositionFrame>
+  );
+}
+
+export function previewPositionCenter() {
+  return (
+    <VerticalPositionFrame>
+      <span className="flex-1" />
+      <span className="h-3 w-3 rounded-full bg-[var(--dash-ink)]" />
+      <span className="flex-1" />
+    </VerticalPositionFrame>
+  );
+}
+
+export function previewPositionBottom() {
+  return (
+    <VerticalPositionFrame>
+      <span className="flex-1" />
+      <span className="h-3 w-3 rounded-full bg-[var(--dash-ink)]" />
+    </VerticalPositionFrame>
+  );
+}
+
 // ---- Bentuk foto ----
 function PhotoShape({ children }) {
   return (

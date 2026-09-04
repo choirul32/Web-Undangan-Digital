@@ -5,6 +5,35 @@ import { revealExitMotion } from "../utils/templateStyling";
 import OrnamentLayer from "../components/OrnamentLayer";
 import { getSectionOrnaments } from "../designConfigs";
 
+// Pembungkus posisi vertikal per elemen konten pembuka.
+// position: "" = otomatis (mengikuti contentPosition), lalu "top" | "center" | "bottom".
+// Margin auto di flex column mendorong elemen ke posisi yang diminta; offsetY
+// memberi geser halus tambahan (minus = naik).
+function ElementPositioner({ position = "", offsetY = 0, children }) {
+  const style = {};
+
+  if (position === "top") {
+    style.marginTop = 0;
+    style.marginBottom = "auto";
+  } else if (position === "bottom") {
+    style.marginTop = "auto";
+    style.marginBottom = 0;
+  } else if (position === "center") {
+    style.marginTop = "auto";
+    style.marginBottom = "auto";
+  }
+
+  if (Number(offsetY)) {
+    style.transform = `translateY(${Number(offsetY)}px)`;
+  }
+
+  return (
+    <div className="flex w-full flex-col items-center" style={style}>
+      {children}
+    </div>
+  );
+}
+
 export default function OpeningRevealOverlay({
   config,
   coverConfig,
@@ -80,7 +109,7 @@ export default function OpeningRevealOverlay({
     ? "flex min-h-[calc(100svh-3.5rem)] flex-col items-center justify-center"
     : config.contentPosition === "split"
       ? "flex min-h-[calc(100svh-3.5rem)] flex-col items-center"
-      : "";
+      : "flex min-h-[calc(100svh-3.5rem)] flex-col items-center justify-center";
 
   // Personalisasi ukuran & posisi dari designConfig (kosong = default render).
   const px = (value) => (value ? { fontSize: `${value}px` } : null);
@@ -96,9 +125,14 @@ export default function OpeningRevealOverlay({
         : config.contentPosition === "split"
           ? "flex-col justify-between"
           : "items-center";
-  const contentOffsetStyle = config.contentOffsetY
-    ? { transform: `translateY(${Number(config.contentOffsetY)}px)` }
-    : null;
+  const contentOffsetStyle = {
+    ...(config.contentOffsetY ? { transform: `translateY(${Number(config.contentOffsetY)}px)` } : {}),
+    ...(config.contentPaddingTop ? { paddingTop: `${Number(config.contentPaddingTop)}px` } : {}),
+    ...(config.contentPaddingBottom ? { paddingBottom: `${Number(config.contentPaddingBottom)}px` } : {}),
+    ...(config.contentMaxWidth ? { maxWidth: `${Number(config.contentMaxWidth)}px` } : {}),
+  };
+  // Jarak antar elemen: pakai gap bila diisi, kalau kosong biarkan margin class bawaan.
+  const elementGapStyle = config.elementGap ? { gap: `${Number(config.elementGap)}px` } : null;
 
   const coverImageClass = `${compactMode
     ? "mx-auto mb-5 aspect-[3/4] w-36 rounded-t-full rounded-b-[14px]"
@@ -117,12 +151,9 @@ export default function OpeningRevealOverlay({
     usePhotoBackdrop
       ? "border-white/70 bg-black/42 shadow-black/20"
       : "border-[var(--color-accent-pale)] bg-[var(--color-surface)]/88 shadow-[var(--color-primary)]/10"
-  } ${config.contentPosition === "split" ? "mt-auto" : ""}`;
+  }`;
   const guestBoxStyle = {
     ...(config.guestCardBgColor ? { backgroundColor: config.guestCardBgColor } : {}),
-    ...(config.contentPosition === "split" && config.guestOffsetY
-      ? { marginBottom: `${Number(config.guestOffsetY)}px` }
-      : {}),
   };
   const guestEyebrowClass = compactMode
     ? `text-[10px] font-black uppercase tracking-[0.14em] ${usePhotoBackdrop ? "text-white/85" : "text-[var(--color-accent)]"}`
@@ -172,17 +203,27 @@ export default function OpeningRevealOverlay({
       <OrnamentLayer ornaments={getSectionOrnaments(designConfig, "opening")} />
       <OpeningSequenceAsset asset={config.asset} isOpening={isOpening} onSkip={handleOpen} />
       <OpeningSequenceAtmosphere config={config} isOpening={isOpening} />
-      <OpeningSequence config={config} isOpening={isOpening} className={`relative z-10 mx-auto w-full ${contentWidthClass} ${contentLayoutClass} ${contentClass}`} style={contentOffsetStyle}>
-        {config.coverImageEnabled ? <img src={revealCoverImage} alt={`${couple.groomNickname} dan ${couple.brideNickname}`} className={coverImageClass} style={photoWidthStyle} /> : null}
-        <p className={`${eyebrowClass} ${eyebrowColorClass}`}>The Wedding Of</p>
-        <h1 className={`${titleClass} ${headingColorClass}`} style={{ fontFamily: "var(--font-heading)", ...titleFontSizeStyle }}>{couple.groomNickname} & {couple.brideNickname}</h1>
-        <div className={guestBoxClass} style={guestBoxStyle}>
-          <p className={guestEyebrowClass}>Kepada Yth.</p>
-          <p className={guestNameClass} style={{ ...guestFontSizeStyle, ...(config.guestCardTextColor ? { color: config.guestCardTextColor } : {}) }}>{guestName || "Tamu Undangan"}</p>
-        </div>
-        <button type="button" onClick={handleOpen} disabled={isOpening} className={buttonClass} style={{ ...buttonFontSizeStyle, ...buttonStyle }}>
-          {config.buttonText || "Buka Undangan"}
-        </button>
+      <OpeningSequence config={config} isOpening={isOpening} className={`relative z-10 mx-auto w-full ${contentWidthClass} ${contentLayoutClass} ${contentClass}`} style={{ ...contentOffsetStyle, ...elementGapStyle }}>
+        {config.coverImageEnabled ? (
+          <ElementPositioner position={config.photoPosition} offsetY={config.photoOffsetY}>
+            <img src={revealCoverImage} alt={`${couple.groomNickname} dan ${couple.brideNickname}`} className={coverImageClass} style={photoWidthStyle} />
+          </ElementPositioner>
+        ) : null}
+        <ElementPositioner position={config.titlePosition} offsetY={config.titleOffsetY}>
+          <p className={`${eyebrowClass} ${eyebrowColorClass}`}>The Wedding Of</p>
+          <h1 className={`${titleClass} ${headingColorClass}`} style={{ fontFamily: "var(--font-heading)", ...titleFontSizeStyle }}>{couple.groomNickname} & {couple.brideNickname}</h1>
+        </ElementPositioner>
+        <ElementPositioner position={config.guestPosition} offsetY={config.guestOffsetY}>
+          <div className={guestBoxClass} style={guestBoxStyle}>
+            <p className={guestEyebrowClass}>Kepada Yth.</p>
+            <p className={guestNameClass} style={{ ...guestFontSizeStyle, ...(config.guestCardTextColor ? { color: config.guestCardTextColor } : {}) }}>{guestName || "Tamu Undangan"}</p>
+          </div>
+        </ElementPositioner>
+        <ElementPositioner position={config.buttonPosition} offsetY={config.buttonOffsetY}>
+          <button type="button" onClick={handleOpen} disabled={isOpening} className={buttonClass} style={{ ...buttonFontSizeStyle, ...buttonStyle }}>
+            {config.buttonText || "Buka Undangan"}
+          </button>
+        </ElementPositioner>
       </OpeningSequence>
     </motion.div>
   );

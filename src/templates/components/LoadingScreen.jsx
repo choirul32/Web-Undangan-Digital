@@ -4,10 +4,10 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
 /**
- * LoadingScreen — progress dekoratif elegan di awal undangan.
- * - Progress naik halus sampai ~85% secara instan (kesan cepat)
- * - Lalu menunggu aset kunci (foto sampul) benar-benar selesai dimuat
- * - Teks "Memuat undangan..." + ornamen halus (garis bergerak)
+ * LoadingScreen — layar pembuka undangan.
+ * - Bar progress indeterminate (bergerak terus) — tidak memakai angka persen
+ *   buatan yang bisa terlihat "macet" (mis. diam di 95%) padahal masih nunggu.
+ * - Layar hilang setelah cover termuat + durasi minimum; ada jaring pengaman.
  * - Hormati prefers-reduced-motion
  */
 function prefersReducedMotion() {
@@ -18,7 +18,6 @@ function prefersReducedMotion() {
 }
 
 export default function LoadingScreen({ coverImage, onDone, minDuration = 1400 }) {
-  const [progress, setProgress] = useState(0);
   const [hasCoverLoaded, setHasCoverLoaded] = useState(false);
   const reducedMotion = useRef(false);
   const doneRef = useRef(false);
@@ -29,35 +28,16 @@ export default function LoadingScreen({ coverImage, onDone, minDuration = 1400 }
     onDone?.();
   };
 
-  // Animasi progress dekoratif — cepat ke 85%, lalu perlahan ke 95%
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
     reducedMotion.current = prefersReducedMotion();
 
     if (reducedMotion.current) {
-      setProgress(100);
       const timer = window.setTimeout(finish, 300);
       return () => window.clearTimeout(timer);
     }
 
-    let raf = 0;
-    const start = performance.now();
-    const tick = (now) => {
-      const elapsed = now - start;
-      // 0-85% dalam ~700ms (terasa cepat), 85-95% dalam sisa waktu
-      let next;
-      if (elapsed < 700) {
-        next = Math.min(85, (elapsed / 700) * 85);
-      } else {
-        const slowProgress = Math.min(10, ((elapsed - 700) / 1600) * 10);
-        next = 85 + slowProgress;
-      }
-      setProgress(Math.round(next));
-      raf = window.requestAnimationFrame(tick);
-    };
-    raf = window.requestAnimationFrame(tick);
-
-    return () => window.cancelAnimationFrame(raf);
+    return undefined;
   }, []);
 
   // Preload cover image — aset kunci yang wajib selesai
@@ -82,24 +62,28 @@ export default function LoadingScreen({ coverImage, onDone, minDuration = 1400 }
     };
   }, [coverImage]);
 
-  // Selesai: progress >= 95 (atau reduced motion) + cover loaded + durasi minimum
+  // Durasi minimum sudah lewat — ditandai state terpisah.
+  const [minDurationPassed, setMinDurationPassed] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || doneRef.current) return undefined;
+    const timer = window.setTimeout(() => setMinDurationPassed(true), minDuration);
+    return () => window.clearTimeout(timer);
+  }, [minDuration]);
+
+  // Selesai: cover loaded + durasi minimum sudah lewat.
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
+    if (doneRef.current) return undefined;
 
-    const minTimer = window.setTimeout(() => {
-      if (progress >= 95 && hasCoverLoaded) {
-        finish();
-      }
-    }, minDuration);
+    if (hasCoverLoaded && minDurationPassed) {
+      finish();
+      return undefined;
+    }
 
-    // Jaring pengaman: maksimal 6 detik apa pun yang terjadi
-    const safetyTimer = window.setTimeout(finish, 6000);
-
-    return () => {
-      window.clearTimeout(minTimer);
-      window.clearTimeout(safetyTimer);
-    };
-  }, [progress, hasCoverLoaded, minDuration]);
+    // Jaring pengaman: maksimal 8 detik apa pun yang terjadi
+    const safetyTimer = window.setTimeout(finish, 8000);
+    return () => window.clearTimeout(safetyTimer);
+  }, [hasCoverLoaded, minDurationPassed]);
 
   return (
     <motion.div
@@ -128,17 +112,14 @@ export default function LoadingScreen({ coverImage, onDone, minDuration = 1400 }
       <p className="mt-6 text-sm font-black uppercase tracking-[0.28em] text-[var(--color-primary)]">
         Membuka Undangan
       </p>
-      <p className="mt-1.5 text-xs font-semibold text-[var(--color-primary)]/55">
-        {progress}%
-      </p>
 
-      {/* Progress bar tipis & elegan */}
-      <div className="mt-5 h-[3px] w-44 overflow-hidden rounded-full bg-[var(--color-accent)]/15">
-        <motion.div
-          className="h-full rounded-full bg-[var(--color-accent)]"
-          animate={{ width: `${progress}%` }}
-          transition={{ ease: "easeOut", duration: 0.3 }}
-        />
+      {/* Bar progress indeterminate — tidak mengklaim persentase palsu */}
+      <div
+        className="mt-5 h-[3px] w-44 overflow-hidden rounded-full bg-[var(--color-accent)]/15"
+        role="progressbar"
+        aria-label="Memuat"
+      >
+        <div className="loading-bar-indeterminate h-full rounded-full bg-[var(--color-accent)]" />
       </div>
     </motion.div>
   );

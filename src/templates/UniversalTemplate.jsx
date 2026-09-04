@@ -86,6 +86,9 @@ export default function UniversalTemplate({
     bride: bridePhoto,
     groom: groomPhoto,
   };
+  // Cover asli invitation (nullable) — dipakai HomeSection untuk hero background
+  // saat template mematikan foto utama (photoEnabled: false).
+  const invitationCoverImage = invitation.coverImage || null;
 
   const isCompactHomePreview =
     framedPreview || (previewSectionOnly && previewFocusSection === "home") || isNarrowViewport;
@@ -225,6 +228,7 @@ export default function UniversalTemplate({
           events={events}
           personalizedGuestName={personalizedGuestName}
           profileImages={profileImages}
+          invitationCoverImage={invitationCoverImage}
           isCompactHomePreview={isCompactHomePreview}
           showGuestGreeting={showHomeGuestGreeting}
         />
