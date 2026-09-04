@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Field, SelectInput, TextInput, ToggleField } from "../FormControls";
+import { buildSnapshotMessage } from "../../../templates/previewProtocol";
 import VisualChoiceControl from "./VisualChoiceControl";
 import {
   previewCoverCentered,
@@ -50,7 +52,32 @@ function optionLabel(value) {
   return optionLabels[value] || value;
 }
 
-function CoverLivePreview({ src }) {
+function CoverLivePreview({ src, previewSnapshot }) {
+  const iframeRef = useRef(null);
+
+  // Update konten iframe via postMessage tanpa reload — src distabilkan
+  // (buang previewTick) supaya iframe tidak remount tiap perubahan.
+  useEffect(() => {
+    if (!previewSnapshot || !iframeRef.current?.contentWindow) {
+      return;
+    }
+    iframeRef.current.contentWindow.postMessage(
+      buildSnapshotMessage(previewSnapshot),
+      window.location.origin,
+    );
+  }, [previewSnapshot]);
+
+  const stableSrc =
+    typeof src === "string"
+      ? src.split("?")[0] +
+        "?" +
+        new URLSearchParams(
+          Array.from(new URLSearchParams(src.split("?")[1] || "").entries()).filter(
+            ([key]) => key !== "previewTick",
+          ),
+        ).toString()
+      : src;
+
   return (
     <div className="rounded-[14px] border border-[var(--dash-border)] bg-white p-3 lg:sticky lg:top-4">
       <div className="mb-2 flex items-center justify-between gap-2">
@@ -69,11 +96,19 @@ function CoverLivePreview({ src }) {
             style={{ width: 218, height: 388 }}
           >
             <iframe
-              key={src}
-              src={src}
+              ref={iframeRef}
+              src={stableSrc}
               title="Pratinjau cover utama"
               className="absolute left-0 top-0 origin-top-left border-0"
               style={{ width: 412, height: 732, transform: "scale(0.529)" }}
+              onLoad={() => {
+                if (previewSnapshot && iframeRef.current?.contentWindow) {
+                  iframeRef.current.contentWindow.postMessage(
+                    buildSnapshotMessage(previewSnapshot),
+                    window.location.origin,
+                  );
+                }
+              }}
             />
           </div>
           <div className="mx-auto mt-1 h-1 w-10 rounded-full bg-[var(--color-primary)]/35" />
@@ -90,6 +125,7 @@ export default function CoverStep({
   coverBackgroundModeOptions,
   updateCoverBackgroundImage,
   coverPreviewSrc,
+  previewSnapshot,
 }) {
   if (!visible) {
     return null;
@@ -288,7 +324,7 @@ export default function CoverStep({
               </Field>
             )}
           </div>
-          <CoverLivePreview src={coverPreviewSrc} />
+          <CoverLivePreview src={coverPreviewSrc} previewSnapshot={previewSnapshot} />
         </div>
 
         <div className="mt-6 rounded-[14px] border border-[var(--dash-border)] bg-white p-5">
@@ -359,6 +395,37 @@ export default function CoverStep({
                 <option value="bottom">Bawah</option>
                 <option value="split">Nama Atas, Tamu Bawah</option>
               </SelectInput>
+            </Field>
+            <Field label="Jarak Card Tamu (px)">
+              <TextInput
+                type="number"
+                step={4}
+                placeholder="0 (default)"
+                value={coverSectionConfig.guestOffsetY ?? 0}
+                onChange={(event) =>
+                  updateTemplateSectionConfig("home", "guestOffsetY", Number(event.target.value))
+                }
+              />
+            </Field>
+            <Field label="Warna Card Tamu">
+              <input
+                type="color"
+                value={coverSectionConfig.guestCardBgColor || "#ffffff"}
+                onChange={(event) =>
+                  updateTemplateSectionConfig("home", "guestCardBgColor", event.target.value)
+                }
+                className="h-11 w-full rounded-xl border border-[var(--dash-border)] bg-white p-1 outline-none focus:border-[var(--color-accent)]"
+              />
+            </Field>
+            <Field label="Warna Teks Tamu">
+              <input
+                type="color"
+                value={coverSectionConfig.guestCardTextColor || "#1e293b"}
+                onChange={(event) =>
+                  updateTemplateSectionConfig("home", "guestCardTextColor", event.target.value)
+                }
+                className="h-11 w-full rounded-xl border border-[var(--dash-border)] bg-white p-1 outline-none focus:border-[var(--color-accent)]"
+              />
             </Field>
             <Field label="Geser Konten (px, minus = naik)">
               <TextInput

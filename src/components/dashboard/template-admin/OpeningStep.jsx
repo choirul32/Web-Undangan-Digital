@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import {
   DashboardButton,
   Field,
@@ -5,6 +6,7 @@ import {
   TextInput,
   ToggleField,
 } from "../FormControls";
+import { buildSnapshotMessage } from "../../../templates/previewProtocol";
 
 const openingAssetTypeOptions = ["motion", "lottie", "video", "image-sequence"];
 
@@ -68,6 +70,19 @@ function Panel({ eyebrow, title, description, children }) {
 }
 
 function MiniInput({ label, type = "text", step, placeholder, value, onChange }) {
+  if (type === "color") {
+    return (
+      <Field label={label}>
+        <input
+          type="color"
+          value={value ?? "#ffffff"}
+          onChange={(event) => onChange(event.target.value)}
+          className="h-11 w-full rounded-xl border border-[var(--dash-border)] bg-white p-1 outline-none focus:border-[var(--color-accent)]"
+        />
+      </Field>
+    );
+  }
+
   return (
     <Field label={label}>
       <TextInput
@@ -107,8 +122,35 @@ export default function OpeningStep({
   updateOpeningSequenceAsset,
   updateOpeningSequenceAssetFile,
   openingSectionPreviewSrc,
+  previewSnapshot,
   onReplayPreview,
 }) {
+  const iframeRef = useRef(null);
+
+  // Kirim snapshot config ke iframe preview via postMessage — update konten
+  // tanpa reload. src iframe distabilkan (buang previewTick) supaya iframe
+  // tidak remount tiap perubahan warna/font.
+  useEffect(() => {
+    if (!previewSnapshot || !iframeRef.current?.contentWindow) {
+      return;
+    }
+    iframeRef.current.contentWindow.postMessage(
+      buildSnapshotMessage(previewSnapshot),
+      window.location.origin,
+    );
+  }, [previewSnapshot]);
+
+  const stablePreviewSrc =
+    typeof openingSectionPreviewSrc === "string"
+      ? openingSectionPreviewSrc.split("?")[0] +
+        "?" +
+        new URLSearchParams(
+          Array.from(
+            new URLSearchParams(openingSectionPreviewSrc.split("?")[1] || "").entries(),
+          ).filter(([key]) => key !== "previewTick"),
+        ).toString()
+      : openingSectionPreviewSrc;
+
   if (!visible) {
     return null;
   }
@@ -399,6 +441,38 @@ export default function OpeningStep({
                 </SelectInput>
               </Field>
               <MiniInput
+                label="Jarak Card Tamu (px)"
+                type="number"
+                step="4"
+                placeholder="0 (default)"
+                value={openingRevealWidgetConfig.guestOffsetY ?? 0}
+                onChange={(value) => updateOpeningRevealWidget("guestOffsetY", Number(value))}
+              />
+              <MiniInput
+                label="Warna Card Tamu"
+                type="color"
+                value={openingRevealWidgetConfig.guestCardBgColor || "#ffffff"}
+                onChange={(value) => updateOpeningRevealWidget("guestCardBgColor", value)}
+              />
+              <MiniInput
+                label="Warna Teks Tamu"
+                type="color"
+                value={openingRevealWidgetConfig.guestCardTextColor || "#1e293b"}
+                onChange={(value) => updateOpeningRevealWidget("guestCardTextColor", value)}
+              />
+              <MiniInput
+                label="Warna Tombol"
+                type="color"
+                value={openingRevealWidgetConfig.buttonBgColor || "#0f766e"}
+                onChange={(value) => updateOpeningRevealWidget("buttonBgColor", value)}
+              />
+              <MiniInput
+                label="Warna Teks Tombol"
+                type="color"
+                value={openingRevealWidgetConfig.buttonTextColor || "#ffffff"}
+                onChange={(value) => updateOpeningRevealWidget("buttonTextColor", value)}
+              />
+              <MiniInput
                 label="Geser Konten (px, minus = naik)"
                 type="number"
                 step="4"
@@ -431,11 +505,19 @@ export default function OpeningStep({
                   style={{ width: 218, height: 388 }}
                 >
                   <iframe
-                    key={openingSectionPreviewSrc}
-                    src={openingSectionPreviewSrc}
+                    ref={iframeRef}
+                    src={stablePreviewSrc}
                     title="Pratinjau pembuka home"
                     className="absolute left-0 top-0 origin-top-left border-0"
                     style={{ width: 412, height: 732, transform: "scale(0.529)" }}
+                    onLoad={() => {
+                      if (previewSnapshot && iframeRef.current?.contentWindow) {
+                        iframeRef.current.contentWindow.postMessage(
+                          buildSnapshotMessage(previewSnapshot),
+                          window.location.origin,
+                        );
+                      }
+                    }}
                   />
                 </div>
                 <div className="mx-auto mt-1 h-1 w-10 rounded-full bg-[var(--color-primary)]/35" />

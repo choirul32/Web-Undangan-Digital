@@ -118,6 +118,12 @@ export default function OpeningRevealOverlay({
       ? "border-white/70 bg-black/42 shadow-black/20"
       : "border-[var(--color-accent-pale)] bg-[var(--color-surface)]/88 shadow-[var(--color-primary)]/10"
   } ${config.contentPosition === "split" ? "mt-auto" : ""}`;
+  const guestBoxStyle = {
+    ...(config.guestCardBgColor ? { backgroundColor: config.guestCardBgColor } : {}),
+    ...(config.contentPosition === "split" && config.guestOffsetY
+      ? { marginBottom: `${Number(config.guestOffsetY)}px` }
+      : {}),
+  };
   const guestEyebrowClass = compactMode
     ? `text-[10px] font-black uppercase tracking-[0.14em] ${usePhotoBackdrop ? "text-white/85" : "text-[var(--color-accent)]"}`
     : `text-sm font-black uppercase tracking-[0.16em] ${usePhotoBackdrop ? "text-white/85" : "text-[var(--color-accent)]"}`;
@@ -127,6 +133,10 @@ export default function OpeningRevealOverlay({
   const buttonClass = compactMode
     ? "mt-6 rounded-2xl bg-[var(--color-primary)] px-6 py-3 text-sm font-black text-white shadow-xl shadow-[var(--color-primary)]/20"
     : "mt-9 rounded-2xl bg-[var(--color-primary)] px-8 py-4 text-base font-black text-white shadow-xl shadow-[var(--color-primary)]/20";
+  const buttonStyle = {
+    ...(config.buttonBgColor ? { backgroundColor: config.buttonBgColor } : {}),
+    ...(config.buttonTextColor ? { color: config.buttonTextColor } : {}),
+  };
   const splitPanelClass = animation === "gate" ? "absolute inset-y-0 z-[2] w-1/2 bg-[var(--color-surface)] shadow-2xl shadow-[var(--color-primary)]/15" : "absolute inset-y-0 z-[2] w-1/2 bg-[var(--color-primary)]/12 shadow-2xl shadow-[var(--color-primary)]/10";
 
   const splitPanelStyle = (side) =>
@@ -166,11 +176,11 @@ export default function OpeningRevealOverlay({
         {config.coverImageEnabled ? <img src={revealCoverImage} alt={`${couple.groomNickname} dan ${couple.brideNickname}`} className={coverImageClass} style={photoWidthStyle} /> : null}
         <p className={`${eyebrowClass} ${eyebrowColorClass}`}>The Wedding Of</p>
         <h1 className={`${titleClass} ${headingColorClass}`} style={{ fontFamily: "var(--font-heading)", ...titleFontSizeStyle }}>{couple.groomNickname} & {couple.brideNickname}</h1>
-        <div className={guestBoxClass}>
+        <div className={guestBoxClass} style={guestBoxStyle}>
           <p className={guestEyebrowClass}>Kepada Yth.</p>
-          <p className={guestNameClass} style={guestFontSizeStyle}>{guestName || "Tamu Undangan"}</p>
+          <p className={guestNameClass} style={{ ...guestFontSizeStyle, ...(config.guestCardTextColor ? { color: config.guestCardTextColor } : {}) }}>{guestName || "Tamu Undangan"}</p>
         </div>
-        <button type="button" onClick={handleOpen} disabled={isOpening} className={buttonClass} style={buttonFontSizeStyle}>
+        <button type="button" onClick={handleOpen} disabled={isOpening} className={buttonClass} style={{ ...buttonFontSizeStyle, ...buttonStyle }}>
           {config.buttonText || "Buka Undangan"}
         </button>
       </OpeningSequence>

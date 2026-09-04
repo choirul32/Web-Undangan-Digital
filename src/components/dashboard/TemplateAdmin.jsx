@@ -2019,6 +2019,7 @@ function TemplateAdminPage() {
                 coverBackgroundModeOptions={coverBackgroundModeOptions}
                 updateCoverBackgroundImage={updateCoverBackgroundImage}
                 coverPreviewSrc={coverSectionPreviewSrc}
+                previewSnapshot={editorPreviewSnapshot}
               />
               <GlobalStyleStep
                 visible={editorStep === 3}
@@ -2048,6 +2049,7 @@ function TemplateAdminPage() {
                 updateOpeningSequenceAsset={updateOpeningSequenceAsset}
                 updateOpeningSequenceAssetFile={updateOpeningSequenceAssetFile}
                 openingSectionPreviewSrc={openingSectionPreviewSrc}
+                previewSnapshot={editorPreviewSnapshot}
                 onReplayPreview={() => setTemplatePreviewTick((current) => current + 1)}
               />
               <WidgetsStep

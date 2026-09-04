@@ -46,7 +46,7 @@ export default function UniversalTemplate({
       !framedPreview &&
       typeof window !== "undefined" &&
       // Loading tampil di mode publik & preview editor (bukan framed mini-preview)
-      !previewSectionOnly,
+      !initialPreviewSectionOnly,
   );
 
   const invitation = { ...emptyInvitation, ...data };

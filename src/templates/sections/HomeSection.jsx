@@ -260,6 +260,14 @@ export default function HomeSection({
                         : "mx-auto mt-6 w-full max-w-[18rem] sm:mt-8 sm:max-w-sm"
                     }`
               }
+              style={{
+                ...(coverConfig.guestCardBgColor
+                  ? { backgroundColor: coverConfig.guestCardBgColor }
+                  : {}),
+                ...(coverConfig.contentPosition === "split" && coverConfig.guestOffsetY
+                  ? { marginBottom: `${Number(coverConfig.guestOffsetY)}px` }
+                  : {}),
+              }}
             >
               <p
                 className={`font-black uppercase tracking-[0.16em] text-[var(--color-accent)] ${
@@ -272,6 +280,11 @@ export default function HomeSection({
                 className={`mt-1.5 font-black text-[var(--color-primary)] ${
                   isCompactHomePreview ? "text-[13px]" : "text-base sm:text-2xl"
                 }`}
+                style={
+                  coverConfig.guestCardTextColor
+                    ? { color: coverConfig.guestCardTextColor }
+                    : undefined
+                }
               >
                 {personalizedGuestName || "Tamu Undangan"}
               </p>

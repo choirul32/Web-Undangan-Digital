@@ -183,10 +183,14 @@ export const defaultCoverSectionConfig = {
   nameFontSize: "", // px — ukuran nama pasangan
   dateFontSize: "", // px — ukuran tanggal
   quoteFontSize: "", // px — ukuran kutipan
-  contentPosition: "center", // center | top | bottom
+  contentPosition: "center", // center | top | bottom | split
   contentOffsetY: 0, // px — geser konten naik (-) / turun (+)
   photoWidth: "", // px — lebar foto cover
   photoOffsetY: 0, // px — geser foto naik (-) / turun (+)
+  // Warna card nama tamu (kosong = pakai style bawaan)
+  guestCardBgColor: "", // hex — background card "Kepada Yth / Tamu Undangan"
+  guestCardTextColor: "", // hex — warna teks nama tamu
+  guestOffsetY: 0, // px — jarak card tamu dari bawah (mode split)
 };
 
 export const defaultOpeningRevealConfig = {
@@ -204,9 +208,16 @@ export const defaultOpeningRevealConfig = {
   titleFontSize: "", // px — ukuran nama pasangan
   guestFontSize: "", // px — ukuran nama tamu
   buttonFontSize: "", // px — ukuran teks tombol
-  contentPosition: "center", // center | top | bottom
+  contentPosition: "center", // center | top | bottom | split
   contentOffsetY: 0, // px — geser konten naik (-) / turun (+)
   photoWidth: "", // px — lebar foto tengah
+  // Warna card nama tamu (kosong = pakai style bawaan)
+  guestCardBgColor: "", // hex — background card "Kepada Yth / Tamu Undangan"
+  guestCardTextColor: "", // hex — warna teks nama tamu
+  guestOffsetY: 0, // px — jarak card tamu dari bawah (mode split)
+  // Warna tombol "Buka Undangan" (kosong = pakai style bawaan)
+  buttonBgColor: "", // hex — background tombol
+  buttonTextColor: "", // hex — warna teks tombol
 };
 
 export const defaultOpeningSequenceConfig = {
