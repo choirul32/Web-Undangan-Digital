@@ -1,6 +1,7 @@
 ﻿import { motion } from "framer-motion";
 import OrnamentLayer from "../components/OrnamentLayer";
-import { getSectionOrnaments, getSectionStyleConfig } from "../designConfigs";
+import { getSectionOrnaments } from "../designConfigs";
+import { resolveSectionBackground } from "./sectionBackground";
 
 export const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -150,44 +151,20 @@ export function SectionTitle({ eyebrow, title, desc }) {
 }
 
 export function SectionFrame({ section, designConfig, baseClassName = "", applySectionStyle = true, children }) {
-  const styleConfig = getSectionStyleConfig(designConfig, section);
+  // Aturan background terkonsentrasi di satu Seam (sectionBackground.js) —
+  // SectionFrame tinggal render keputusan, tidak menghitung sendiri.
+  const {
+    styleConfig,
+    isTransparentSection,
+    hasOwnBackgroundImage,
+    backgroundImage,
+    effectiveBackground,
+    overlayOpacity,
+    parallaxOffset: parallaxSpeed,
+  } = resolveSectionBackground(designConfig, section);
   const musicWidgetConfig = designConfig?.widgets?.music || {};
   const pulseSync = musicWidgetConfig.pulseSync || false;
   const pulseIntensity = musicWidgetConfig.pulseIntensity || "subtle";
-
-  // Transparansi section: kalau ADA background global, section jadi transparan
-  // KECUALI: home, section yang set backgroundImage sendiri, atau section yang
-  // eksplisit set useGlobalBackground=false (pilih "pakai background sendiri").
-  const globalBg = designConfig?.sections?.global?.backgroundImage;
-  const sectionOwn = designConfig?.sections?.[section] || {};
-  const hasOwnImage = Boolean(sectionOwn.backgroundImage);
-  const useGlobalBackground = sectionOwn.useGlobalBackground !== false;
-  const isTransparentSection =
-    Boolean(globalBg) &&
-    section !== "home" &&
-    useGlobalBackground &&
-    !hasOwnImage;
-
-  const parallaxSpeed = {
-    none: 0,
-    slow: 12,
-    medium: 24,
-    fast: 40,
-  }[styleConfig.backgroundParallax || "none"] || 0;
-
-  // Hanya render background IMAGE lokal kalau section punya gambar SENDIRI
-  // (sectionOwn.backgroundImage), bukan warisan global — global sudah dirender
-  // sekali di GlobalBackground (root).
-  const hasOwnBackgroundImage = Boolean(sectionOwn.backgroundImage) && !isTransparentSection;
-  const overlayOpacity = Math.min(90, Math.max(0, Number(styleConfig.backgroundOverlay) || 0)) / 100;
-
-  // Background section: kalau transparan → transparent.
-  // Kalau tidak transparan → warna section SENDIRI (sectionOwn.backgroundColor),
-  // bukan styleConfig.backgroundColor yang bisa berasal dari global (useGlobal=true
-  // membuat getSectionStyleConfig mengembalikan warna global, menutupi bg image global).
-  const effectiveBackground = isTransparentSection
-    ? "transparent"
-    : sectionOwn.backgroundColor || styleConfig.backgroundColor;
 
   return (
     <motion.section {...sectionMotion(styleConfig.entranceAnimation)} viewport={{ once: true, amount: 0.18 }} transition={{ duration: 0.6, ease: "easeOut" }} id={`section-${section}`} data-preview-section={section} data-background-parallax={parallaxSpeed ? String(parallaxSpeed) : undefined} className={`relative z-10 overflow-hidden ${spacingClass(styleConfig.spacingPreset)} ${fontClass(styleConfig.fontPreset)} ${isTransparentSection ? "!bg-transparent" : ""} ${baseClassName}`} style={applySectionStyle ? { ...cssVars(styleConfig), backgroundColor: effectiveBackground || undefined } : undefined}>
@@ -198,7 +175,7 @@ export function SectionFrame({ section, designConfig, baseClassName = "", applyS
             style={parallaxSpeed ? { "--parallax-speed": `${parallaxSpeed}px` } : undefined}
           >
             <img
-              src={styleConfig.backgroundImage}
+              src={backgroundImage}
               alt=""
               className="section-bg-image h-full w-full object-cover"
               style={parallaxSpeed ? { height: "130%", maxWidth: "none" } : undefined}

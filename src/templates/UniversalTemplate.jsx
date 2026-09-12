@@ -3,22 +3,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { emptyInvitation } from "../data/emptyInvitation";
-import {
-  getCoupleSectionConfig,
-  getCoverSectionConfig,
-  getDesignConfig,
-  getOpeningRevealConfig,
-  getOpeningSequenceConfig,
-} from "./designConfigs";
-import MusicPlayer, { getMusicWidgetConfig } from "./components/MusicPlayer";
+import MusicPlayer from "./components/MusicPlayer";
 import LoadingScreen from "./components/LoadingScreen";
 import FloatingActions from "./components/FloatingActions";
 import GlobalBackground from "./components/GlobalBackground";
-import { getCountdownWidgetConfig } from "./components/CountdownTimer";
-import { getEventWidgetConfig } from "./components/EventWidget";
-import { getGalleryWidgetConfig } from "./components/GalleryWidget";
-import { getStoryWidgetConfig } from "./components/StoryWidget";
 import { cssVars, normalizeEventExamples } from "./utils/templateStyling";
+import { resolvePreviewState } from "./utils/previewState";
 import usePreviewSectionFilter from "./hooks/usePreviewSectionFilter";
 import useSectionBackgroundParallax from "./hooks/useSectionBackgroundParallax";
 import OpeningRevealOverlay from "./sections/OpeningRevealOverlay";
@@ -54,30 +44,39 @@ export default function UniversalTemplate({
   const events = normalizeEventExamples(invitation.events || []);
   const story = invitation.story || [];
 
-  const designConfig = getDesignConfig(invitation.templateId, invitation.designConfig);
-  const globalStyleConfig = designConfig?.sections?.global || {};
-  const coverConfig = getCoverSectionConfig(designConfig);
-  const openingRevealConfig = getOpeningRevealConfig(designConfig);
-  const openingSequenceConfig = getOpeningSequenceConfig(designConfig);
   const { previewFocusSection, previewSectionOnly, shouldRenderSection } = usePreviewSectionFilter(
     invitation.templateId,
     initialPreviewSectionOnly,
     initialPreviewFocusSection,
   );
-  const shouldDisableOpeningOverlay = disableOpeningOverlay || previewSectionOnly;
-  const openingOverlayConfig = {
-    ...openingRevealConfig,
-    enabled: previewOpening ? true : shouldDisableOpeningOverlay ? false : openingRevealConfig.enabled,
-    sequencePreset: openingSequenceConfig.preset,
-    asset: openingSequenceConfig.asset,
-  };
-  const personalizedGuestName = invitation.features?.guestName === false ? "" : guestName;
-  const coupleConfig = getCoupleSectionConfig(designConfig);
-  const countdownConfig = getCountdownWidgetConfig(designConfig);
-  const eventConfig = getEventWidgetConfig(designConfig);
-  const galleryConfig = getGalleryWidgetConfig(designConfig);
-  const storyConfig = getStoryWidgetConfig(designConfig);
-  const musicConfig = getMusicWidgetConfig(designConfig);
+  // Keputusan render terkonsentrasi di satu Seam (previewState.js) —
+  // UniversalTemplate tinggal render keputusan, tidak merumuskan sendiri.
+  const {
+    designConfig,
+    globalStyleConfig,
+    coverConfig,
+    openingOverlayConfig,
+    personalizedGuestName,
+    coupleConfig,
+    countdownConfig,
+    eventConfig,
+    galleryConfig,
+    storyConfig,
+    musicConfig,
+    shouldDelayInvitationContent: shouldDelayFromOverlay,
+    showHomeGuestGreeting,
+    shouldRenderWishes,
+    shouldRenderGift,
+    shouldRenderMusic,
+  } = resolvePreviewState({
+    invitation,
+    guestName,
+    previewOpening,
+    disableOpeningOverlay,
+    previewSectionOnly,
+    previewFocusSection,
+    shouldRenderSection,
+  });
   const bridePhoto = couple.bridePhoto || "/assets/catin_wanita.jpg";
   const groomPhoto = couple.groomPhoto || "/assets/catin_pria.jpg";
   const coverPhoto = invitation.coverImage || "/assets/CoverPasangan.png";
@@ -92,8 +91,7 @@ export default function UniversalTemplate({
 
   const isCompactHomePreview =
     framedPreview || (previewSectionOnly && previewFocusSection === "home") || isNarrowViewport;
-  const shouldDelayInvitationContent = openingOverlayConfig.enabled && !isRevealOpen;
-  const showHomeGuestGreeting = !openingOverlayConfig.enabled;
+  const shouldDelayInvitationContent = shouldDelayFromOverlay && !isRevealOpen;
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -239,7 +237,7 @@ export default function UniversalTemplate({
       {!shouldDelayInvitationContent && shouldRenderSection("countdown") ? <CountdownSection designConfig={designConfig} events={events} countdownConfig={countdownConfig} /> : null}
       {!shouldDelayInvitationContent && shouldRenderSection("story") ? <StorySection designConfig={designConfig} story={story} storyConfig={storyConfig} /> : null}
       {!shouldDelayInvitationContent && shouldRenderSection("gallery") ? <GallerySection designConfig={designConfig} invitation={invitation} galleryConfig={galleryConfig} /> : null}
-      {!shouldDelayInvitationContent && shouldRenderSection("gift") && invitation.features?.gift ? <GiftSection accounts={invitation.bankAccounts} designConfig={designConfig} qrisImage={invitation.qrisImage} /> : null}
+      {!shouldDelayInvitationContent && shouldRenderGift ? <GiftSection accounts={invitation.bankAccounts} designConfig={designConfig} qrisImage={invitation.qrisImage} /> : null}
       {!shouldDelayInvitationContent && shouldRenderSection("rsvp") ? (
         <RsvpSection
           designConfig={designConfig}
@@ -250,12 +248,11 @@ export default function UniversalTemplate({
         />
       ) : null}
       {!shouldDelayInvitationContent &&
-      shouldRenderSection("doa-ucapan") &&
-      (!invitation.features?.rsvp || previewFocusSection === "doa-ucapan") ? (
+      shouldRenderWishes ? (
         <WishesSection designConfig={designConfig} slug={invitation.slug} preview={previewSectionOnly || previewMode} />
       ) : null}
 
-      {!previewSectionOnly && (invitation.features?.music || musicConfig.enabled) ? (
+      {shouldRenderMusic ? (
         <MusicPlayer
           musicUrl={invitation.musicUrl || ""}
           musicTitle={invitation.musicTitle || "Wedding Music"}

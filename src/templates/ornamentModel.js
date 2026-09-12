@@ -84,6 +84,17 @@ export function getParallaxSpeed(value) {
   return PARALLAX_SPEEDS[value] ?? 0;
 }
 
+// ---- Section parallax (amplitudo px) ----
+// Satu vocabulary dengan ornament: amplitudo px section diturunkan dari
+// PARALLAX_SPEEDS agar tidak ada dua skala yang drift diam-diam.
+// slow 0.15*80=12, medium 0.3*80=24, fast 0.5*80=40 — sama persis dengan
+// nilai px yang dipakai SectionFrame selama ini (nol perubahan visual).
+export const SECTION_PARALLAX_SCALE = 80;
+
+export function getSectionParallaxOffset(value) {
+  return Math.round(getParallaxSpeed(value) * SECTION_PARALLAX_SCALE);
+}
+
 // ---- Layer (zIndex) ----
 // Threshold ini otoritas: zIndex < 0 = background (di belakang teks),
 // zIndex >= 0 = foreground (di atas konten). Editor dan renderer

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   getOrnamentLayerPresetId,
   getParallaxSpeed,
+  getSectionParallaxOffset,
   isForegroundLayer,
   mirrorSlotMap,
   ornamentLayerPresets,
@@ -55,6 +56,13 @@ describe("ornamentModel parallax", () => {
   it("getParallaxSpeed menerima angka langsung", () => {
     expect(getParallaxSpeed(0.42)).toBe(0.42);
     expect(getParallaxSpeed("bogus")).toBe(0);
+  });
+
+  it("getSectionParallaxOffset memakai vocabulary yang sama (nol drift visual)", () => {
+    expect(getSectionParallaxOffset("none")).toBe(0);
+    expect(getSectionParallaxOffset("slow")).toBe(12);
+    expect(getSectionParallaxOffset("medium")).toBe(24);
+    expect(getSectionParallaxOffset("fast")).toBe(40);
   });
 });
 

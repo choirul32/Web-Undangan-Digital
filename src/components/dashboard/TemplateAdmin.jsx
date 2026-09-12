@@ -105,51 +105,8 @@ import GlobalStyleStep from "./template-admin/GlobalStyleStep";
 import AiTemplateGenerator from "./template-admin/AiTemplateGenerator";
 import useOrnamentTimelineInteractions from "../../hooks/dashboard/useOrnamentTimelineInteractions";
 import { prepareImageForUpload } from "../../lib/imageUpload";
-
-function parseHexColor(color = "") {
-  const normalized = color.replace("#", "").trim();
-
-  if (!/^[0-9a-f]{6}$/i.test(normalized)) {
-    return null;
-  }
-
-  return {
-    r: parseInt(normalized.slice(0, 2), 16),
-    g: parseInt(normalized.slice(2, 4), 16),
-    b: parseInt(normalized.slice(4, 6), 16),
-  };
-}
-
-function colorLuminance(color) {
-  const rgb = parseHexColor(color);
-
-  if (!rgb) {
-    return null;
-  }
-
-  const channels = [rgb.r, rgb.g, rgb.b].map((value) => {
-    const normalized = value / 255;
-    return normalized <= 0.03928
-      ? normalized / 12.92
-      : ((normalized + 0.055) / 1.055) ** 2.4;
-  });
-
-  return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
-}
-
-function contrastRatio(foreground, background) {
-  const foregroundLuminance = colorLuminance(foreground);
-  const backgroundLuminance = colorLuminance(background);
-
-  if (foregroundLuminance === null || backgroundLuminance === null) {
-    return null;
-  }
-
-  const lighter = Math.max(foregroundLuminance, backgroundLuminance);
-  const darker = Math.min(foregroundLuminance, backgroundLuminance);
-
-  return (lighter + 0.05) / (darker + 0.05);
-}
+import { applyPaletteToDesignConfig, paletteToSectionColors } from "../../lib/applyPalette";
+import { contrastRatio } from "../../lib/colorUtils";
 
 function isMissingAssetPath(src = "") {
   if (!src) {
@@ -1160,36 +1117,15 @@ function TemplateAdminPage() {
       return;
     }
 
-    const nextSections = { ...(parsedDesignConfig.sections || {}) };
-    nextSections.global = {
-      ...(nextSections.global || {}),
-      backgroundColor: palette.colors.bg,
-      primaryColor: palette.colors.primary,
-      textColor: palette.colors.text,
-      accentColor: palette.colors.accent,
-      surfaceColor: palette.colors.surface,
-    };
-
-    Object.keys(nextSections)
-      .filter((sectionKey) => sectionKey !== "global")
-      .forEach((sectionKey) => {
-        const prevSection = nextSections[sectionKey] || {};
-        nextSections[sectionKey] = {
-          ...prevSection,
-          useGlobal: true,
-          backgroundColor: palette.colors.bg,
-          textColor: palette.colors.text,
-          accentColor: palette.colors.accent,
-          surfaceColor: palette.colors.surface,
-        };
-      });
-
-    writeDesignConfig({
-      ...parsedDesignConfig,
-      sections: nextSections,
-      palette: palette.id,
-    });
-    setManagerMessage(`Palette "${palette.label}" diterapkan.`);
+    // Pemetaan warna terkonsentrasi di satu Seam (applyPalette.js) —
+    // TemplateAdmin tinggal tulis hasilnya, tidak memetakan manual.
+    const { warnings } = paletteToSectionColors(palette);
+    writeDesignConfig(applyPaletteToDesignConfig(parsedDesignConfig, palette));
+    setManagerMessage(
+      warnings.length > 0
+        ? `Palette "${palette.label}" diterapkan (teks dikoreksi agar kontras).`
+        : `Palette "${palette.label}" diterapkan.`,
+    );
   };
 
   const handleAiGenerated = ({ designConfig, description }) => {

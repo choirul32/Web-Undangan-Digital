@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { getParallaxSpeed } from "../ornamentModel";
 
 /**
  * GlobalBackground — satu layer background menempel di seluruh halaman.
@@ -12,8 +13,24 @@ import React, { useEffect, useRef } from "react";
  * - backgroundImage: URL gambar (kosong = tidak render)
  * - parallax: "none" | "slow" | "medium" | "fast"
  * - overlay: 0-90 (kegelapan overlay biar teks terbaca)
+ *
+ * Rasio gerak memakai vocabulary ornament yang sama
+ * (ornamentModel.getParallaxSpeed): slow 0.12, medium 0.22, fast 0.35.
+ * Sengaja TIDAK memakai PARALLAX_SPEEDS mentah (0.15/0.3/0.5) —
+ * background full-page bergerak lebih pelan dari ornament agar
+ * tidak mabuk di HP entry-level (ADR-0001).
  */
-const PARALLAX_SPEEDS = { none: 0, slow: 0.12, medium: 0.22, fast: 0.35 };
+const GLOBAL_PARALLAX_SPEEDS = { none: 0, slow: 0.12, medium: 0.22, fast: 0.35 };
+
+export function getGlobalParallaxSpeed(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (value in GLOBAL_PARALLAX_SPEEDS) {
+    return GLOBAL_PARALLAX_SPEEDS[value];
+  }
+  return getParallaxSpeed(value);
+}
 
 export default function GlobalBackground({ backgroundImage, backgroundColor, parallax = "none", overlay = 0 }) {
   const ref = useRef(null);
@@ -26,7 +43,7 @@ export default function GlobalBackground({ backgroundImage, backgroundColor, par
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reducedMotion) return undefined;
 
-    const speed = PARALLAX_SPEEDS[parallax] || 0;
+    const speed = getGlobalParallaxSpeed(parallax);
     if (!speed) return undefined;
 
     let ticking = false;
