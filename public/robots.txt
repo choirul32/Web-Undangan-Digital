@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+# TODO: ganti dengan domain produksi, mis. Sitemap: https://nusainvite.com/sitemap.xml
