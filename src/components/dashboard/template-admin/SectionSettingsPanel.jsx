@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Field, SelectInput, TextInput } from "../FormControls";
 import VisualChoiceControl from "./VisualChoiceControl";
+import SectionOrderPanel from "./SectionOrderPanel";
 import {
   previewSpacingCompact,
   previewSpacingNormal,
@@ -421,6 +422,7 @@ export default function SectionSettingsPanel({
   parsedDesignConfig,
   updateTemplateSectionConfig,
   uploadSectionBackground,
+  patchSectionsOrder,
 }) {
   return (
     <div className="space-y-2">
@@ -430,6 +432,12 @@ export default function SectionSettingsPanel({
       <p className="text-xs font-semibold leading-5 text-[var(--dash-muted)]">
         Buka tiap section untuk atur latar, warna teks, jarak, gaya card, dan animasinya dalam satu tempat.
       </p>
+      <div className="mt-3">
+        <SectionOrderPanel
+          parsedDesignConfig={parsedDesignConfig}
+          patchSectionsOrder={patchSectionsOrder}
+        />
+      </div>
       <div className="mt-3 space-y-2">
         {SECTION_OPTIONS.map((sectionOption) => {
           const sectionConfig = parsedDesignConfig?.sections?.[sectionOption.id] || {};

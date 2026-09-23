@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  applyPatchCanvasSectionsOrder,
   applyPatchOpeningSequenceAsset,
   applyPatchOrnament,
   applyPatchOrnamentAtIndex,
@@ -115,6 +116,26 @@ describe("applyPatchOrnaments", () => {
       (list) => list.filter((item) => item.id !== "a"),
     );
     expect(next.ornaments.home).toEqual([{ id: "b" }]);
+  });
+});
+
+describe("applyPatchCanvasSectionsOrder", () => {
+  it("menulis canvas.sectionsOrder tanpa merusak key canvas lain", () => {
+    const order = ["home", "gallery", "couple", "acara", "countdown", "story", "gift", "rsvp", "doa-ucapan"];
+    const next = applyPatchCanvasSectionsOrder(
+      { canvas: { foo: 1 }, sections: {} },
+      order,
+    );
+    expect(next.canvas.sectionsOrder).toEqual(order);
+    expect(next.canvas.foo).toBe(1);
+  });
+
+  it("menerima updater function", () => {
+    const next = applyPatchCanvasSectionsOrder(
+      { canvas: { sectionsOrder: ["home", "couple"] } },
+      (list) => [...list, "gallery"],
+    );
+    expect(next.canvas.sectionsOrder).toContain("gallery");
   });
 });
 

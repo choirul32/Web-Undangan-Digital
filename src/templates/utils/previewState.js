@@ -10,6 +10,7 @@ import {
   getOpeningSequenceConfig,
   getStoryWidgetConfig,
 } from "../designConfigs";
+import { getSectionsOrder } from "../sectionsOrder";
 
 // ============================================================
 // previewState — satu-satunya pemilik keputusan render
@@ -94,6 +95,7 @@ export function resolvePreviewState({
 
   return {
     designConfig,
+    sectionsOrder: getSectionsOrder(designConfig),
     globalStyleConfig: designConfig?.sections?.global || {},
     coverConfig: getCoverSectionConfig(designConfig),
     openingOverlayConfig,

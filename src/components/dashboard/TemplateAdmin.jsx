@@ -333,6 +333,7 @@ function TemplateAdminPage() {
     patchOrnaments,
     toggleGlobalOrnamentExclusion,
     patchOpeningSequenceAsset,
+    patchSectionsOrder,
     writeDesignConfigPreset,
   } = useDesignConfig({
     activeDesignSection,
@@ -2236,6 +2237,7 @@ function TemplateAdminPage() {
                 globalSectionStyleConfig={globalSectionStyleConfig}
                 updateGlobalSectionStyle={updateGlobalSectionStyle}
                 updateTemplateSectionConfig={updateTemplateSectionConfig}
+                patchSectionsOrder={patchSectionsOrder}
                 headingFontOptions={headingFontOptions}
                 bodyFontOptions={bodyFontOptions}
                 coupleSectionConfig={coupleSectionConfig}

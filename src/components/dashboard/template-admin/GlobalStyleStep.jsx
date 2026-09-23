@@ -186,6 +186,7 @@ export default function GlobalStyleStep({
   globalSectionStyleConfig,
   updateGlobalSectionStyle,
   updateTemplateSectionConfig,
+  patchSectionsOrder,
   headingFontOptions,
   bodyFontOptions,
   coupleSectionConfig,
@@ -630,6 +631,7 @@ export default function GlobalStyleStep({
               parsedDesignConfig={parsedDesignConfig}
               updateTemplateSectionConfig={updateTemplateSectionConfig}
               uploadSectionBackground={uploadSectionBackground}
+              patchSectionsOrder={patchSectionsOrder}
             />
           </div>
         </DashboardCard>

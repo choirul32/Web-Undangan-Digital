@@ -93,4 +93,21 @@ describe("sanitizeDesignConfig", () => {
     expect(config.ornaments.global[0].slot).toBe("top-left");
     expect(config.ornaments.global[0].width).toBe(150);
   });
+
+  it("membersihkan canvas.sectionsOrder dari id tak dikenal, sisanya dilengkapi", () => {
+    const { config, warnings } = sanitizeDesignConfig({
+      canvas: { sectionsOrder: ["gallery", "home", "ngaco", "gallery"] },
+    });
+
+    expect(config.canvas.sectionsOrder).not.toContain("ngaco");
+    expect(config.canvas.sectionsOrder[0]).toBe("gallery");
+    expect(config.canvas.sectionsOrder[1]).toBe("home");
+    expect(config.canvas.sectionsOrder).toHaveLength(9);
+    expect(warnings.some((w) => w.includes("sectionsOrder"))).toBe(true);
+  });
+
+  it("canvas non-object tetap jadi object kosong", () => {
+    const { config } = sanitizeDesignConfig({ canvas: "ngaco" });
+    expect(config.canvas).toEqual({});
+  });
 });

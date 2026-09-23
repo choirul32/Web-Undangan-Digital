@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from "react";
 import { normalizeDesignConfig } from "../../../templates/designConfigs";
+import { getSectionsOrder } from "../../../templates/sectionsOrder";
 
 // ============================================================
 // useDesignConfig — state + patch API untuk designConfig.
@@ -101,6 +102,31 @@ export function applyPatchOrnaments(config, section, patchOrUpdater) {
     ornaments: {
       ...(config.ornaments || {}),
       [section]: nextSectionOrnaments,
+    },
+  };
+}
+
+export function applyPatchCanvasSectionsOrder(config, orderOrUpdater) {
+  const currentOrder = Array.isArray(config?.canvas?.sectionsOrder)
+    ? config.canvas.sectionsOrder
+    : getSectionsOrder(config || {});
+  const rawNext =
+    typeof orderOrUpdater === "function"
+      ? orderOrUpdater(currentOrder)
+      : orderOrUpdater;
+
+  // Selalu lewat allowlist registry: id tak dikenal/duplikat dibuang,
+  // section yang hilang dilengkapi. Updater mentah tidak bisa merusak render.
+  const nextOrder = getSectionsOrder({
+    ...(config || {}),
+    canvas: { ...(config?.canvas || {}), sectionsOrder: rawNext },
+  });
+
+  return {
+    ...config,
+    canvas: {
+      ...(config.canvas || {}),
+      sectionsOrder: nextOrder,
     },
   };
 }
@@ -258,6 +284,10 @@ export default function useDesignConfig({
     guard((config) => applyPatchOpeningSequenceAsset(config, fields));
   };
 
+  const patchSectionsOrder = (orderOrUpdater) => {
+    guard((config) => applyPatchCanvasSectionsOrder(config, orderOrUpdater));
+  };
+
   // ---- Bulk operations (presets) ----
   const writeDesignConfigPreset = (nextConfig, message) => {
     writeDesignConfig(nextConfig);
@@ -280,6 +310,7 @@ export default function useDesignConfig({
     patchOrnaments,
     toggleGlobalOrnamentExclusion,
     patchOpeningSequenceAsset,
+    patchSectionsOrder,
     writeDesignConfigPreset,
     undo,
     redo,

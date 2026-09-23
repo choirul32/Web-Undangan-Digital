@@ -9,6 +9,7 @@ import FloatingActions from "./components/FloatingActions";
 import GlobalBackground from "./components/GlobalBackground";
 import { cssVars, normalizeEventExamples } from "./utils/templateStyling";
 import { resolvePreviewState } from "./utils/previewState";
+import { DEFAULT_SECTION_ORDER } from "./sectionsOrder";
 import usePreviewSectionFilter from "./hooks/usePreviewSectionFilter";
 import useSectionBackgroundParallax from "./hooks/useSectionBackgroundParallax";
 import OpeningRevealOverlay from "./sections/OpeningRevealOverlay";
@@ -53,6 +54,7 @@ export default function UniversalTemplate({
   // UniversalTemplate tinggal render keputusan, tidak merumuskan sendiri.
   const {
     designConfig,
+    sectionsOrder,
     globalStyleConfig,
     coverConfig,
     openingOverlayConfig,
@@ -92,6 +94,112 @@ export default function UniversalTemplate({
   const isCompactHomePreview =
     framedPreview || (previewSectionOnly && previewFocusSection === "home") || isNarrowViewport;
   const shouldDelayInvitationContent = shouldDelayFromOverlay && !isRevealOpen;
+
+  const renderSectionById = (sectionId) => {
+    if (shouldDelayInvitationContent) {
+      return null;
+    }
+
+    switch (sectionId) {
+      case "home":
+        return shouldRenderSection("home") ? (
+          <HomeSection
+            key="home"
+            designConfig={designConfig}
+            coverConfig={coverConfig}
+            couple={couple}
+            events={events}
+            personalizedGuestName={personalizedGuestName}
+            profileImages={profileImages}
+            invitationCoverImage={invitationCoverImage}
+            isCompactHomePreview={isCompactHomePreview}
+            showGuestGreeting={showHomeGuestGreeting}
+          />
+        ) : null;
+      case "couple":
+        return shouldRenderSection("couple") ? (
+          <CoupleSection
+            key="couple"
+            designConfig={designConfig}
+            couple={couple}
+            coupleConfig={coupleConfig}
+            profileImages={coupleProfileImages}
+          />
+        ) : null;
+      case "acara":
+        return shouldRenderSection("acara") ? (
+          <EventSection
+            key="acara"
+            designConfig={designConfig}
+            events={events}
+            eventConfig={eventConfig}
+          />
+        ) : null;
+      case "countdown":
+        return shouldRenderSection("countdown") ? (
+          <CountdownSection
+            key="countdown"
+            designConfig={designConfig}
+            events={events}
+            countdownConfig={countdownConfig}
+          />
+        ) : null;
+      case "story":
+        return shouldRenderSection("story") ? (
+          <StorySection
+            key="story"
+            designConfig={designConfig}
+            story={story}
+            storyConfig={storyConfig}
+          />
+        ) : null;
+      case "gallery":
+        return shouldRenderSection("gallery") ? (
+          <GallerySection
+            key="gallery"
+            designConfig={designConfig}
+            invitation={invitation}
+            galleryConfig={galleryConfig}
+          />
+        ) : null;
+      case "gift":
+        return shouldRenderGift ? (
+          <GiftSection
+            key="gift"
+            accounts={invitation.bankAccounts}
+            designConfig={designConfig}
+            qrisImage={invitation.qrisImage}
+          />
+        ) : null;
+      case "rsvp":
+        return shouldRenderSection("rsvp") ? (
+          <RsvpSection
+            key="rsvp"
+            designConfig={designConfig}
+            invitation={invitation}
+            personalizedGuestName={personalizedGuestName}
+            guestSlug={guestSlug}
+            preview={previewSectionOnly || previewMode}
+          />
+        ) : null;
+      case "doa-ucapan":
+        return shouldRenderWishes ? (
+          <WishesSection
+            key="doa-ucapan"
+            designConfig={designConfig}
+            slug={invitation.slug}
+            preview={previewSectionOnly || previewMode}
+          />
+        ) : null;
+      default:
+        return null;
+    }
+  };
+
+  const orderedSections =
+    Array.isArray(sectionsOrder) && sectionsOrder.length > 0
+      ? sectionsOrder
+      : DEFAULT_SECTION_ORDER;
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
@@ -218,39 +326,7 @@ export default function UniversalTemplate({
         ) : null}
       </AnimatePresence>
 
-      {!shouldDelayInvitationContent && shouldRenderSection("home") ? (
-        <HomeSection
-          designConfig={designConfig}
-          coverConfig={coverConfig}
-          couple={couple}
-          events={events}
-          personalizedGuestName={personalizedGuestName}
-          profileImages={profileImages}
-          invitationCoverImage={invitationCoverImage}
-          isCompactHomePreview={isCompactHomePreview}
-          showGuestGreeting={showHomeGuestGreeting}
-        />
-      ) : null}
-
-      {!shouldDelayInvitationContent && shouldRenderSection("couple") ? <CoupleSection designConfig={designConfig} couple={couple} coupleConfig={coupleConfig} profileImages={coupleProfileImages} /> : null}
-      {!shouldDelayInvitationContent && shouldRenderSection("acara") ? <EventSection designConfig={designConfig} events={events} eventConfig={eventConfig} /> : null}
-      {!shouldDelayInvitationContent && shouldRenderSection("countdown") ? <CountdownSection designConfig={designConfig} events={events} countdownConfig={countdownConfig} /> : null}
-      {!shouldDelayInvitationContent && shouldRenderSection("story") ? <StorySection designConfig={designConfig} story={story} storyConfig={storyConfig} /> : null}
-      {!shouldDelayInvitationContent && shouldRenderSection("gallery") ? <GallerySection designConfig={designConfig} invitation={invitation} galleryConfig={galleryConfig} /> : null}
-      {!shouldDelayInvitationContent && shouldRenderGift ? <GiftSection accounts={invitation.bankAccounts} designConfig={designConfig} qrisImage={invitation.qrisImage} /> : null}
-      {!shouldDelayInvitationContent && shouldRenderSection("rsvp") ? (
-        <RsvpSection
-          designConfig={designConfig}
-          invitation={invitation}
-          personalizedGuestName={personalizedGuestName}
-          guestSlug={guestSlug}
-          preview={previewSectionOnly || previewMode}
-        />
-      ) : null}
-      {!shouldDelayInvitationContent &&
-      shouldRenderWishes ? (
-        <WishesSection designConfig={designConfig} slug={invitation.slug} preview={previewSectionOnly || previewMode} />
-      ) : null}
+      {orderedSections.map((sectionId) => renderSectionById(sectionId))}
 
       {shouldRenderMusic ? (
         <MusicPlayer

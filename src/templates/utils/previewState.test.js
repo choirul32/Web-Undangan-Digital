@@ -7,6 +7,7 @@ import {
   shouldRenderMusicPlayer,
   shouldRenderWishesSection,
 } from "./previewState";
+import { DEFAULT_SECTION_ORDER } from "../sectionsOrder";
 
 const baseInvitation = {
   templateId: "basic",
@@ -141,5 +142,38 @@ describe("resolvePreviewState", () => {
     expect(resolved.shouldRenderGift).toBe(true);
     expect(resolved.shouldRenderMusic).toBe(true);
     expect(resolved.shouldRenderWishes).toBe(true);
+  });
+
+  it("tanpa custom order -> sectionsOrder default registry", () => {
+    const resolved = resolvePreviewState({
+      invitation: { ...baseInvitation, features: {} },
+      shouldRenderSection: () => true,
+    });
+
+    expect(resolved.sectionsOrder).toEqual(DEFAULT_SECTION_ORDER);
+  });
+
+  it("custom canvas.sectionsOrder dipakai renderer", () => {
+    const custom = [
+      "home",
+      "acara",
+      "couple",
+      "gallery",
+      "countdown",
+      "story",
+      "gift",
+      "rsvp",
+      "doa-ucapan",
+    ];
+    const resolved = resolvePreviewState({
+      invitation: {
+        ...baseInvitation,
+        features: {},
+        designConfig: { canvas: { sectionsOrder: custom } },
+      },
+      shouldRenderSection: () => true,
+    });
+
+    expect(resolved.sectionsOrder).toEqual(custom);
   });
 });

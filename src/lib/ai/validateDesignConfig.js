@@ -6,6 +6,7 @@
 // ============================================================
 
 import { ornamentSlots, ornamentParallaxOptions } from "../../templates/ornamentModel";
+import { getSectionsOrder } from "../../templates/sectionsOrder";
 import {
   countdownVariantOptions,
   eventVariantOptions,
@@ -199,6 +200,35 @@ function sanitizeWidgets(widgets = {}) {
   return cleaned;
 }
 
+function sanitizeCanvas(canvas = {}, warnings = []) {
+  if (!isObject(canvas)) {
+    return {};
+  }
+
+  const cleaned = { ...canvas };
+
+  if (cleaned.sectionsOrder !== undefined) {
+    if (!Array.isArray(cleaned.sectionsOrder)) {
+      delete cleaned.sectionsOrder;
+      warnings.push("canvas.sectionsOrder dilewati (bukan array).");
+    } else {
+      const before = cleaned.sectionsOrder;
+      const after = getSectionsOrder({ canvas: { sectionsOrder: before } });
+      const isClean =
+        before.length === after.length &&
+        before.every((id, index) => id === after[index]);
+      if (!isClean) {
+        warnings.push(
+          "canvas.sectionsOrder dibersihkan (id tak dikenal/duplikat dibuang, yang hilang dilengkapi).",
+        );
+      }
+      cleaned.sectionsOrder = after;
+    }
+  }
+
+  return cleaned;
+}
+
 function sanitizeSections(sections = {}) {
   const cleaned = { ...sections };
 
@@ -229,7 +259,7 @@ export function sanitizeDesignConfig(input = {}) {
   const source = isObject(input) ? input : {};
 
   const config = {
-    canvas: isObject(source.canvas) ? source.canvas : {},
+    canvas: sanitizeCanvas(source.canvas, warnings),
     sections: sanitizeSections(source.sections || {}),
     ornaments: {},
     ornamentExclusions: isObject(source.ornamentExclusions) ? source.ornamentExclusions : {},
